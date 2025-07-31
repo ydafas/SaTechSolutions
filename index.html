@@ -31,6 +31,7 @@
     .hero{background:linear-gradient(135deg,var(--primary-color),#3b82f6);color:#fff;text-align:center;padding:140px 0 80px;}
     .hero h1{font-size:2.8rem;margin-bottom:1rem;font-weight:800;}
     .hero p{font-size:1.2rem;margin-bottom:2rem;opacity:.9;}
+    .hero-buttons{display:flex;gap:1rem;justify-content:center;}
     .btn-primary,.btn-secondary{padding:1rem 2rem;border-radius:8px;font-size:1rem;font-weight:600;text-decoration:none;transition:all .3s;}
     .btn-primary{background:var(--accent-color);color:#fff;border:none;}
     .btn-primary:hover{background:#d97706;transform:translateY(-2px);}
@@ -68,22 +69,230 @@
     .social-links{display:flex;gap:.5rem;margin-top:.5rem;}
     .social-links a{width:32px;height:32px;background:var(--primary-color);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;}
     .footer-bottom{text-align:center;font-size:.8rem;color:#9ca3af;}
-    @media (max-width: 768px) {
-  /* Stack the hero buttons vertically */
-  .hero-buttons {
-    flex-direction: column;
-    align-items: stretch;    /* make children fill container width */
-    gap: 0.75rem;            /* vertical spacing */
-  }
+    
+    .about-video-embed {
+      border: 4px solid #1e40af;   
+      border-radius: 12px;         
+      overflow: hidden;            
+      max-width: 100%;             
+      margin: 1.5rem auto;         
+    }
 
-  /* Make both buttons full-width and add some breathing room */
-  .hero-buttons .btn-primary,
-  .hero-buttons .btn-secondary {
-    width: 100%;
-    text-align: center;
-    margin: 0;               /* reset any inline margins */
-  }
-}
+    .section-divider {
+      border: 0;
+      height: 2px;                             
+      background: var(--accent-color);         
+      opacity: 0.3;                            
+      margin: 3rem auto;                       
+      max-width: 80%;                          
+    }
+
+    /* Mobile Styles */
+    @media (max-width: 768px) {
+      .container {
+        padding: 0 15px;
+      }
+      
+      /* Navigation */
+      .nav-links {
+        position: fixed;
+        top: 70px;
+        left: -100%;
+        width: 100%;
+        height: calc(100vh - 70px);
+        background: var(--primary-color);
+        flex-direction: column;
+        justify-content: flex-start;
+        align-items: center;
+        padding-top: 2rem;
+        transition: left 0.3s ease;
+        gap: 1rem;
+      }
+      
+      .nav-links.active {
+        left: 0;
+      }
+      
+      .nav-links li {
+        width: 100%;
+        text-align: center;
+      }
+      
+      .nav-links a {
+        display: block;
+        padding: 1rem;
+        font-size: 1.1rem;
+      }
+      
+      .mobile-menu {
+        display: block;
+      }
+      
+      .cta-button {
+        display: none;
+      }
+      
+      /* Hero Section */
+      .hero {
+        padding: 120px 0 60px;
+      }
+      
+      .hero h1 {
+        font-size: 2rem;
+        line-height: 1.2;
+      }
+      
+      .hero p {
+        font-size: 1rem;
+        margin-bottom: 1.5rem;
+      }
+      
+      .hero-buttons {
+        flex-direction: column;
+        align-items: stretch;    
+        gap: 0.75rem;            
+        max-width: 300px;
+        margin: 0 auto;
+      }
+
+      .hero-buttons .btn-primary,
+      .hero-buttons .btn-secondary {
+        width: 100%;
+        text-align: center;
+        margin: 0;               
+      }
+      
+      /* Sections */
+      section {
+        padding: 60px 0;
+      }
+      
+      .section-title h2 {
+        font-size: 2rem;
+      }
+      
+      .section-title p {
+        font-size: 0.9rem;
+      }
+      
+      /* Services Grid */
+      .services-grid {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+      }
+      
+      .service-card {
+        padding: 1.5rem;
+      }
+      
+      .service-card h3 {
+        font-size: 1.2rem;
+      }
+      
+      .service-card p {
+        font-size: 0.9rem;
+      }
+      
+      /* About Section */
+      .about-content {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+      }
+      
+      .about-text h2 {
+        font-size: 1.75rem;
+      }
+      
+      .about-text p {
+        font-size: 0.95rem;
+      }
+      
+      /* Contact Section */
+      .contact-content {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+      }
+      
+      .contact-info h2 {
+        font-size: 1.75rem;
+      }
+      
+      .contact-item {
+        margin-bottom: 1.5rem;
+      }
+      
+      .contact-item div {
+        font-size: 0.9rem;
+      }
+      
+      .contact-form {
+        padding: 1.5rem;
+      }
+      
+      /* Footer */
+      .footer-content {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+        text-align: center;
+      }
+      
+      .footer-section h3 {
+        margin-bottom: 1rem;
+      }
+      
+      .social-links {
+        justify-content: center;
+      }
+      
+      /* Video Embed */
+      .about-video-embed {
+        margin: 1rem 0;
+      }
+      
+      /* Section Divider */
+      .section-divider {
+        margin: 2rem auto;
+        max-width: 90%;
+      }
+    }
+
+    /* Small Mobile Styles */
+    @media (max-width: 480px) {
+      .logo {
+        font-size: 1.5rem;
+      }
+      
+      .hero h1 {
+        font-size: 1.75rem;
+      }
+      
+      .hero p {
+        font-size: 0.95rem;
+      }
+      
+      .section-title h2 {
+        font-size: 1.75rem;
+      }
+      
+      .service-card {
+        padding: 1.25rem;
+      }
+      
+      .contact-form {
+        padding: 1.25rem;
+      }
+      
+      .about-text h2,
+      .contact-info h2 {
+        font-size: 1.5rem;
+      }
+      
+      .contact-item i {
+        width: 35px;
+        height: 35px;
+        font-size: 0.9rem;
+      }
+    }
   </style>
 </head>
 <body>
@@ -191,8 +400,6 @@
 
 <hr class="section-divider">
 
-<section class="about" id="about">
-
   <section class="contact" id="contact">
     <div class="container contact-content">
       <div class="contact-info">
@@ -206,6 +413,7 @@
   <form
     action="https://formspree.io/f/xjkoorab"
     method="POST"
+    id="contactForm"
   >
     <!-- Optional: customize your email subject -->
     <input type="hidden" name="_subject" value="New Quote Request from Website">
@@ -274,8 +482,16 @@
     // Mobile toggle
     document.querySelector('.mobile-menu').onclick = () => {
       const nav = document.querySelector('.nav-links');
-      nav.style.display = nav.style.display==='flex'?'none':'flex';
+      nav.classList.toggle('active');
     };
+    
+    // Close mobile menu when clicking on a link
+    document.querySelectorAll('.nav-links a').forEach(link => {
+      link.addEventListener('click', () => {
+        document.querySelector('.nav-links').classList.remove('active');
+      });
+    });
+    
     // Smooth scroll
     document.querySelectorAll('a[href^="#"]').forEach(a=>{
       a.addEventListener('click',e=>{
@@ -284,33 +500,15 @@
                 .scrollIntoView({behavior:'smooth'});
       });
     });
-// Contact form
+
+    // Contact form
     document.getElementById('contactForm').addEventListener('submit', e => {
-// Let the form submit normally to Formspree…
-  alert('Thanks! Your request has been sent.');
-  // …you can still reset if you like, though Formspree will redirect by default
-  e.target.reset();
-});
+      // Let the form submit normally to Formspree…
+      alert('Thanks! Your request has been sent.');
+      // …you can still reset if you like, though Formspree will redirect by default
+      e.target.reset();
+    });
   </script>
-
-<style>
-    .about-video-embed {
-      border: 4px solid #1e40af;   /* your primary brand color */
-      border-radius: 12px;         /* rounded corners */
-      overflow: hidden;            /* ensure the iframe is clipped */
-      max-width: 100%;             /* responsive width */
-      margin: 1.5rem auto;         /* spacing above/below, centered */
-    }
-
-    .section-divider {
-    border: 0;
-    height: 2px;                             /* thickness */
-    background: var(--accent-color);         /* use your accent color */
-    opacity: 0.3;                            /* subtle fade */
-    margin: 3rem auto;                       /* spacing */
-    max-width: 80%;                          /* length of the line */
-  }
-  </style>
 
 </body>
 </html>
