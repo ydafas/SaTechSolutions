@@ -419,31 +419,33 @@
     <input type="hidden" name="_subject" value="New Quote Request from Website">
     <!-- Optional: disable Formspree's CAPTCHA -->
     <input type="hidden" name="_captcha" value="false">
+    <!-- Redirect after submission -->
+    <input type="hidden" name="_next" value="">
 
     <div class="form-group">
-      <label for="name">Full Name</label>
-      <input type="text" id="name" name="name" required>
+      <label for="fullName">Full Name</label>
+      <input type="text" id="fullName" name="fullName" required>
     </div>
 
     <div class="form-group">
-      <label for="email">Email</label>
-      <input type="email" id="email" name="email" required>
+      <label for="emailAddress">Email</label>
+      <input type="email" id="emailAddress" name="emailAddress" required>
     </div>
 
     <div class="form-group">
-      <label for="service">Service Needed</label>
-      <select id="service" name="service" required>
+      <label for="serviceNeeded">Service Needed</label>
+      <select id="serviceNeeded" name="serviceNeeded" required>
         <option value="">Select a service</option>
-        <option value="rack-installation">Server Rack Installation</option>
-        <option value="cable-management">Network Cable Management</option>
-        <option value="rack-configuration">Rack Configuration</option>
-        <option value="web-deployment">Website Deployment</option>
+        <option value="Server Rack Installation">Server Rack Installation</option>
+        <option value="Network Cable Management">Network Cable Management</option>
+        <option value="Rack Configuration">Rack Configuration</option>
+        <option value="Website Deployment">Website Deployment</option>
       </select>
     </div>
 
     <div class="form-group">
-      <label for="message">Project Details</label>
-      <textarea id="message" name="message"></textarea>
+      <label for="projectDetails">Project Details</label>
+      <textarea id="projectDetails" name="projectDetails" placeholder="Please describe your project requirements..."></textarea>
     </div>
 
     <button type="submit" class="btn-primary" style="width:100%">Request Quote</button>
@@ -502,11 +504,12 @@
     });
 
     // Contact form
-    document.getElementById('contactForm').addEventListener('submit', e => {
-      // Let the form submit normally to Formspree…
-      alert('Thanks! Your request has been sent.');
-      // …you can still reset if you like, though Formspree will redirect by default
-      e.target.reset();
+    document.getElementById('contactForm').addEventListener('submit', function(e) {
+      // Don't prevent default - let Formspree handle the submission
+      // Just show a message and let the form submit naturally
+      setTimeout(() => {
+        alert('Thanks! Your request has been sent.');
+      }, 100);
     });
   </script>
 
