@@ -152,8 +152,6 @@
 <hr class="section-divider">
 
 <section class="about" id="about">
-
-  <section class="about" id="about">
     <div class="container about-content">
       <div class="about-text">
         <h2>About SaTech IT Solutions</h2>
@@ -190,7 +188,16 @@
         <div class="contact-item"><i class="fas fa-map-marker-alt"></i><div><strong>Address</strong><br><span>Huntsville, Alabama</span></div></div>
       </div>
       <div class="contact-form">
-        <form id="contactForm">
+        <form
+  id="contactForm"
+  action="https://formspree.io/f/XYZ12345"
+  method="POST"
+>
+  <!-- Optional: set a custom email subject -->
+  <input type="hidden" name="_subject" value="New Quote Request from Website">
+  <!-- Optional: skip Formspree’s default CAPTCHA -->
+  
+  <input type="hidden" name="_captcha" value="false">
           <div class="form-group"><label for="name">Full Name</label><input type="text" id="name" name="name" required></div>
           <div class="form-group"><label for="email">Email</label><input type="email" id="email" name="email" required></div>
           <div class="form-group"><label for="service">Service Needed</label>
@@ -249,12 +256,13 @@
                 .scrollIntoView({behavior:'smooth'});
       });
     });
-    // Contact form
-    document.getElementById('contactForm').addEventListener('submit',e=>{
-      e.preventDefault();
-      alert('Thank you! We will contact you soon.');
-      e.target.reset();
-    });
+// Contact form
+    document.getElementById('contactForm').addEventListener('submit', e => {
+// Let the form submit normally to Formspree…
+  alert('Thanks! Your request has been sent.');
+  // …you can still reset if you like, though Formspree will redirect by default
+  e.target.reset();
+});
   </script>
 
 <style>
