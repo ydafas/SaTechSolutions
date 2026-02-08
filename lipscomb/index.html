@@ -33,7 +33,7 @@
     header{background:linear-gradient(135deg,var(--elegant-dark),var(--primary-color));position:fixed;width:100%;top:0;z-index:1000;box-shadow:0 4px 20px rgba(0,0,0,0.1);}
     nav{display:flex;justify-content:space-between;align-items:center;padding:1rem 0;}
     .logo{color:#fff;font-size:1.8rem;font-weight:bold;display:flex;align-items:center;}
-    .nav-links{display:flex;gap:2rem;list-style:none;margin-left:auto;}
+    .nav-links{display:flex;gap:2rem;list-style:none;margin-left:auto;margin-right:1rem;}
     .nav-links a{color:#fff;text-decoration:none;font-weight:500;transition:all .3s;position:relative;}
     .nav-links a::after{
       content:'';
@@ -537,6 +537,11 @@
     /* Mobile Styles */
     @media (max-width: 768px) {
       .container {padding: 0 15px;}
+      section::after{
+        left:0;
+        width:100%;
+        border:none;
+      }
       .nav-links {position: fixed;top: 70px;left: -100%;width: 100%;height: calc(100vh - 70px);background:linear-gradient(135deg,#1f2937,#374151);flex-direction: column;justify-content: flex-start;align-items: center;padding-top: 2rem;transition: left 0.3s ease;gap: 1rem;}
       .nav-links.active {left: 0;}
       .nav-links li {width: 100%;text-align: center;}
@@ -547,18 +552,19 @@
       .hero h1 {font-size: 2rem;line-height: 1.2;}
       .hero p {font-size: 1rem;margin-bottom: 1.5rem;}
       .hero-buttons {flex-direction: column;align-items: stretch;gap: 0.75rem;max-width: 300px;margin: 0 auto;}
-      section {padding: 60px 0;}
+      section {padding: 60px 0;margin:1rem 0;}
       .section-title h2 {font-size: 2rem;}
-      .gallery-wrapper{grid-template-columns:1fr;gap:2rem;}
+      .gallery-wrapper{grid-template-columns:1fr;gap:2rem;padding:1.5rem;}
       .gallery-slide img{height:300px;}
-      .gallery-description{min-height:auto;}
+      .gallery-description{min-height:auto;padding:1.5rem;}
       .gallery-arrow.left{left:10px;}
       .gallery-arrow.right{right:10px;}
       .testimonial-carousel{padding:2rem 60px;}
       .testimonial.center{width:90%;max-width:400px;}
       .testimonial.left,.testimonial.right{display:none;}
-      .about-content {grid-template-columns: 1fr;}
-      .contact-content {grid-template-columns: 1fr;}
+      .about-content {grid-template-columns: 1fr;padding:1.5rem;}
+      .contact-content {grid-template-columns: 1fr;padding:1.5rem;}
+      .contact-form{padding:1.5rem;}
       .footer-content {grid-template-columns: 1fr;text-align: center;}
       .social-links {justify-content: center;}
     }
