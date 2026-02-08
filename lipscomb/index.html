@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Lipscomb's Custom Remodeling – Home Renovations & Custom Builds</title>
+ <!-- Google tag (gtag.js) – Update ID if needed for analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=GT-5DF6JG2M"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'GT-5DF6JG2M');
+</script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box;}
+    :root {
+      --primary-color:#8b4513; /* Saddle brown for headers/main accents */
+      --secondary-color:#556b2f; /* Olive green for checks/icons */
+      --accent-color:#cd853f; /* Peru for buttons/highlights */
+      --dark-color:#3c2f2f; /* Dark brown for titles */
+      --light-color:#f5f5dc; /* Beige for backgrounds */
+      --text-color:#4d4d4d; /* Dark gray for text */
+    }
+    body{font-family:'Inter',sans-serif;color:var(--text-color);line-height:1.6;}
+    .container{max-width:1200px;margin:0 auto;padding:0 20px;}
+    header{background:linear-gradient(135deg,var(--primary-color),#a0522d);position:fixed;width:100%;top:0;z-index:1000;}
+    nav{display:flex;justify-content:space-between;align-items:center;padding:1rem 0;}
+    .logo{color:#fff;font-size:1.8rem;font-weight:bold;display:flex;align-items:center;}
+    .logo img{max-height:60px;width:auto;}
+    .nav-links{display:flex;gap:2rem;list-style:none;}
+    .nav-links a{color:#fff;text-decoration:none;font-weight:500;transition:color .3s;}
+    .nav-links a:hover{color:var(--accent-color);}
+    .cta-button{background:var(--accent-color);color:#fff;padding:.7rem 1.5rem;border-radius:5px;font-weight:600;transition:all .3s;}
+    .cta-button:hover{background:#a0522d;transform:translateY(-2px);}
+    .mobile-menu{display:none;font-size:1.5rem;color:#fff;cursor:pointer;}
+    section{padding:80px 0;}
+    .hero{background:linear-gradient(135deg,var(--primary-color),#a0522d);color:#fff;text-align:center;padding:140px 0 80px;}
+    .hero h1{font-size:2.8rem;margin-bottom:1rem;font-weight:800;}
+    .hero p{font-size:1.2rem;margin-bottom:2rem;opacity:.9;}
+    .hero-buttons{display:flex;gap:1rem;justify-content:center;}
+    .btn-primary,.btn-secondary{padding:1rem 2rem;border-radius:8px;font-size:1rem;font-weight:600;text-decoration:none;transition:all .3s;}
+    .btn-primary{background:var(--accent-color);color:#fff;border:none;}
+    .btn-primary:hover{background:#a0522d;transform:translateY(-2px);}
+    .btn-secondary{background:transparent;color:#fff;border:2px solid #fff;}
+    .btn-secondary:hover{background:#fff;color:var(--primary-color);}
+    .section-title{text-align:center;margin-bottom:3rem;}
+    .section-title h2{font-size:2.5rem;color:var(--dark-color);margin-bottom:.5rem;}
+    .section-title p{font-size:1rem;color:var(--text-color);opacity:.8;}
+    .gallery-container{position:relative;max-width:800px;margin:0 auto;overflow:hidden;}
+    .gallery-slide{display:none;text-align:center;}
+    .gallery-slide.active{display:block;}
+    .gallery-slide img{max-width:100%;height:auto;border-radius:10px;box-shadow:0 4px 8px rgba(0,0,0,0.1);}
+    .testimonial-container{max-width:600px;margin:0 auto;text-align:center;}
+    .testimonial{display:none;padding:2rem;background:var(--light-color);border-radius:15px;box-shadow:0 10px 30px rgba(0,0,0,.1);}
+    .testimonial.active{display:block;}
+    .stars{color:var(--accent-color);font-size:1.5rem;margin-bottom:1rem;}
+    .testimonial-name{font-weight:600;font-size:1.2rem;margin-bottom:0.5rem;}
+    .testimonial-desc{font-style:italic;font-size:1rem;}
+    .about-content{display:grid;grid-template-columns:1fr 1fr;gap:3rem;align-items:center;}
+    .about-text h2{font-size:2rem;color:var(--dark-color);margin-bottom:1rem;}
+    .about-text p{font-size:1rem;margin-bottom:1rem;}
+    .contact-content{display:grid;grid-template-columns:1fr 1fr;gap:3rem;}
+    .contact-info h2{font-size:2rem;color:var(--dark-color);margin-bottom:1rem;}
+    .contact-item{display:flex;align-items:center;margin-bottom:1rem;}
+    .contact-item i{width:40px;height:40px;background:var(--primary-color);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;margin-right:.8rem;}
+    .contact-form{background:var(--light-color);padding:2rem;border-radius:15px;}
+    .form-group{margin-bottom:1rem;}
+    .form-group label{display:block;margin-bottom:.5rem;font-weight:600;color:var(--dark-color);}
+    .form-group input,.form-group textarea,.form-group select{width:100%;padding:.8rem;border:1px solid #d1d5db;border-radius:8px;}
+    .form-group textarea{height:120px;resize:vertical;}
+    footer{background:var(--dark-color);color:#fff;padding:2rem 0;}
+    .footer-content{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:2rem;margin-bottom:1rem;}
+    .footer-section h3{color:var(--accent-color);margin-bottom:.5rem;}
+    .footer-section p,.footer-section a{color:#d1d5db;text-decoration:none;font-size:.9rem;line-height:1.6;}
+    .footer-section a:hover{color:var(--accent-color);}
+    .social-links{display:flex;gap:.5rem;margin-top:.5rem;}
+    .social-links a{width:32px;height:32px;background:var(--primary-color);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;}
+    .footer-bottom{text-align:center;font-size:.8rem;color:#9ca3af;}
+    .section-divider {
+      border: 0;
+      height: 2px;
+      background: var(--accent-color);
+      opacity: 0.3;
+      margin: 3rem auto;
+      max-width: 80%;
+    }
+    /* Mobile Styles */
+    @media (max-width: 768px) {
+      .container {padding: 0 15px;}
+      .nav-links {position: fixed;top: 70px;left: -100%;width: 100%;height: calc(100vh - 70px);background: var(--primary-color);flex-direction: column;justify-content: flex-start;align-items: center;padding-top: 2rem;transition: left 0.3s ease;gap: 1rem;}
+      .nav-links.active {left: 0;}
+      .nav-links li {width: 100%;text-align: center;}
+      .nav-links a {display: block;padding: 1rem;font-size: 1.1rem;}
+      .mobile-menu {display: block;}
+      .cta-button {display: none;}
+      .hero {padding: 120px 0 60px;}
+      .hero h1 {font-size: 2rem;line-height: 1.2;}
+      .hero p {font-size: 1rem;margin-bottom: 1.5rem;}
+      .hero-buttons {flex-direction: column;align-items: stretch;gap: 0.75rem;max-width: 300px;margin: 0 auto;}
+      .hero-buttons .btn-primary, .hero-buttons .btn-secondary {width: 100%;text-align: center;margin: 0;}
+      section {padding: 60px 0;}
+      .section-title h2 {font-size: 2rem;}
+      .section-title p {font-size: 0.9rem;}
+      .about-content {grid-template-columns: 1fr;gap: 2rem;}
+      .about-text h2 {font-size: 1.75rem;}
+      .about-text p {font-size: 0.95rem;}
+      .contact-content {grid-template-columns: 1fr;gap: 2rem;}
+      .contact-info h2 {font-size: 1.75rem;}
+      .contact-item {margin-bottom: 1.5rem;}
+      .contact-item div {font-size: 0.9rem;}
+      .contact-form {padding: 1.5rem;}
+      .footer-content {grid-template-columns: 1fr;gap: 1.5rem;text-align: center;}
+      .footer-section h3 {margin-bottom: 1rem;}
+      .social-links {justify-content: center;}
+      .section-divider {margin: 2rem auto;max-width: 90%;}
+      .gallery-container, .testimonial-container {max-width: 100%;}
+    }
+    @media (max-width: 480px) {
+      .logo {font-size: 1.5rem;}
+      .hero h1 {font-size: 1.75rem;}
+      .hero p {font-size: 0.95rem;}
+      .section-title h2 {font-size: 1.75rem;}
+      .contact-form {padding: 1.25rem;}
+      .about-text h2, .contact-info h2 {font-size: 1.5rem;}
+      .contact-item i {width: 35px;height: 35px;font-size: 0.9rem;}
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="container">
+      <div class="logo"><img src="Logo.png" alt="Lipscomb's Custom Remodeling"></div>
+      <ul class="nav-links">
+        <li><a href="#home">Home</a></li>
+        <li><a href="#services">Services</a></li>
+        <li><a href="#testimonials">Testimonials</a></li>
+        <li><a href="#about">About</a></li>
+        <li><a href="#contact">Contact</a></li>
+      </ul>
+      <a href="#contact" class="cta-button">Get Quote</a>
+      <div class="mobile-menu"><i class="fas fa-bars"></i></div>
+    </nav>
+  </header>
+  <section class="hero" id="home">
+    <div class="container">
+      <h1>Custom Home Remodeling Experts</h1>
+      <p>Transform your space with professional kitchen, bathroom, and whole-home renovations.</p>
+      <p>Serving Huntsville, Alabama</p>
+      <div class="hero-buttons">
+        <a href="#services" class="btn-primary">Our Services</a>
+        <a href="#contact" class="btn-secondary">Free Consultation</a>
+      </div>
+    </div>
+  </section>
+  <section class="services" id="services">
+    <div class="container">
+      <div class="section-title">
+        <h2>Our Services</h2>
+        <p>Explore our portfolio of custom remodeling projects</p>
+      </div>
+      <div class="gallery-container" id="gallery"></div> <!-- JS will populate slides here -->
+    </div>
+  </section>
+  <section class="testimonials" id="testimonials">
+    <div class="container">
+      <div class="section-title">
+        <h2>What Our Clients Say</h2>
+        <p>Hear from satisfied homeowners</p>
+      </div>
+      <div class="testimonial-container" id="testimonialContainer"></div> <!-- JS will populate here -->
+    </div>
+  </section>
+<hr class="section-divider">
+  <section class="about" id="about">
+    <div class="container about-content">
+      <div class="about-text">
+        <h2>About Lipscomb's Custom Remodeling</h2>
+        <p>At Lipscomb's Custom Remodeling, we specialize in high-quality home renovations tailored to your vision.</p>
+        <p>Owned and operated by Mike Lipscomb, our team brings years of experience in custom builds and remodels, ensuring craftsmanship and attention to detail.</p>
+        <p>Fully insured · Licensed contractors · Satisfaction guaranteed</p>
+      </div>
+      <!-- Add a video or image here if desired; removed original for theme fit -->
+    </div>
+  </section>
+<hr class="section-divider">
+  <section class="contact" id="contact">
+    <div class="container contact-content">
+      <div class="contact-info">
+        <h2>Get In Touch</h2>
+        <p>Ready to start your remodeling project? Request a quote today.</p>
+        <div class="contact-item"><i class="fas fa-phone"></i><div><strong>Phone</strong><br><span>(256) 698-6050</span></div></div>
+        <div class="contact-item"><i class="fas fa-envelope"></i><div><strong>Email</strong><br><span>lipscombscustomremodeling@gmail.com</span></div></div>
+        <div class="contact-item"><i class="fas fa-map-marker-alt"></i><div><strong>Address</strong><br><span>Huntsville, Alabama</span></div></div>
+      </div>
+      <div class="contact-form">
+  <form
+    action="https://formspree.io/f/YOUR_NEW_FORM_ID_HERE"  <!-- Replace with your new Formspree endpoint -->
+    method="POST"
+    id="contactForm"
+  >
+    <!-- Optional: customize your email subject -->
+    <input type="hidden" name="_subject" value="New Quote Request from Website">
+    <!-- Optional: disable Formspree's CAPTCHA -->
+    <input type="hidden" name="_captcha" value="false">
+    <!-- Redirect after submission -->
+    <input type="hidden" name="_next" value="https://yourdomain.com/lipscomb/thank-you.html">  <!-- Create a thank-you.html if desired -->
+    <div class="form-group">
+      <label for="fullName">Full Name</label>
+      <input type="text" id="fullName" name="fullName" required>
+    </div>
+    <div class="form-group">
+      <label for="emailAddress">Email</label>
+      <input type="email" id="emailAddress" name="emailAddress" required>
+    </div>
+    <div class="form-group">
+      <label for="serviceNeeded">Service Needed</label>
+      <select id="serviceNeeded" name="serviceNeeded" required>
+        <option value="">Select a service</option>
+        <option value="Kitchen Remodeling">Kitchen Remodeling</option>
+        <option value="Bathroom Renovations">Bathroom Renovations</option>
+        <option value="Whole-Home Remodel">Whole-Home Remodel</option>
+        <option value="Custom Builds">Custom Builds</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label for="projectDetails">Project Details</label>
+      <textarea id="projectDetails" name="projectDetails" placeholder="Please describe your project requirements..."></textarea>
+    </div>
+    <button type="submit" class="btn-primary" style="width:100%">Request Quote</button>
+  </form>
+</div>
+    </div>
+  </section>
+  <footer>
+    <div class="container footer-content">
+      <div class="footer-section">
+        <h3>Lipscomb's Custom Remodeling</h3>
+        <p>Expert custom home remodeling and renovations tailored to your needs.</p>
+        <div class="social-links">
+          <a href="#"><i class="fab fa-linkedin"></i></a>
+          <a href="#"><i class="fab fa-twitter"></i></a>
+        </div>
+      </div>
+      <div class="footer-section">
+        <h3>Quick Links</h3>
+        <a href="#home">Home</a><br>
+        <a href="#services">Services</a><br>
+        <a href="#testimonials">Testimonials</a><br>
+        <a href="#about">About</a><br>
+        <a href="#contact">Contact</a>
+      </div>
+      <div class="footer-section">
+        <h3>Contact Info</h3>
+        <p><i class="fas fa-phone"></i> (256) 698-6050</p>
+        <p><i class="fas fa-envelope"></i> lipscombscustomremodeling@gmail.com</p>
+      </div>
+    </div>
+    <div class="footer-bottom">&copy; 2026 Lipscomb's Custom Remodeling. All rights reserved.</div>
+  </footer>
+  <script>
+    // Mobile toggle
+    document.querySelector('.mobile-menu').onclick = () => {
+      const nav = document.querySelector('.nav-links');
+      nav.classList.toggle('active');
+    };
+   
+    // Close mobile menu when clicking on a link
+    document.querySelectorAll('.nav-links a').forEach(link => {
+      link.addEventListener('click', () => {
+        document.querySelector('.nav-links').classList.remove('active');
+      });
+    });
+   
+    // Smooth scroll
+    document.querySelectorAll('a[href^="#"]').forEach(a=>{
+      a.addEventListener('click',e=>{
+        e.preventDefault();
+        document.querySelector(a.getAttribute('href'))
+                .scrollIntoView({behavior:'smooth'});
+      });
+    });
+   
+    // Simple CSV parser (splits lines/columns, handles basic quotes)
+    function parseCsv(text) {
+      const lines = text.split(/\r?\n/);
+      const data = [];
+      lines.forEach(line => {
+        if (line.trim()) {
+          const cols = line.split(',').map(col => col.trim().replace(/^"|"$/g, ''));
+          data.push(cols);
+        }
+      });
+      return data;
+    }
+
+    // Load gallery from CSV
+    const galleryCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQyMSHiGlCcus3kKJuEduKZxCtZg5WbbWP2x5isr4Ib0HCJXuHNrZRja8zzkE3YyVKmBalgQ8ERBrgq/pub?gid=0&single=true&output=csv'; // Paste your published Google Sheets CSV URL here (for Images tab)
+    const galleryContainer = document.getElementById('gallery');
+    function loadGallery() {
+      if (!galleryCsvUrl) {
+        // Fallback placeholders
+        galleryContainer.innerHTML = `
+          <div class="gallery-slide active"><img src="https://via.placeholder.com/800x400?text=Project+1" alt="Project 1"></div>
+          <div class="gallery-slide"><img src="https://via.placeholder.com/800x400?text=Project+2" alt="Project 2"></div>
+          <div class="gallery-slide"><img src="https://via.placeholder.com/800x400?text=Project+3" alt="Project 3"></div>
+        `;
+      } else {
+        fetch(galleryCsvUrl)
+          .then(response => response.text())
+          .then(text => {
+            const data = parseCsv(text);
+            let html = '';
+            data.slice(1).forEach(row => { // Skip header
+              if (row[0]) html += `<div class="gallery-slide"><img src="${row[0]}" alt="Project Image"></div>`;
+            });
+            galleryContainer.innerHTML = html || '<p>No images loaded.</p>';
+            rotateGallery();
+          })
+          .catch(() => galleryContainer.innerHTML = '<p>Error loading gallery.</p>');
+      }
+      rotateGallery(); // Start rotation even on fallback
+    }
+
+    // Rotate gallery slides
+    function rotateGallery() {
+      const slides = galleryContainer.querySelectorAll('.gallery-slide');
+      if (slides.length < 1) return;
+      let current = 0;
+      slides[current].classList.add('active');
+      setInterval(() => {
+        slides[current].classList.remove('active');
+        current = (current + 1) % slides.length;
+        slides[current].classList.add('active');
+      }, 5000); // Rotate every 5 seconds
+    }
+
+    // Load testimonials from CSV
+    const testimonialCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQyMSHiGlCcus3kKJuEduKZxCtZg5WbbWP2x5isr4Ib0HCJXuHNrZRja8zzkE3YyVKmBalgQ8ERBrgq/pub?gid=1066538276&single=true&output=csv'; // Paste your published Google Sheets CSV URL here (for Testimonials tab)
+    const testimonialContainer = document.getElementById('testimonialContainer');
+    function loadTestimonials() {
+      if (!testimonialCsvUrl) {
+        // Fallback example
+        testimonialContainer.innerHTML = `
+          <div class="testimonial active">
+            <div class="stars">★★★★★</div>
+            <div class="testimonial-name">Tom T</div>
+            <div class="testimonial-desc">Mike transformed our outdated kitchen and it looks amazing!</div>
+          </div>
+          <div class="testimonial">
+            <div class="stars">★★★★★</div>
+            <div class="testimonial-name">Jane D</div>
+            <div class="testimonial-desc">Excellent work on our bathroom remodel!</div>
+          </div>
+        `;
+      } else {
+        fetch(testimonialCsvUrl)
+          .then(response => response.text())
+          .then(text => {
+            const data = parseCsv(text);
+            let html = '';
+            data.slice(1).forEach(row => { // Skip header
+              const name = row[0] || '';
+              const desc = row[1] || '';
+              const stars = parseInt(row[2] || 5);
+              const starIcons = '★'.repeat(stars) + '☆'.repeat(5 - stars);
+              html += `
+                <div class="testimonial">
+                  <div class="stars">${starIcons}</div>
+                  <div class="testimonial-name">${name}</div>
+                  <div class="testimonial-desc">${desc}</div>
+                </div>
+              `;
+            });
+            testimonialContainer.innerHTML = html || '<p>No testimonials loaded.</p>';
+            rotateTestimonials();
+          })
+          .catch(() => testimonialContainer.innerHTML = '<p>Error loading testimonials.</p>');
+      }
+      rotateTestimonials(); // Start rotation even on fallback
+    }
+
+    // Rotate testimonials
+    function rotateTestimonials() {
+      const items = testimonialContainer.querySelectorAll('.testimonial');
+      if (items.length < 1) return;
+      let current = 0;
+      items[current].classList.add('active');
+      setInterval(() => {
+        items[current].classList.remove('active');
+        current = (current + 1) % items.length;
+        items[current].classList.add('active');
+      }, 5000); // Rotate every 5 seconds
+    }
+
+    // Load dynamic content on page load
+    window.onload = () => {
+      loadGallery();
+      loadTestimonials();
+    };
+
+    // Contact form submission message
+    document.getElementById('contactForm').addEventListener('submit', function(e) {
+      setTimeout(() => {
+        alert('Thanks! Your request has been sent.');
+      }, 100);
+    });
+  </script>
+</body>
+</html>
