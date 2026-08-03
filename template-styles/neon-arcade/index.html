@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="description" content="Vortex Arcade &amp; Games — a trusted locally owned business proudly serving the your area area.">
+<meta name="robots" content="noindex,nofollow">
+<title>Vortex Arcade &amp; Games — Website Preview by SaTech IT Solutions</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --void:#0a0118;--night:#150829;--panel:#1c0b38;--panel-2:#24104a;
+  --pink:#ff2e88;--pink-dark:#c81f68;--cyan:#05e6ff;--cyan-dim:#4bb9c9;
+  --violet:#b26bff;--ink:#f4ecff;--soft:#c9b8e6;--muted:#8a77b0;
+  --line:rgba(255,46,136,.28);--line-cyan:rgba(5,230,255,.26);
+  --mono:'SFMono-Regular',ui-monospace,'Consolas','Liberation Mono',Menlo,monospace;
+}
+html{scroll-behavior:smooth;}
+body{font-family:'Segoe UI',system-ui,-apple-system,Roboto,Helvetica,Arial,sans-serif;color:var(--ink);background:var(--void);line-height:1.65;-webkit-font-smoothing:antialiased;}
+.wrap{max-width:1040px;margin:0 auto;padding:0 26px;position:relative;z-index:2;}
+
+.banner{background:var(--night);color:#d8c8ff;font-size:.82rem;text-align:center;padding:.7rem 1rem;line-height:1.5;border-bottom:1px solid var(--line-cyan);}
+.banner a{color:var(--cyan);font-weight:700;text-decoration:underline;text-underline-offset:2px;}
+
+/* ---- HERO: purple night sky + synth-sun + receding neon grid floor ---- */
+.hero{position:relative;overflow:hidden;background:linear-gradient(180deg,#0a0118 0%,#1a0b3a 46%,#3a0f5e 60%,#150829 61%,#0a0118 100%);padding:5.5rem 0 8rem;border-bottom:2px solid var(--pink);}
+.hero .sun{position:absolute;left:50%;top:2.6rem;transform:translateX(-50%);width:300px;height:300px;border-radius:50%;background:linear-gradient(180deg,#ffe14d 0%,#ff8a3d 38%,#ff2e88 74%,#b026a0 100%);filter:blur(.5px);box-shadow:0 0 90px 24px rgba(255,46,136,.45),0 0 160px 60px rgba(178,38,160,.35);z-index:0;}
+/* horizontal sun scanlines (cut-out bands) */
+.hero .sun:after{content:"";position:absolute;left:0;right:0;bottom:0;height:52%;background:repeating-linear-gradient(to bottom,transparent 0 8px,var(--night) 8px 13px);}
+.hero .glow{position:absolute;left:0;right:0;top:0;height:60%;background:radial-gradient(120% 90% at 50% 8%,rgba(255,46,136,.22) 0%,transparent 55%);z-index:0;pointer-events:none;}
+.hero .floor{position:absolute;left:-25%;right:-25%;bottom:0;height:42%;z-index:0;
+  background-image:
+    repeating-linear-gradient(to right,rgba(5,230,255,.55) 0 2px,transparent 2px 62px),
+    repeating-linear-gradient(to bottom,rgba(255,46,136,.55) 0 2px,transparent 2px 62px);
+  background-position:center bottom;
+  transform:perspective(300px) rotateX(64deg);transform-origin:50% 100%;
+  -webkit-mask-image:linear-gradient(to top,#000 8%,transparent 92%);mask-image:linear-gradient(to top,#000 8%,transparent 92%);
+  animation:floorScroll 6s linear infinite;}
+@keyframes floorScroll{from{background-position-y:0;}to{background-position-y:62px;}}
+@media(prefers-reduced-motion:reduce){.hero .floor{animation:none;}}
+.hero .wrap{padding-top:.5rem;}
+
+.eyebrow{display:inline-block;font-family:var(--mono);font-size:.72rem;letter-spacing:.34em;text-transform:uppercase;font-weight:700;color:var(--cyan);border:1px solid var(--line-cyan);border-radius:2px;padding:.4rem .95rem;margin-bottom:1.5rem;text-shadow:0 0 8px rgba(5,230,255,.7);background:rgba(5,230,255,.06);}
+.hero h1{font-size:3.15rem;font-weight:800;letter-spacing:.005em;line-height:1.06;max-width:19ch;margin-bottom:1.2rem;color:#fff;
+  text-shadow:0 0 4px #fff,0 0 12px var(--pink),0 0 30px var(--pink),0 0 60px rgba(255,46,136,.7);}
+.hero p{font-size:1.2rem;color:#d6c7f5;max-width:52ch;margin-bottom:2.2rem;}
+.hero .meta{margin-top:2.2rem;font-family:var(--mono);font-size:.78rem;color:var(--cyan-dim);letter-spacing:.08em;text-transform:uppercase;}
+.hero .meta b{color:var(--pink);font-weight:700;}
+
+.btn{position:relative;display:inline-block;padding:.95rem 2rem;font-family:var(--mono);font-weight:700;font-size:.86rem;letter-spacing:.12em;text-transform:uppercase;text-decoration:none;min-height:44px;line-height:1.7;border-radius:3px;transition:box-shadow .15s,transform .15s;}
+.btn-neon{background:var(--pink);color:#12002a;box-shadow:0 0 12px rgba(255,46,136,.7),0 0 32px rgba(255,46,136,.4);}
+.btn-neon:hover{box-shadow:0 0 18px rgba(255,46,136,.95),0 0 46px rgba(255,46,136,.6);transform:translateY(-1px);}
+.btn-ghost{color:var(--cyan);border:1px solid var(--cyan);margin-left:.7rem;box-shadow:0 0 10px rgba(5,230,255,.35),inset 0 0 10px rgba(5,230,255,.12);}
+.btn-ghost:hover{box-shadow:0 0 18px rgba(5,230,255,.6),inset 0 0 14px rgba(5,230,255,.2);transform:translateY(-1px);}
+
+.trust{display:flex;flex-wrap:wrap;gap:.6rem;margin-top:2rem;}
+.chip{font-family:var(--mono);font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:#d6c7f5;border:1px solid var(--line);border-radius:2px;padding:.42rem .9rem;background:rgba(255,46,136,.05);}
+.chip.rate{border-color:var(--cyan);color:#fff;background:rgba(5,230,255,.08);font-weight:700;box-shadow:0 0 12px rgba(5,230,255,.3);}
+.chip.rate b{color:var(--cyan);}
+
+section{padding:5rem 0;position:relative;border-bottom:1px solid rgba(178,107,255,.16);}
+.section-head{margin-bottom:2.8rem;padding-left:1.15rem;position:relative;}
+.section-head:before{content:"";position:absolute;left:0;top:.15rem;bottom:.15rem;width:3px;background:linear-gradient(var(--cyan),var(--pink));box-shadow:0 0 10px rgba(255,46,136,.6);}
+.section-head .sub{font-family:var(--mono);font-size:.72rem;letter-spacing:.2em;text-transform:uppercase;color:var(--cyan);font-weight:700;}
+.section-head h2{font-size:2.1rem;font-weight:800;letter-spacing:.005em;margin-top:.4rem;color:#fff;text-shadow:0 0 10px rgba(178,107,255,.55),0 0 26px rgba(178,107,255,.3);}
+
+.about{background:linear-gradient(180deg,var(--void),var(--night));}
+.about p{color:#cdbdf0;font-size:1.1rem;max-width:66ch;margin-bottom:1.2rem;}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:1.15rem;}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:1.5rem 1.4rem;display:flex;align-items:center;gap:1.1rem;transition:border-color .15s,box-shadow .15s,transform .15s;}
+.card:hover{border-color:var(--cyan);box-shadow:0 0 18px rgba(5,230,255,.28);transform:translateY(-2px);}
+.card .num{flex:none;width:48px;height:48px;border-radius:6px;background:var(--void);color:var(--cyan);font-family:var(--mono);font-weight:700;font-size:1.05rem;display:flex;align-items:center;justify-content:center;border:1px solid var(--line-cyan);text-shadow:0 0 8px rgba(5,230,255,.7);}
+.card:hover .num{color:var(--pink);border-color:var(--line);text-shadow:0 0 8px rgba(255,46,136,.7);}
+.card h3{font-size:1.06rem;font-weight:700;color:var(--ink);letter-spacing:.005em;}
+
+.contact{background:var(--night);}
+.contact-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:1.2rem;}
+.contact-grid .box{background:var(--panel-2);border:1px solid var(--line);border-radius:6px;padding:1.5rem 1.4rem;}
+.contact-grid .lab{font-family:var(--mono);font-size:.7rem;letter-spacing:.16em;text-transform:uppercase;color:var(--cyan);font-weight:700;margin-bottom:.5rem;text-shadow:0 0 8px rgba(5,230,255,.5);}
+.contact-grid a{color:#fff;text-decoration:none;font-weight:700;}
+.contact-grid a:hover{color:var(--pink);text-shadow:0 0 10px rgba(255,46,136,.7);}
+.contact-grid .val{color:#cdbdf0;font-weight:600;}
+
+.cta{position:relative;overflow:hidden;text-align:center;background:linear-gradient(180deg,var(--void) 0%,#2a0d52 100%);border-bottom:none;}
+.cta:before{content:"";position:absolute;left:50%;bottom:-160px;transform:translateX(-50%);width:520px;height:520px;border-radius:50%;background:radial-gradient(circle,rgba(255,46,136,.4),transparent 62%);pointer-events:none;}
+.cta .frame{position:relative;z-index:1;max-width:680px;margin:0 auto;border:1px solid var(--pink);border-radius:8px;padding:3.2rem 2.4rem;background:rgba(20,8,42,.6);box-shadow:0 0 30px rgba(255,46,136,.28),inset 0 0 40px rgba(178,38,160,.14);}
+.cta .sub{font-family:var(--mono);font-size:.72rem;letter-spacing:.2em;text-transform:uppercase;color:var(--cyan);font-weight:700;}
+.cta h2{font-size:2.3rem;font-weight:800;color:#fff;margin:.6rem 0 .9rem;text-shadow:0 0 6px #fff,0 0 16px var(--pink),0 0 40px rgba(255,46,136,.6);border-bottom:none;}
+.cta p{color:#d6c7f5;max-width:52ch;margin:0 auto 2rem;font-size:1.08rem;}
+
+footer{padding:2.8rem 0;font-size:.82rem;color:var(--muted);text-align:center;line-height:1.7;background:var(--void);}
+footer a{color:var(--cyan);text-decoration:underline;text-underline-offset:2px;}
+
+@media(max-width:720px){
+  .hero{padding:4rem 0 6rem;}
+  .hero h1{font-size:2.2rem;}
+  .hero .sun{width:210px;height:210px;}
+  .section-head h2{font-size:1.7rem;}
+  section{padding:3.4rem 0;}
+  .btn-ghost{margin-left:0;margin-top:.7rem;}
+  .cta .frame{padding:2.2rem 1.4rem;}
+  .cta h2{font-size:1.7rem;}
+}
+</style>
+</head>
+<body>
+<div class="banner">Free website preview built by <a href="https://satechitsolutions.com/#contact" target="_blank" rel="noopener">SaTech IT Solutions</a> for Vortex Arcade &amp; Games — not Vortex Arcade &amp; Games's official website.</div>
+
+<header class="hero">
+  <div class="glow" aria-hidden="true"></div>
+  <div class="sun" aria-hidden="true"></div>
+  <div class="floor" aria-hidden="true"></div>
+  <div class="wrap">
+  <span class="eyebrow">Website Preview</span>
+  <h1>Local, Dependable, and Ready to Help</h1>
+  <p>Proudly serving the your area area with service worth recommending.</p>
+  <a class="btn btn-neon" href="mailto:Tom@SaTechITSolutions.com?subject=Interested%20in%20my%20website%20preview">Press Start</a>
+  <a class="btn btn-ghost" href="https://satechitsolutions.com/#contact" target="_blank" rel="noopener">Learn More</a>
+  <div class="trust"><span class="chip rate">★★★★★ <b>4.7</b> &middot; 214 Google reviews</span><span class="chip">Locally Owned & Operated</span><span class="chip">Trusted by Neighbors</span><span class="chip">Serving the Community</span></div>
+  <p class="meta"><b>&#9654;</b> Arcade &middot; 123 Main St, Your City, ST</p>
+</div></header>
+
+<section class="about"><div class="wrap">
+  <div class="section-head"><div class="sub">Insert Coin</div><h2>Vortex Arcade &amp; Games</h2></div>
+  <p>Vortex Arcade &amp; Games is a locally owned business serving the your area area and the surrounding community — built on doing right by neighbors and earning repeat business the honest way.</p><p>You get responsive service, fair pricing, and people who stand behind their work. That&#x27;s the reputation Vortex Arcade &amp; Games has built, one satisfied customer at a time.</p>
+</div></section>
+
+<section class="services"><div class="wrap">
+  <div class="section-head"><div class="sub">Select Mode</div><h2>What We Do</h2></div>
+  <div class="grid"><div class="card"><span class="num">01</span><h3>Free Consultations</h3></div><div class="card"><span class="num">02</span><h3>Custom Solutions</h3></div><div class="card"><span class="num">03</span><h3>Responsive Local Service</h3></div><div class="card"><span class="num">04</span><h3>Fair, Upfront Pricing</h3></div><div class="card"><span class="num">05</span><h3>Satisfaction Guaranteed</h3></div></div>
+</div></section>
+
+<section class="contact"><div class="wrap">
+  <div class="section-head"><div class="sub">Player One</div><h2>Get in Touch</h2></div>
+  <div class="contact-grid"><div class="box"><div class="lab">Call</div><a href="tel:5551234567">(555) 123-4567</a></div><div class="box"><div class="lab">Find Us</div><span class="val">123 Main St, Your City, ST</span></div></div>
+</div></section>
+
+<section class="cta"><div class="wrap">
+  <div class="frame">
+  <div class="sub">Like This Preview?</div>
+  <h2>Let's Make It Your Real Website</h2>
+  <p>This mockup was built by SaTech IT Solutions to show Vortex Arcade &amp; Games what a bold, high-voltage website could look like. Ready to hit start for real?</p>
+  <a class="btn btn-neon" href="mailto:Tom@SaTechITSolutions.com?subject=Interested%20in%20my%20website%20preview">Email SaTech IT Solutions</a>
+  <a class="btn btn-ghost" href="https://satechitsolutions.com/#contact" target="_blank" rel="noopener">Visit SaTech IT Solutions</a>
+</div></div></section>
+
+<footer><div class="wrap">&copy; 2026 Website preview by <a href="https://satechitsolutions.com" target="_blank" rel="noopener">SaTech IT Solutions</a>. Not affiliated with or endorsed by Vortex Arcade &amp; Games.</div></footer>
+</body>
+</html>

@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="description" content="Magnolia Market Co. — a trusted locally owned business proudly serving the your area area.">
+<meta name="robots" content="noindex,nofollow">
+<title>Magnolia Market Co. — Website Preview by SaTech IT Solutions</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --white:#ffffff;--warm:#fbf9f5;--panel:#f5f2ec;
+  --shiplap:rgba(28,28,24,.055);--shiplap-soft:rgba(28,28,24,.03);
+  --black:#1c1c1a;--black-2:#2b2b27;--ink:#24241d;--muted:#6f6f64;
+  --sage:#77906f;--sage-deep:#48603f;--sage-tint:#eaf0e6;--sage-line:#cdd8c4;
+  --line:#e6e1d6;
+}
+html{scroll-behavior:smooth;}
+body{font-family:system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:var(--ink);background:var(--warm);line-height:1.68;-webkit-font-smoothing:antialiased;}
+.wrap{max-width:1020px;margin:0 auto;padding:0 26px;}
+/* faint horizontal shiplap board lines */
+.shiplap{background-color:var(--warm);background-image:repeating-linear-gradient(180deg,var(--shiplap) 0 1px,transparent 1px 40px);}
+.banner{background:var(--black);color:#e9e6de;font-size:.82rem;text-align:center;padding:.7rem 1rem;line-height:1.5;letter-spacing:.01em;}
+.banner a{color:#b8caa9;font-weight:700;text-decoration:underline;}
+.eyebrow{display:inline-flex;align-items:center;gap:.6rem;font-size:.7rem;letter-spacing:.28em;text-transform:uppercase;color:var(--sage-deep);font-weight:800;}
+.eyebrow:before,.eyebrow:after{content:"";width:8px;height:8px;background:var(--sage);display:inline-block;}
+.eyebrow.solo:after{display:none;}
+.hero{background-color:var(--warm);background-image:repeating-linear-gradient(180deg,var(--shiplap) 0 1px,transparent 1px 40px);padding:5.5rem 0 4.75rem;border-top:5px solid var(--sage);border-bottom:1px solid var(--line);}
+.hero .eyebrow{margin-bottom:1.5rem;}
+.hero h1{font-size:3rem;font-weight:800;letter-spacing:-.02em;line-height:1.08;max-width:19ch;margin-bottom:1.15rem;color:var(--black);}
+.hero p.lede{font-size:1.2rem;color:var(--muted);max-width:52ch;margin-bottom:2.1rem;}
+.hero .meta{margin-top:2rem;font-size:.82rem;color:var(--muted);letter-spacing:.03em;text-transform:uppercase;}
+.hero .meta b{color:var(--sage-deep);font-weight:700;}
+.btn{display:inline-block;padding:.92rem 1.95rem;font-weight:700;font-size:.95rem;letter-spacing:.02em;text-decoration:none;min-height:44px;line-height:1.55;border-radius:2px;}
+.btn-black{background:var(--black);color:#fff;}
+.btn-black:hover{background:var(--black-2);}
+.btn-sage{color:var(--sage-deep);border:2px solid var(--sage);background:var(--white);margin-left:.6rem;}
+.btn-sage:hover{background:var(--sage-tint);}
+.trust{display:flex;flex-wrap:wrap;gap:.6rem;align-items:center;margin-top:2rem;}
+.chip{font-size:.8rem;color:var(--ink);background:var(--white);border:1px solid var(--line);border-radius:2px;padding:.4rem .9rem;}
+.chip.rate{border:1px solid var(--sage);border-left:5px solid var(--sage);color:var(--sage-deep);font-weight:700;}
+section{padding:4.6rem 0;}
+.section-head{margin-bottom:2.7rem;}
+.section-head .sub{font-size:.7rem;letter-spacing:.24em;text-transform:uppercase;color:var(--sage-deep);font-weight:800;}
+.section-head h2{font-size:2rem;font-weight:800;letter-spacing:-.01em;color:var(--black);margin-top:.5rem;position:relative;padding-bottom:.75rem;}
+.section-head h2:after{content:"";position:absolute;left:0;bottom:0;width:56px;height:3px;background:var(--sage);}
+.about{background-color:var(--panel);background-image:repeating-linear-gradient(180deg,var(--shiplap-soft) 0 1px,transparent 1px 40px);border-top:1px solid var(--line);border-bottom:1px solid var(--line);}
+.about p{color:var(--ink);font-size:1.08rem;max-width:66ch;margin-bottom:1.1rem;}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:1.3rem;}
+/* black-framed "farmhouse window" service cards */
+.card{background:var(--white);border:2px solid var(--black);border-radius:2px;padding:1.5rem 1.5rem;display:flex;align-items:center;gap:1.1rem;position:relative;}
+.card:before{content:"";position:absolute;left:8px;right:8px;top:8px;bottom:8px;border:1px solid var(--sage-line);pointer-events:none;border-radius:1px;}
+.card .no{flex:none;width:40px;height:40px;background:var(--sage);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:1.05rem;border-radius:2px;position:relative;z-index:1;}
+.card h3{font-size:1.06rem;font-weight:700;color:var(--black);position:relative;z-index:1;}
+.contact{background-color:var(--warm);background-image:repeating-linear-gradient(180deg,var(--shiplap) 0 1px,transparent 1px 40px);}
+.contact-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1.6rem;}
+.contact-grid .lab{font-size:.7rem;letter-spacing:.18em;text-transform:uppercase;color:var(--sage-deep);font-weight:800;margin-bottom:.45rem;}
+.contact-grid a{color:var(--black);text-decoration:none;font-weight:700;border-bottom:2px solid var(--sage);}
+.contact-grid a:hover{color:var(--sage-deep);}
+.contact-grid .val{color:var(--muted);font-weight:600;}
+.cta{background:var(--black);color:#fff;position:relative;overflow:hidden;}
+.cta:before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(180deg,rgba(255,255,255,.03) 0 1px,transparent 1px 40px);pointer-events:none;}
+.cta .wrap{position:relative;z-index:1;}
+.cta .section-head .sub{color:#b8caa9;}
+.cta .section-head h2{color:#fff;}
+.cta .section-head h2:after{background:var(--sage);}
+.cta p{color:#d8d5cc;max-width:56ch;margin-bottom:2rem;font-size:1.08rem;}
+.cta .btn-black{background:var(--sage);color:#12210e;}
+.cta .btn-black:hover{background:#86a07d;}
+.cta .btn-sage{background:transparent;color:#fff;border-color:rgba(255,255,255,.55);}
+.cta .btn-sage:hover{background:rgba(255,255,255,.08);}
+footer{background:#141412;color:#9a9a8f;text-align:center;padding:2.4rem 1rem;font-size:.82rem;}
+footer a{color:#b8caa9;}
+@media(max-width:640px){.hero{padding:3.6rem 0 3.2rem;}.hero h1{font-size:2.05rem;}section{padding:3.2rem 0;}.btn-sage{margin-left:0;margin-top:.7rem;}}
+</style>
+</head>
+<body>
+<div class="banner">Free website preview built by <a href="https://satechitsolutions.com/#contact" target="_blank" rel="noopener">SaTech IT Solutions</a> for Magnolia Market Co. — not Magnolia Market Co.'s official website.</div>
+
+<header class="hero"><div class="wrap">
+  <span class="eyebrow">Website Preview</span>
+  <h1>Local, Dependable, and Ready to Help</h1>
+  <p class="lede">Proudly serving the your area area with service worth recommending.</p>
+  <a class="btn btn-black" href="mailto:Tom@SaTechITSolutions.com?subject=Interested%20in%20my%20website%20preview">Get in Touch</a>
+  <a class="btn btn-sage" href="https://satechitsolutions.com/#contact" target="_blank" rel="noopener">Learn More</a>
+  <div class="trust"><span class="chip rate">★★★★★ 4.9 &middot; 55 Google reviews</span><span class="chip">Locally Owned & Operated</span><span class="chip">Trusted by Neighbors</span><span class="chip">Serving the Community</span></div>
+  <p class="meta"><b>&#9670;</b> Home goods store &middot; 123 Main St, Your City, ST</p>
+</div></header>
+
+<section class="about shiplap"><div class="wrap">
+  <div class="section-head"><div class="sub">Our Story</div><h2>Welcome to Magnolia Market Co.</h2></div>
+  <p>Magnolia Market Co. is a locally owned business serving the your area area and the surrounding community — built on doing right by neighbors and earning repeat business the honest way.</p><p>You get responsive service, fair pricing, and people who stand behind their work. That&#x27;s the reputation Magnolia Market Co. has built, one satisfied customer at a time.</p>
+</div></section>
+
+<section class="services"><div class="wrap">
+  <div class="section-head"><div class="sub">What We Offer</div><h2>Services</h2></div>
+  <div class="grid"><div class="card"><span class="no">01</span><h3>Free Consultations</h3></div><div class="card"><span class="no">02</span><h3>Custom Solutions</h3></div><div class="card"><span class="no">03</span><h3>Responsive Local Service</h3></div><div class="card"><span class="no">04</span><h3>Fair, Upfront Pricing</h3></div><div class="card"><span class="no">05</span><h3>Satisfaction Guaranteed</h3></div></div>
+</div></section>
+
+<section class="contact"><div class="wrap">
+  <div class="section-head"><div class="sub">Come By</div><h2>Get in Touch</h2></div>
+  <div class="contact-grid"><div><div class="lab">Call Us</div><a href="tel:5551234567">(555) 123-4567</a></div><div><div class="lab">Visit</div><span class="val">123 Main St, Your City, ST</span></div></div>
+</div></section>
+
+<section class="cta"><div class="wrap">
+  <div class="section-head"><div class="sub">Like This Preview?</div><h2>Let's Make It Your Real Website</h2></div>
+  <p>This mockup was built by SaTech IT Solutions to show Magnolia Market Co. what a clean, welcoming modern-farmhouse website could look like. Want to make it official?</p>
+  <a class="btn btn-black" href="mailto:Tom@SaTechITSolutions.com?subject=Interested%20in%20my%20website%20preview">Email SaTech IT Solutions</a>
+  <a class="btn btn-sage" href="https://satechitsolutions.com/#contact" target="_blank" rel="noopener">Visit SaTech IT Solutions</a>
+</div></section>
+
+<footer>&copy; 2026 Website preview by <a href="https://satechitsolutions.com" target="_blank" rel="noopener">SaTech IT Solutions</a>. Not affiliated with or endorsed by Magnolia Market Co..</footer>
+</body>
+</html>

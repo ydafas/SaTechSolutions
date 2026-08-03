@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="description" content="Bright Ideas Design Co. — a trusted locally owned business proudly serving the your area area.">
+<meta name="robots" content="noindex,nofollow">
+<title>Bright Ideas Design Co. — Website Preview by SaTech IT Solutions</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --ink:#14110f;--ink-soft:#3a332e;
+  --red:#e5231d;--red-dark:#b8140f;
+  --blue:#1b57ef;--blue-dark:#123fb0;
+  --yellow:#ffd21e;--yellow-dark:#e6b400;
+  --paper:#fff7e6;--paper-2:#fdeecb;--white:#ffffff;--muted:#6a6058;
+  /* Ben-Day / halftone dot screens (flat, no image) */
+  --dots-red:radial-gradient(var(--red) 1.7px,transparent 2px) 0 0/13px 13px;
+  --dots-blue:radial-gradient(var(--blue) 1.7px,transparent 2px) 0 0/13px 13px;
+  --dots-ink:radial-gradient(rgba(20,17,15,.16) 1.6px,transparent 2px) 0 0/12px 12px;
+}
+html{scroll-behavior:smooth;}
+body{font-family:'Segoe UI',system-ui,-apple-system,Roboto,Helvetica,Arial,sans-serif;color:var(--ink);background:var(--paper);line-height:1.62;-webkit-font-smoothing:antialiased;}
+.wrap{max-width:1040px;margin:0 auto;padding:0 26px;}
+
+.banner{background:var(--ink);color:#fff2cf;font-size:.82rem;font-weight:600;text-align:center;padding:.7rem 1rem;line-height:1.5;}
+.banner a{color:var(--yellow);font-weight:800;text-decoration:underline;}
+/* halftone divider ribbon */
+.halftone{height:20px;background:var(--dots-red),var(--yellow);border-top:4px solid var(--ink);border-bottom:4px solid var(--ink);}
+
+.hero{position:relative;overflow:hidden;background:var(--dots-ink),var(--yellow);color:var(--ink);padding:4.8rem 0 4.4rem;text-align:center;border-bottom:5px solid var(--ink);}
+.hero .wrap{position:relative;z-index:1;}
+/* jagged starburst "POW" badge */
+.burst{display:inline-flex;align-items:center;justify-content:center;width:150px;height:150px;margin-bottom:1.5rem;background:var(--blue);color:#fff;font-size:.82rem;font-weight:900;letter-spacing:.14em;text-transform:uppercase;text-align:center;line-height:1.15;transform:rotate(-8deg);filter:drop-shadow(5px 6px 0 var(--ink));clip-path:polygon(50% 0,61% 18%,80% 12%,74% 32%,95% 35%,79% 50%,95% 65%,74% 68%,80% 88%,61% 82%,50% 100%,39% 82%,20% 88%,26% 68%,5% 65%,21% 50%,5% 35%,26% 32%,20% 12%,39% 18%);}
+.burst span{max-width:98px;}
+/* inked comic-logo headline: white fill, black outline, red offset */
+.hero h1{font-size:3.3rem;font-weight:900;line-height:1.03;letter-spacing:.005em;text-transform:uppercase;max-width:17ch;margin:0 auto 1.4rem;color:#fff;text-shadow:-2px -2px 0 var(--ink),2px -2px 0 var(--ink),-2px 2px 0 var(--ink),2px 2px 0 var(--ink),6px 7px 0 var(--red);}
+/* speech-bubble subheading with a CSS tail */
+.bubble{position:relative;display:inline-block;background:var(--white);color:var(--ink);border:3px solid var(--ink);border-radius:22px;padding:1rem 1.5rem;max-width:52ch;font-size:1.14rem;font-weight:600;box-shadow:5px 6px 0 var(--ink);margin-bottom:2.2rem;}
+.bubble:after{content:"";position:absolute;left:44px;bottom:-19px;width:26px;height:20px;background:var(--white);border-right:3px solid var(--ink);border-bottom:3px solid var(--ink);transform:skewX(-24deg);border-bottom-right-radius:5px;}
+.hero .meta{margin-top:2rem;font-size:.8rem;font-weight:700;color:var(--ink-soft);letter-spacing:.06em;text-transform:uppercase;}
+
+.btn{display:inline-block;padding:.95rem 2rem;font-weight:900;font-size:.88rem;letter-spacing:.06em;text-transform:uppercase;text-decoration:none;min-height:44px;line-height:1.55;border:3px solid var(--ink);border-radius:12px;box-shadow:5px 5px 0 var(--ink);transition:transform .08s,box-shadow .08s;}
+.btn:active{transform:translate(3px,3px);box-shadow:2px 2px 0 var(--ink);}
+.btn-red{background:var(--red);color:#fff;}
+.btn-red:hover{background:var(--red-dark);}
+.btn-white{background:var(--white);color:var(--ink);margin-left:.65rem;}
+.btn-white:hover{background:var(--paper-2);}
+.trust{display:flex;flex-wrap:wrap;gap:.6rem;justify-content:center;margin-top:2rem;}
+.chip{font-size:.76rem;font-weight:800;letter-spacing:.03em;text-transform:uppercase;color:var(--ink);background:var(--white);border:3px solid var(--ink);border-radius:999px;padding:.4rem 1rem;box-shadow:3px 3px 0 var(--ink);}
+.chip.rate{background:var(--yellow);}
+
+section{padding:4.4rem 0;}
+.section-head{text-align:center;margin-bottom:2.7rem;}
+.section-head .sub{display:inline-block;font-size:.74rem;font-weight:900;letter-spacing:.16em;text-transform:uppercase;color:#fff;background:var(--red);border:3px solid var(--ink);border-radius:8px;padding:.32rem 1rem;box-shadow:3px 3px 0 var(--ink);transform:rotate(-2deg);}
+.section-head h2{font-size:2.1rem;font-weight:900;letter-spacing:.005em;text-transform:uppercase;margin-top:1rem;color:var(--ink);text-shadow:3px 3px 0 var(--yellow);}
+
+.about{background:var(--dots-blue),var(--paper);border-top:5px solid var(--ink);border-bottom:5px solid var(--ink);}
+.about-inner{max-width:680px;margin:0 auto;background:var(--white);border:4px solid var(--ink);border-radius:16px;padding:2.2rem 2rem;box-shadow:8px 8px 0 var(--ink);}
+.about-inner p{color:var(--ink-soft);font-size:1.08rem;margin-bottom:1.05rem;}
+.about-inner p:last-child{margin-bottom:0;}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:1.5rem;}
+/* comic-panel service cards */
+.card{position:relative;background:var(--white);border:4px solid var(--ink);border-radius:14px;padding:1.9rem 1.5rem 1.6rem;text-align:center;box-shadow:7px 7px 0 var(--ink);}
+.card:before{content:"";position:absolute;inset:0;border-radius:10px;background:var(--dots-ink);opacity:.5;pointer-events:none;}
+.card>*{position:relative;}
+.card .disc{width:56px;height:56px;border-radius:50%;border:4px solid var(--ink);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:1.2rem;color:#fff;margin:0 auto 1rem;box-shadow:3px 3px 0 var(--ink);}
+.card .disc.c0{background:var(--red);}
+.card .disc.c1{background:var(--blue);}
+.card .disc.c2{background:var(--yellow);color:var(--ink);}
+.card h3{font-size:1.08rem;font-weight:800;color:var(--ink);line-height:1.32;}
+
+.contact{background:var(--dots-ink),var(--paper-2);}
+.contact-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:1.5rem;text-align:center;max-width:840px;margin:0 auto;}
+.contact-grid>div{background:var(--white);border:3px solid var(--ink);border-radius:12px;padding:1.4rem 1rem;box-shadow:5px 5px 0 var(--ink);}
+.contact-grid .lab{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--blue-dark);font-weight:900;margin-bottom:.5rem;}
+.contact-grid a{color:var(--red-dark);text-decoration:none;font-weight:800;}
+.contact-grid a:hover{text-decoration:underline;}
+.contact-grid .val{color:var(--ink-soft);font-weight:700;}
+
+.cta{position:relative;overflow:hidden;background:var(--dots-red),var(--blue);color:#fff;text-align:center;border-top:5px solid var(--ink);border-bottom:5px solid var(--ink);}
+.cta .wrap{position:relative;z-index:1;}
+.cta .section-head .sub{background:var(--yellow);color:var(--ink);}
+.cta h2{color:#fff;text-shadow:3px 3px 0 var(--ink);}
+.cta p{max-width:56ch;margin:.2rem auto 2rem;font-size:1.1rem;font-weight:600;background:var(--white);color:var(--ink);border:3px solid var(--ink);border-radius:16px;padding:1.1rem 1.5rem;box-shadow:6px 6px 0 var(--ink);}
+.cta .btn-white{background:var(--yellow);}
+.cta .btn-white:hover{background:var(--yellow-dark);}
+
+footer{background:var(--ink);color:#e8dccb;text-align:center;padding:2.5rem 1rem;font-size:.82rem;line-height:1.6;}
+footer a{color:var(--yellow);font-weight:700;}
+@media(max-width:640px){.hero{padding:3.4rem 0 3rem;}.hero h1{font-size:2.15rem;}.burst{width:124px;height:124px;}section{padding:3.1rem 0;}.btn-white{margin-left:0;margin-top:.7rem;}}
+</style>
+</head>
+<body>
+<div class="banner">Free website preview built by <a href="https://satechitsolutions.com/#contact" target="_blank" rel="noopener">SaTech IT Solutions</a> for Bright Ideas Design Co. — not Bright Ideas Design Co.'s official website.</div>
+<div class="halftone" aria-hidden="true"></div>
+
+<header class="hero"><div class="wrap">
+  <div class="burst"><span>Website Preview</span></div>
+  <h1>Local, Dependable, and Ready to Help</h1>
+  <div class="bubble">Proudly serving the your area area with service worth recommending.</div>
+  <div>
+    <a class="btn btn-red" href="mailto:Tom@SaTechITSolutions.com?subject=Interested%20in%20my%20website%20preview">Get in Touch</a>
+    <a class="btn btn-white" href="https://satechitsolutions.com/#contact" target="_blank" rel="noopener">Learn More</a>
+  </div>
+  <div class="trust"><span class="chip rate">★★★★★ 4.9 &middot; 41 Google reviews</span><span class="chip">Locally Owned & Operated</span><span class="chip">Trusted by Neighbors</span><span class="chip">Serving the Community</span></div>
+  <p class="meta">Graphic design studio &middot; 123 Main St, Your City, ST</p>
+</div></header>
+
+<section class="about"><div class="wrap">
+  <div class="section-head"><div class="sub">Our Story</div><h2>Meet Bright Ideas Design Co.</h2></div>
+  <div class="about-inner"><p>Bright Ideas Design Co. is a locally owned business serving the your area area and the surrounding community — built on doing right by neighbors and earning repeat business the honest way.</p><p>You get responsive service, fair pricing, and people who stand behind their work. That&#x27;s the reputation Bright Ideas Design Co. has built, one satisfied customer at a time.</p></div>
+</div></section>
+
+<section class="services"><div class="wrap">
+  <div class="section-head"><div class="sub">What We Do</div><h2>Services</h2></div>
+  <div class="grid"><div class="card"><div class="disc c0">01</div><h3>Free Consultations</h3></div><div class="card"><div class="disc c1">02</div><h3>Custom Solutions</h3></div><div class="card"><div class="disc c2">03</div><h3>Responsive Local Service</h3></div><div class="card"><div class="disc c0">04</div><h3>Fair, Upfront Pricing</h3></div><div class="card"><div class="disc c1">05</div><h3>Satisfaction Guaranteed</h3></div></div>
+</div></section>
+
+<section class="contact"><div class="wrap">
+  <div class="section-head"><div class="sub">Find Us</div><h2>Get in Touch</h2></div>
+  <div class="contact-grid"><div><div class="lab">Call Us</div><a href="tel:5551234567">(555) 123-4567</a></div><div><div class="lab">Visit</div><span class="val">123 Main St, Your City, ST</span></div></div>
+</div></section>
+
+<section class="cta"><div class="wrap">
+  <div class="section-head"><div class="sub">Like This Preview?</div><h2>Let's Make It Pop</h2></div>
+  <p>This bold mockup was created by SaTech IT Solutions to show Bright Ideas Design Co. what an eye-catching website could look like. Ready to make it official?</p>
+  <a class="btn btn-red" href="mailto:Tom@SaTechITSolutions.com?subject=Interested%20in%20my%20website%20preview">Email SaTech IT Solutions</a>
+  <a class="btn btn-white" href="https://satechitsolutions.com/#contact" target="_blank" rel="noopener">Visit SaTech IT Solutions</a>
+</div></section>
+<div class="halftone" aria-hidden="true"></div>
+
+<footer><div class="wrap">&copy; 2026 Website preview by <a href="https://satechitsolutions.com" target="_blank" rel="noopener">SaTech IT Solutions</a>. Not affiliated with or endorsed by Bright Ideas Design Co..</div></footer>
+</body>
+</html>

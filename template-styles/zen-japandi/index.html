@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="description" content="Kobo Design Studio — a trusted locally owned business proudly serving the your area area.">
+<meta name="robots" content="noindex,nofollow">
+<title>Kobo Design Studio — Website Preview by SaTech IT Solutions</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bone:#f4f0e8;--bone-2:#ece6da;--paper:#faf7f0;
+  --wood:#c8a97e;--wood-soft:#e3d3ba;--wood-deep:#9c7c54;
+  --ink:#1c1a17;--ink-soft:#3a3630;--muted:#8a8378;--line:#ddd4c4;
+  --serif:Georgia,'Iowan Old Style','Times New Roman',Times,serif;
+  --sans:system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+}
+html{scroll-behavior:smooth;}
+body{font-family:var(--sans);color:var(--ink);background:var(--bone);line-height:1.85;font-weight:400;-webkit-font-smoothing:antialiased;}
+.wrap{max-width:1080px;margin:0 auto;padding:0 40px;}
+.eyebrow{font-size:.68rem;letter-spacing:.34em;text-transform:uppercase;color:var(--wood-deep);font-weight:600;}
+.banner{background:var(--bone-2);border-bottom:1px solid var(--line);color:var(--muted);font-size:.8rem;text-align:center;padding:.8rem 1rem;line-height:1.6;letter-spacing:.02em;}
+.banner a{color:var(--ink-soft);font-weight:600;text-decoration:underline;text-underline-offset:2px;}
+
+/* HERO — asymmetric: wide text column + narrow vertical-label/ensō column */
+.hero{padding:7rem 0 5.5rem;}
+.hero .grid{display:grid;grid-template-columns:1fr 96px;gap:2.5rem;align-items:start;}
+.hero .lead{max-width:30ch;}
+.hero .eyebrow{display:block;margin-bottom:2rem;}
+.hero h1{font-family:var(--serif);font-size:3.1rem;font-weight:400;letter-spacing:-.01em;line-height:1.18;color:var(--ink);margin-bottom:1.6rem;}
+.hero p{font-size:1.1rem;color:var(--ink-soft);max-width:46ch;margin-bottom:2.6rem;}
+.hero .aside{justify-self:end;display:flex;flex-direction:column;align-items:center;gap:2.2rem;padding-top:.4rem;}
+.vlabel{writing-mode:vertical-rl;text-orientation:mixed;font-size:.66rem;letter-spacing:.4em;text-transform:uppercase;color:var(--muted);font-weight:600;}
+/* ensō — an open ink circle, drawn in CSS, tilted for wabi-sabi imperfection */
+.enso{width:64px;height:64px;border-radius:50%;border:2px solid var(--ink);border-top-color:transparent;border-right-color:var(--wood-deep);transform:rotate(-18deg);opacity:.9;}
+.actions{display:flex;flex-wrap:wrap;gap:1rem;align-items:center;}
+.btn{display:inline-block;font-family:var(--sans);font-size:.82rem;letter-spacing:.14em;text-transform:uppercase;font-weight:600;text-decoration:none;padding:1rem 2.2rem;min-height:44px;line-height:1.5;transition:background .18s,color .18s;}
+.btn-ink{background:var(--ink);color:var(--bone);}
+.btn-ink:hover{background:var(--ink-soft);}
+.btn-line{color:var(--ink);border:1px solid var(--ink);}
+.btn-line:hover{background:var(--ink);color:var(--bone);}
+.trust{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center;margin-top:2.6rem;}
+.chip{font-size:.72rem;letter-spacing:.1em;color:var(--muted);border:1px solid var(--line);padding:.4rem .95rem;background:var(--paper);}
+.chip.rate{border-color:var(--wood);color:var(--wood-deep);font-weight:600;letter-spacing:.04em;}
+.metaline{margin-top:2rem;font-size:.78rem;letter-spacing:.06em;color:var(--muted);text-transform:uppercase;}
+
+.rule{height:1px;background:var(--line);}
+section{padding:5.5rem 0;}
+
+/* ABOUT — asymmetric: numeral marker column + text */
+.about .grid{display:grid;grid-template-columns:200px 1fr;gap:3rem;align-items:start;}
+.about .marker{font-family:var(--serif);font-size:3.4rem;color:var(--wood);line-height:1;}
+.about .eyebrow{display:block;margin-top:1rem;}
+.about h2{font-family:var(--serif);font-size:2rem;font-weight:400;line-height:1.25;margin-bottom:1.6rem;color:var(--ink);}
+.about p{color:var(--ink-soft);font-size:1.04rem;max-width:60ch;margin-bottom:1.2rem;}
+
+/* SERVICES — hairline-divided list, index in wood, offset right */
+.services{background:var(--paper);}
+.services .head{display:grid;grid-template-columns:200px 1fr;gap:3rem;margin-bottom:2.4rem;}
+.services .head .eyebrow{display:block;}
+.services h2{font-family:var(--serif);font-size:2rem;font-weight:400;color:var(--ink);}
+.svc{list-style:none;border-top:1px solid var(--line);}
+.svc li{display:grid;grid-template-columns:200px 1fr;gap:3rem;align-items:baseline;padding:1.5rem 0;border-bottom:1px solid var(--line);}
+.svc .num{font-family:var(--serif);font-size:.9rem;color:var(--wood-deep);letter-spacing:.24em;}
+.svc .name{font-size:1.15rem;color:var(--ink);font-weight:500;}
+
+/* CONTACT — warm wood-tone panel, asymmetric columns */
+.contact{background:var(--wood-soft);}
+.contact .grid{display:grid;grid-template-columns:200px 1fr;gap:3rem;align-items:start;}
+.contact h2{font-family:var(--serif);font-size:2rem;font-weight:400;color:var(--ink);margin-bottom:2rem;}
+.contact .eyebrow{color:var(--wood-deep);display:block;margin-top:1rem;}
+.cgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:2rem;}
+.cgrid .lab{font-size:.68rem;letter-spacing:.24em;text-transform:uppercase;color:var(--wood-deep);font-weight:600;margin-bottom:.55rem;}
+.cgrid a{color:var(--ink);text-decoration:none;font-weight:600;border-bottom:1px solid var(--ink);padding-bottom:1px;}
+.cgrid .val{color:var(--ink-soft);font-weight:500;}
+
+/* CTA — ink on bone, centered restraint with a small ensō */
+.cta{text-align:center;}
+.cta .enso{margin:0 auto 2rem;}
+.cta .eyebrow{display:block;margin-bottom:1.2rem;}
+.cta h2{font-family:var(--serif);font-size:2.3rem;font-weight:400;color:var(--ink);max-width:22ch;margin:0 auto 1.2rem;line-height:1.25;}
+.cta p{color:var(--ink-soft);max-width:52ch;margin:0 auto 2.4rem;font-size:1.04rem;}
+.cta .actions{justify-content:center;}
+
+footer{background:var(--ink);color:#b8b0a2;padding:3rem 1rem;text-align:center;font-size:.78rem;letter-spacing:.03em;line-height:1.7;}
+footer a{color:var(--wood-soft);text-decoration:underline;text-underline-offset:2px;}
+
+@media(max-width:720px){
+  .wrap{padding:0 24px;}
+  .hero{padding:4rem 0 3.5rem;}
+  .hero .grid{grid-template-columns:1fr;gap:2.4rem;}
+  .hero .aside{flex-direction:row;justify-self:start;gap:1.6rem;}
+  .vlabel{writing-mode:horizontal-tb;}
+  .hero h1{font-size:2.2rem;}
+  section{padding:3.5rem 0;}
+  .about .grid,.services .head,.svc li,.contact .grid{grid-template-columns:1fr;gap:1rem;}
+  .svc li{gap:.4rem;}
+  .about .marker{font-size:2.6rem;}
+}
+</style>
+</head>
+<body>
+<div class="banner">Free website preview built by <a href="https://satechitsolutions.com/#contact" target="_blank" rel="noopener">SaTech IT Solutions</a> for Kobo Design Studio — not Kobo Design Studio's official website.</div>
+
+<header class="hero"><div class="wrap"><div class="grid">
+  <div class="lead">
+    <span class="eyebrow">Website Preview</span>
+    <h1>Local, Dependable, and Ready to Help</h1>
+    <p>Proudly serving the your area area with service worth recommending.</p>
+    <div class="actions">
+      <a class="btn btn-ink" href="mailto:Tom@SaTechITSolutions.com?subject=Interested%20in%20my%20website%20preview">Get in Touch</a>
+      <a class="btn btn-line" href="https://satechitsolutions.com/#contact" target="_blank" rel="noopener">Learn More</a>
+    </div>
+    <div class="trust"><span class="chip rate">★★★★★ 4.9 &middot; 22 Google reviews</span><span class="chip">Locally Owned & Operated</span><span class="chip">Trusted by Neighbors</span><span class="chip">Serving the Community</span></div>
+    <p class="metaline">Interior design &middot; 123 Main St, Your City, ST</p>
+  </div>
+  <div class="aside" aria-hidden="true">
+    <span class="vlabel">Quiet &middot; Considered</span>
+    <div class="enso"></div>
+  </div>
+</div></div></header>
+
+<div class="wrap"><div class="rule"></div></div>
+
+<section class="about"><div class="wrap"><div class="grid">
+  <div>
+    <div class="marker">01</div>
+    <span class="eyebrow">About</span>
+  </div>
+  <div>
+    <h2>Kobo Design Studio</h2>
+    <p>Kobo Design Studio is a locally owned business serving the your area area and the surrounding community — built on doing right by neighbors and earning repeat business the honest way.</p><p>You get responsive service, fair pricing, and people who stand behind their work. That&#x27;s the reputation Kobo Design Studio has built, one satisfied customer at a time.</p>
+  </div>
+</div></div></section>
+
+<section class="services"><div class="wrap">
+  <div class="head">
+    <div><span class="eyebrow">02 &mdash; What We Do</span></div>
+    <h2>Services</h2>
+  </div>
+  <ul class="svc"><li><span class="num">01 &mdash;</span><span class="name">Free Consultations</span></li><li><span class="num">02 &mdash;</span><span class="name">Custom Solutions</span></li><li><span class="num">03 &mdash;</span><span class="name">Responsive Local Service</span></li><li><span class="num">04 &mdash;</span><span class="name">Fair, Upfront Pricing</span></li><li><span class="num">05 &mdash;</span><span class="name">Satisfaction Guaranteed</span></li></ul>
+</div></section>
+
+<section class="contact"><div class="wrap"><div class="grid">
+  <div>
+    <div class="marker" style="font-family:var(--serif);font-size:3.4rem;color:var(--wood-deep);line-height:1;">03</div>
+    <span class="eyebrow">Contact</span>
+  </div>
+  <div>
+    <h2>Get in Touch</h2>
+    <div class="cgrid"><div><div class="lab">Call</div><a href="tel:5551234567">(555) 123-4567</a></div><div><div class="lab">Visit</div><span class="val">123 Main St, Your City, ST</span></div></div>
+  </div>
+</div></div></section>
+
+<section class="cta"><div class="wrap">
+  <div class="enso" aria-hidden="true"></div>
+  <span class="eyebrow">Like This Preview?</span>
+  <h2>Let's make it your real website</h2>
+  <p>This mockup was built by SaTech IT Solutions to show Kobo Design Studio what a calm, considered website could look like. Ready to make it official?</p>
+  <div class="actions">
+    <a class="btn btn-ink" href="mailto:Tom@SaTechITSolutions.com?subject=Interested%20in%20my%20website%20preview">Email SaTech IT Solutions</a>
+    <a class="btn btn-line" href="https://satechitsolutions.com/#contact" target="_blank" rel="noopener">Visit SaTech IT Solutions</a>
+  </div>
+</div></section>
+
+<footer><div class="wrap">&copy; 2026 Website preview by <a href="https://satechitsolutions.com" target="_blank" rel="noopener">SaTech IT Solutions</a>. Not affiliated with or endorsed by Kobo Design Studio.</div></footer>
+</body>
+</html>

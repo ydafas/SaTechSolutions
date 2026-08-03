@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="description" content="Sterling &amp; Vance Advisory — a trusted locally owned business proudly serving the your area area.">
+<meta name="robots" content="noindex,nofollow">
+<title>Sterling &amp; Vance Advisory — Website Preview by SaTech IT Solutions</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --black:#000000;--ink:#0a0a0a;--muted:#5c5c5c;--faint:#8a8a8a;
+  --line:#e4e4e4;--line-mid:#c9c9c9;--rule:#111111;
+  --paper:#ffffff;--soft:#f6f6f6;--soft-2:#efefef;
+  --sans:'Helvetica Neue',Helvetica,Arial,system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+}
+html{scroll-behavior:smooth;}
+body{font-family:var(--sans);color:var(--ink);background:var(--paper);line-height:1.55;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;}
+.wrap{max-width:1120px;margin:0 auto;padding:0 40px;}
+a{color:inherit;}
+
+/* Disclosure banner — minimal, monochrome */
+.banner{background:var(--paper);border-bottom:1px solid var(--line);color:var(--muted);font-size:.78rem;letter-spacing:.01em;text-align:center;padding:.85rem 1.2rem;line-height:1.5;}
+.banner a{color:var(--ink);font-weight:700;text-decoration:underline;text-underline-offset:2px;}
+
+/* Tiny tracked index label */
+.eyebrow{display:inline-block;font-size:.7rem;letter-spacing:.32em;text-transform:uppercase;color:var(--faint);font-weight:700;}
+.eyebrow .idx{color:var(--ink);}
+
+/* HERO — left aligned, enormous type, extreme whitespace */
+.hero{padding:8.5rem 0 6.5rem;border-bottom:1px solid var(--rule);}
+.hero .eyebrow{margin-bottom:2.4rem;}
+.hero h1{font-size:clamp(2.9rem,8vw,5.6rem);font-weight:800;letter-spacing:-.035em;line-height:.98;max-width:16ch;margin-bottom:1.8rem;color:var(--black);}
+.hero p.lede{font-size:1.3rem;font-weight:400;color:var(--muted);max-width:46ch;margin-bottom:3rem;line-height:1.5;}
+.actions{display:flex;flex-wrap:wrap;align-items:center;gap:1rem;}
+.btn{display:inline-flex;align-items:center;justify-content:center;padding:1.05rem 2.3rem;font-weight:700;font-size:.78rem;letter-spacing:.16em;text-transform:uppercase;text-decoration:none;min-height:48px;line-height:1.2;border:1px solid var(--black);transition:background .15s,color .15s;}
+.btn-solid{background:var(--black);color:#fff;}
+.btn-solid:hover{background:#fff;color:var(--black);}
+.btn-line{background:transparent;color:var(--black);border-color:var(--line-mid);}
+.btn-line:hover{border-color:var(--black);}
+.trust{display:flex;flex-wrap:wrap;gap:.55rem;align-items:center;margin-top:3rem;}
+.chip{font-size:.74rem;letter-spacing:.05em;color:var(--muted);border:1px solid var(--line);padding:.45rem 1rem;}
+.chip.rate{border-color:var(--black);color:var(--black);font-weight:700;letter-spacing:.02em;}
+.meta{margin-top:2.6rem;font-size:.74rem;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);}
+.meta b{color:var(--muted);font-weight:600;}
+
+/* Sections — modular two-column grid, huge whitespace */
+section{padding:7rem 0;border-bottom:1px solid var(--line);}
+.grid2{display:grid;grid-template-columns:minmax(0,4fr) minmax(0,7fr);gap:3rem 5rem;}
+.col-label .eyebrow{display:block;margin-bottom:1rem;}
+.col-label h2{font-size:2.2rem;font-weight:800;letter-spacing:-.02em;line-height:1.05;color:var(--black);}
+.about-body p{font-size:1.18rem;color:#333;max-width:60ch;margin-bottom:1.4rem;line-height:1.62;}
+.about-body p:last-child{margin-bottom:0;}
+
+/* Services — huge numbered hairline rows, no cards */
+.svc{list-style:none;}
+.svc li{display:flex;align-items:baseline;gap:2rem;padding:1.9rem 0;border-top:1px solid var(--line);}
+.svc li:last-child{border-bottom:1px solid var(--line);}
+.svc .n{flex:none;font-size:.9rem;font-weight:700;color:var(--faint);letter-spacing:.06em;min-width:3ch;padding-top:.35rem;}
+.svc .t{font-size:clamp(1.4rem,3.2vw,2rem);font-weight:700;letter-spacing:-.02em;line-height:1.1;color:var(--ink);}
+
+/* Contact — hairline label/value rows */
+.contact-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:0;border-top:1px solid var(--line);}
+.contact-list .item{padding:2rem 0;border-bottom:1px solid var(--line);}
+.contact-list .lab{font-size:.7rem;letter-spacing:.22em;text-transform:uppercase;color:var(--faint);font-weight:700;margin-bottom:.7rem;}
+.contact-list a{text-decoration:none;font-weight:700;font-size:1.15rem;color:var(--ink);border-bottom:1px solid var(--line-mid);padding-bottom:2px;}
+.contact-list a:hover{border-color:var(--black);}
+.contact-list .val{font-size:1.15rem;font-weight:600;color:var(--ink);}
+
+/* Final CTA — inverted, full black */
+.cta{background:var(--black);color:#fff;border-bottom:none;}
+.cta .eyebrow{color:#8a8a8a;}
+.cta .eyebrow .idx{color:#fff;}
+.cta h2{font-size:clamp(2.4rem,6vw,4rem);font-weight:800;letter-spacing:-.03em;line-height:1.02;max-width:18ch;margin:1.6rem 0 1.6rem;color:#fff;}
+.cta p{font-size:1.2rem;color:#c4c4c4;max-width:52ch;margin-bottom:2.8rem;line-height:1.55;}
+.cta .btn-solid{background:#fff;color:var(--black);border-color:#fff;}
+.cta .btn-solid:hover{background:transparent;color:#fff;}
+.cta .btn-line{color:#fff;border-color:rgba(255,255,255,.4);}
+.cta .btn-line:hover{border-color:#fff;}
+
+footer{padding:3.5rem 0;font-size:.78rem;color:var(--faint);letter-spacing:.01em;line-height:1.7;}
+footer a{color:var(--muted);text-decoration:underline;text-underline-offset:2px;}
+
+@media(max-width:720px){
+  .wrap{padding:0 24px;}
+  .hero{padding:5rem 0 4rem;}
+  .hero .eyebrow{margin-bottom:1.6rem;}
+  .hero p.lede{font-size:1.12rem;margin-bottom:2.2rem;}
+  section{padding:4rem 0;}
+  .grid2{grid-template-columns:1fr;gap:1.6rem;}
+  .actions{flex-direction:column;align-items:stretch;}
+  .btn{width:100%;}
+}
+</style>
+</head>
+<body>
+<div class="banner">Free website preview built by <a href="https://satechitsolutions.com/#contact" target="_blank" rel="noopener">SaTech IT Solutions</a> for Sterling &amp; Vance Advisory — not Sterling &amp; Vance Advisory's official website.</div>
+
+<header class="hero"><div class="wrap">
+  <span class="eyebrow"><span class="idx">00</span> &nbsp;/&nbsp; Website Preview</span>
+  <h1>Local, Dependable, and Ready to Help</h1>
+  <p class="lede">Proudly serving the your area area with service worth recommending.</p>
+  <div class="actions">
+    <a class="btn btn-solid" href="mailto:Tom@SaTechITSolutions.com?subject=Interested%20in%20my%20website%20preview">Request a Consultation</a>
+    <a class="btn btn-line" href="https://satechitsolutions.com/#contact" target="_blank" rel="noopener">Learn More</a>
+  </div>
+  <div class="trust"><span class="chip rate">★★★★★ 4.9 &middot; 87 Google reviews</span><span class="chip">Locally Owned & Operated</span><span class="chip">Trusted by Neighbors</span><span class="chip">Serving the Community</span></div>
+  <p class="meta"><b>Financial consulting</b> &middot; 123 Main St, Your City, ST</p>
+</div></header>
+
+<section class="about"><div class="wrap">
+  <div class="grid2">
+    <div class="col-label">
+      <span class="eyebrow"><span class="idx">01</span> &nbsp;/&nbsp; Overview</span>
+      <h2>Sterling &amp; Vance Advisory</h2>
+    </div>
+    <div class="about-body"><p>Sterling &amp; Vance Advisory is a locally owned business serving the your area area and the surrounding community — built on doing right by neighbors and earning repeat business the honest way.</p><p>You get responsive service, fair pricing, and people who stand behind their work. That&#x27;s the reputation Sterling &amp; Vance Advisory has built, one satisfied customer at a time.</p></div>
+  </div>
+</div></section>
+
+<section class="services"><div class="wrap">
+  <div class="grid2">
+    <div class="col-label">
+      <span class="eyebrow"><span class="idx">02</span> &nbsp;/&nbsp; Capabilities</span>
+      <h2>Services</h2>
+    </div>
+    <div><ul class="svc"><li><span class="n">01</span><span class="t">Free Consultations</span></li><li><span class="n">02</span><span class="t">Custom Solutions</span></li><li><span class="n">03</span><span class="t">Responsive Local Service</span></li><li><span class="n">04</span><span class="t">Fair, Upfront Pricing</span></li><li><span class="n">05</span><span class="t">Satisfaction Guaranteed</span></li></ul></div>
+  </div>
+</div></section>
+
+<section class="contact"><div class="wrap">
+  <div class="grid2">
+    <div class="col-label">
+      <span class="eyebrow"><span class="idx">03</span> &nbsp;/&nbsp; Contact</span>
+      <h2>Get in Touch</h2>
+    </div>
+    <div class="contact-list"><div class="item"><div class="lab">Telephone</div><a href="tel:5551234567">(555) 123-4567</a></div><div class="item"><div class="lab">Office</div><span class="val">123 Main St, Your City, ST</span></div></div>
+  </div>
+</div></section>
+
+<section class="cta"><div class="wrap">
+  <span class="eyebrow"><span class="idx">04</span> &nbsp;/&nbsp; Like This Preview?</span>
+  <h2>Let's make it your real website.</h2>
+  <p>This preview was built by SaTech IT Solutions to show Sterling &amp; Vance Advisory what a refined, professional web presence could look like. Ready to make it official?</p>
+  <div class="actions">
+    <a class="btn btn-solid" href="mailto:Tom@SaTechITSolutions.com?subject=Interested%20in%20my%20website%20preview">Email SaTech IT Solutions</a>
+    <a class="btn btn-line" href="https://satechitsolutions.com/#contact" target="_blank" rel="noopener">Visit SaTech IT Solutions</a>
+  </div>
+</div></section>
+
+<footer><div class="wrap">&copy; 2026 Website preview by <a href="https://satechitsolutions.com" target="_blank" rel="noopener">SaTech IT Solutions</a>. Not affiliated with or endorsed by Sterling &amp; Vance Advisory.</div></footer>
+</body>
+</html>
