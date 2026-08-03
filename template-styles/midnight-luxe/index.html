@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="description" content="Velvet &amp; Ember Lounge — a trusted locally owned business proudly serving the your area area.">
+<meta name="robots" content="noindex,nofollow">
+<title>Velvet &amp; Ember Lounge — Website Preview by SaTech IT Solutions</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --night:#0a0a0c;--night-2:#111015;--night-3:#16151c;--panel:#0d0c11;
+  --gold:#cba64f;--gold-bright:#e7cd8a;--gold-deep:#9a7c34;--gold-hair:rgba(203,166,79,.30);
+  --gold-hair-soft:rgba(203,166,79,.16);
+  --jewel:rgba(139,96,196,.16);--jewel-2:rgba(139,96,196,.10);
+  --ink:#f3efe6;--soft:#cbc4b6;--muted:#8f887a;
+  --serif:'Didot','Bodoni MT','Hoefler Text','Playfair Display',Georgia,'Times New Roman',serif;
+  --sans:system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+}
+html{scroll-behavior:smooth;}
+body{font-family:var(--sans);color:var(--ink);background:var(--night);line-height:1.75;-webkit-font-smoothing:antialiased;}
+.wrap{max-width:1020px;margin:0 auto;padding:0 30px;}
+.serif{font-family:var(--serif);}
+.eyebrow{font-size:.7rem;letter-spacing:.38em;text-transform:uppercase;color:var(--gold);font-weight:600;}
+.rule{display:flex;align-items:center;justify-content:center;gap:1rem;margin:0 auto;}
+.rule:before,.rule:after{content:"";height:1px;width:64px;background:linear-gradient(90deg,transparent,var(--gold-hair));}
+.rule:after{background:linear-gradient(90deg,var(--gold-hair),transparent);}
+.rule .dia{color:var(--gold);font-size:.6rem;transform:rotate(0deg);}
+.banner{background:var(--panel);border-bottom:1px solid var(--gold-hair-soft);color:var(--soft);font-size:.82rem;text-align:center;padding:.75rem 1rem;line-height:1.6;letter-spacing:.01em;}
+.banner a{color:var(--gold-bright);font-weight:600;text-decoration:underline;text-underline-offset:2px;}
+
+.hero{position:relative;overflow:hidden;padding:6.5rem 0 5.5rem;text-align:center;background:radial-gradient(120% 90% at 50% -20%,var(--jewel) 0%,transparent 55%),radial-gradient(80% 70% at 50% 120%,rgba(203,166,79,.08) 0%,transparent 60%),var(--night);}
+.hero:before{content:"";position:absolute;inset:26px;border:1px solid var(--gold-hair);pointer-events:none;}
+.hero:after{content:"";position:absolute;inset:31px;border:1px solid var(--gold-hair-soft);pointer-events:none;}
+.hero .wrap{position:relative;z-index:1;}
+.hero .eyebrow{display:block;margin-bottom:1.6rem;}
+.hero h1{font-family:var(--serif);font-size:3.5rem;font-weight:400;letter-spacing:.01em;line-height:1.14;max-width:20ch;margin:0 auto 1.5rem;color:var(--ink);background:linear-gradient(180deg,#fbf6ea 0%,var(--gold-bright) 130%);-webkit-background-clip:text;background-clip:text;}
+.hero p.lede{font-size:1.18rem;color:var(--soft);max-width:52ch;margin:0 auto 2.4rem;font-weight:300;}
+.hero .meta{margin-top:2.2rem;font-size:.74rem;color:var(--muted);letter-spacing:.14em;text-transform:uppercase;}
+
+.btn{display:inline-block;padding:.95rem 2.2rem;font-weight:600;font-size:.76rem;letter-spacing:.18em;text-transform:uppercase;text-decoration:none;min-height:44px;line-height:1.85;transition:background .2s,color .2s,border-color .2s;}
+.btn-gold{background:linear-gradient(135deg,var(--gold-bright),var(--gold));color:#141109;}
+.btn-gold:hover{background:linear-gradient(135deg,#f0d9a6,var(--gold-bright));}
+.btn-out{color:var(--gold-bright);border:1px solid var(--gold-hair);margin-left:.7rem;}
+.btn-out:hover{border-color:var(--gold);color:var(--gold);}
+.trust{display:flex;flex-wrap:wrap;gap:.7rem;justify-content:center;align-items:center;margin-top:2.4rem;}
+.chip{font-size:.74rem;letter-spacing:.1em;color:var(--soft);border:1px solid var(--gold-hair-soft);border-radius:999px;padding:.42rem 1.05rem;text-transform:uppercase;}
+.chip.rate{border-color:var(--gold);color:var(--gold-bright);font-weight:600;letter-spacing:.04em;text-transform:none;}
+.chip.rate .stars{color:var(--gold);letter-spacing:.05em;}
+
+section{padding:5.5rem 0;position:relative;}
+section+section{border-top:1px solid var(--gold-hair-soft);}
+.section-head{text-align:center;margin-bottom:3rem;}
+.section-head .rule{margin-bottom:1.2rem;}
+.section-head .sub{font-size:.7rem;letter-spacing:.34em;text-transform:uppercase;color:var(--gold);font-weight:600;}
+.section-head h2{font-family:var(--serif);font-size:2.3rem;font-weight:400;letter-spacing:.01em;margin-top:.7rem;color:var(--ink);}
+
+.about{background:var(--night-2);}
+.about-inner{max-width:680px;margin:0 auto;text-align:center;}
+.about-inner p{color:var(--soft);font-size:1.1rem;font-weight:300;margin-bottom:1.3rem;}
+.about-inner p:last-child{margin-bottom:0;}
+
+.menu{list-style:none;max-width:680px;margin:0 auto;}
+.menu li{display:flex;align-items:baseline;gap:1.1rem;padding:1.35rem .2rem;border-bottom:1px solid var(--gold-hair-soft);}
+.menu li:first-child{border-top:1px solid var(--gold-hair-soft);}
+.menu .svc-name{font-family:var(--serif);font-size:1.4rem;font-weight:400;color:var(--ink);}
+.menu .dots{flex:1;border-bottom:1px dotted var(--gold-hair);transform:translateY(-.3rem);}
+.menu .idx{font-family:var(--serif);font-style:italic;font-size:1.05rem;color:var(--gold);min-width:2.2ch;text-align:right;}
+
+.contact{background:var(--night-2);}
+.contact-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:2rem;max-width:840px;margin:0 auto;text-align:center;}
+.contact-grid .box{border:1px solid var(--gold-hair-soft);padding:1.8rem 1.4rem;background:var(--panel);}
+.contact-grid .lab{font-size:.68rem;letter-spacing:.28em;text-transform:uppercase;color:var(--gold);font-weight:600;margin-bottom:.7rem;}
+.contact-grid a{color:var(--gold-bright);text-decoration:none;font-weight:600;font-size:1.04rem;border-bottom:1px solid var(--gold-hair);padding-bottom:2px;}
+.contact-grid a:hover{border-color:var(--gold);}
+.contact-grid .val{color:var(--soft);font-size:1.04rem;}
+
+.cta{text-align:center;background:radial-gradient(120% 120% at 50% 0%,var(--jewel-2) 0%,transparent 60%),var(--night);}
+.cta-frame{position:relative;max-width:760px;margin:0 auto;border:1px solid var(--gold-hair);padding:3.5rem 2.4rem;}
+.cta-frame:before{content:"";position:absolute;inset:6px;border:1px solid var(--gold-hair-soft);pointer-events:none;}
+.cta .sub{color:var(--gold);}
+.cta h2{font-family:var(--serif);font-size:2.4rem;font-weight:400;color:var(--ink);margin-top:.7rem;}
+.cta p{color:var(--soft);max-width:54ch;margin:1.3rem auto 2.4rem;font-size:1.08rem;font-weight:300;}
+
+footer{padding:3rem 0;font-size:.8rem;color:var(--muted);text-align:center;line-height:1.7;border-top:1px solid var(--gold-hair-soft);background:var(--panel);}
+footer a{color:var(--gold-bright);text-decoration:underline;text-underline-offset:2px;}
+
+@media(max-width:720px){
+  .hero{padding:4.5rem 0 3.75rem;}
+  .hero:before{inset:16px;}.hero:after{inset:20px;}
+  .hero h1{font-size:2.4rem;}
+  section{padding:3.75rem 0;}
+  .section-head h2{font-size:1.8rem;}
+  .btn-out{margin-left:0;margin-top:.8rem;}
+  .cta-frame{padding:2.4rem 1.4rem;}
+  .cta h2{font-size:1.8rem;}
+  .menu .svc-name{font-size:1.2rem;}
+}
+</style>
+</head>
+<body>
+<div class="banner">Complimentary website preview crafted by <a href="https://satechitsolutions.com/#contact" target="_blank" rel="noopener">SaTech IT Solutions</a> for Velvet &amp; Ember Lounge — not Velvet &amp; Ember Lounge's official website.</div>
+
+<header class="hero"><div class="wrap">
+  <span class="eyebrow">Website Preview</span>
+  <h1 class="serif">Local, Dependable, and Ready to Help</h1>
+  <p class="lede">Proudly serving the your area area with service worth recommending.</p>
+  <a class="btn btn-gold" href="mailto:Tom@SaTechITSolutions.com?subject=Interested%20in%20my%20website%20preview">Get in Touch</a>
+  <a class="btn btn-out" href="https://satechitsolutions.com/#contact" target="_blank" rel="noopener">Discover More</a>
+  <div class="trust"><span class="chip rate"><span class="stars">★★★★★</span> 4.8 &middot; 216 Google reviews</span><span class="chip">Locally Owned & Operated</span><span class="chip">Trusted by Neighbors</span><span class="chip">Serving the Community</span></div>
+  <p class="meta">Cocktail lounge &middot; 123 Main St, Your City, ST</p>
+</div></header>
+
+<section class="about"><div class="wrap">
+  <div class="section-head">
+    <div class="rule"><span class="dia">&#9670;</span></div>
+    <div class="sub">The Experience</div><h2>Velvet &amp; Ember Lounge</h2>
+  </div>
+  <div class="about-inner"><p>Velvet &amp; Ember Lounge is a locally owned business serving the your area area and the surrounding community — built on doing right by neighbors and earning repeat business the honest way.</p><p>You get responsive service, fair pricing, and people who stand behind their work. That&#x27;s the reputation Velvet &amp; Ember Lounge has built, one satisfied customer at a time.</p></div>
+</div></section>
+
+<section class="services"><div class="wrap">
+  <div class="section-head">
+    <div class="rule"><span class="dia">&#9670;</span></div>
+    <div class="sub">What We Offer</div><h2>Services</h2>
+  </div>
+  <ul class="menu"><li><span class="svc-name">Free Consultations</span><span class="dots"></span><span class="idx">01</span></li><li><span class="svc-name">Custom Solutions</span><span class="dots"></span><span class="idx">02</span></li><li><span class="svc-name">Responsive Local Service</span><span class="dots"></span><span class="idx">03</span></li><li><span class="svc-name">Fair, Upfront Pricing</span><span class="dots"></span><span class="idx">04</span></li><li><span class="svc-name">Satisfaction Guaranteed</span><span class="dots"></span><span class="idx">05</span></li></ul>
+</div></section>
+
+<section class="contact"><div class="wrap">
+  <div class="section-head">
+    <div class="rule"><span class="dia">&#9670;</span></div>
+    <div class="sub">Contact</div><h2>Get in Touch</h2>
+  </div>
+  <div class="contact-grid"><div class="box"><div class="lab">Reservations</div><a href="tel:5551234567">(555) 123-4567</a></div><div class="box"><div class="lab">The Venue</div><span class="val">123 Main St, Your City, ST</span></div></div>
+</div></section>
+
+<section class="cta"><div class="wrap">
+  <div class="cta-frame">
+    <div class="rule"><span class="dia">&#9670;</span></div>
+    <div class="sub" style="margin-top:1.2rem">Like This Preview?</div>
+    <h2 class="serif">Make It Your Real Website</h2>
+    <p>This mockup was crafted by SaTech IT Solutions to show Velvet &amp; Ember Lounge what an elegant, after-dark web presence could look like. Ready to make it official?</p>
+    <a class="btn btn-gold" href="mailto:Tom@SaTechITSolutions.com?subject=Interested%20in%20my%20website%20preview">Email SaTech IT Solutions</a>
+    <a class="btn btn-out" href="https://satechitsolutions.com/#contact" target="_blank" rel="noopener">Visit SaTech IT Solutions</a>
+  </div>
+</div></section>
+
+<footer><div class="wrap">&copy; 2026 Website preview by <a href="https://satechitsolutions.com" target="_blank" rel="noopener">SaTech IT Solutions</a>. Not affiliated with or endorsed by Velvet &amp; Ember Lounge.</div></footer>
+</body>
+</html>

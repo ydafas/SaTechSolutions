@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="description" content="Studio Forge Design — a trusted locally owned business proudly serving the your area area.">
+<meta name="robots" content="noindex,nofollow">
+<title>Studio Forge Design — Website Preview by SaTech IT Solutions</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --concrete:#e8e7e3;--concrete-2:#dedcd6;--concrete-3:#d2d0c9;--bg:#f2f1ed;--panel:#ffffff;
+  --steel:#161719;--steel-2:#212327;--steel-3:#2c2f34;
+  --ink:#1b1c1e;--muted:#6f7176;--muted-2:#8b8d92;
+  --line:#c4c2bb;--line-2:#b3b1a9;--line-steel:#33363b;
+  --cool:#4a5865;--cool-2:#5d6d7c;--cool-soft:rgba(74,88,101,.10);
+  --grid:rgba(27,28,30,.055);--grid-dk:rgba(255,255,255,.05);
+  --mono:ui-monospace,'SFMono-Regular','Cascadia Code',Consolas,'Liberation Mono',Menlo,monospace;
+}
+html{scroll-behavior:smooth;}
+body{font-family:system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:var(--ink);background:var(--bg);line-height:1.62;-webkit-font-smoothing:antialiased;}
+.wrap{max-width:1080px;margin:0 auto;padding:0 30px;}
+.banner{background:var(--steel);color:#c8c9cc;font-family:var(--mono);font-size:.76rem;letter-spacing:.04em;text-align:center;padding:.7rem 1rem;line-height:1.5;}
+.banner a{color:#fff;font-weight:700;text-decoration:underline;text-underline-offset:2px;}
+.ruler{height:12px;background:repeating-linear-gradient(90deg,var(--line-2) 0 1px,transparent 1px 22px);border-bottom:1px solid var(--line);background-color:var(--concrete);}
+.hero{position:relative;overflow:hidden;background-color:var(--concrete);background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:44px 44px;padding:5.5rem 0 4.75rem;border-bottom:1px solid var(--line);}
+.hero:before{content:"";position:absolute;top:0;bottom:0;left:calc((100% - 1080px)/2 + 30px);width:1px;background:var(--line-2);opacity:.8;}
+.hero:after{content:"";position:absolute;top:0;right:0;width:34%;max-width:360px;height:8px;background:var(--steel);}
+.hero .wrap{position:relative;z-index:1;}
+.eyebrow{display:inline-block;font-family:var(--mono);font-size:.72rem;letter-spacing:.26em;text-transform:uppercase;color:var(--cool);font-weight:700;border:1px solid var(--line-2);padding:.4rem .85rem;background:var(--panel);margin-bottom:1.6rem;}
+.hero h1{font-size:3.15rem;font-weight:800;text-transform:uppercase;letter-spacing:-.018em;line-height:1.02;max-width:18ch;margin-bottom:1.2rem;color:var(--ink);}
+.hero p.lede{font-size:1.18rem;color:#4a4b4e;max-width:52ch;margin-bottom:2.2rem;}
+.hero .meta{margin-top:2.2rem;font-family:var(--mono);font-size:.76rem;color:var(--muted);letter-spacing:.04em;text-transform:uppercase;border-top:1px solid var(--line);padding-top:1.1rem;max-width:60ch;}
+.hero .meta b{color:var(--cool);font-weight:700;}
+.btn{display:inline-block;padding:1rem 2.05rem;font-weight:700;font-size:.82rem;letter-spacing:.14em;text-transform:uppercase;text-decoration:none;min-height:44px;line-height:1.55;border:1px solid var(--steel);transition:background .15s,color .15s,border-color .15s;}
+.btn-solid{background:var(--steel);color:var(--concrete);}
+.btn-solid:hover{background:var(--steel-3);border-color:var(--steel-3);}
+.btn-line{color:var(--ink);border-color:var(--line-2);background:transparent;margin-left:.6rem;}
+.btn-line:hover{border-color:var(--steel);}
+.trust{display:flex;flex-wrap:wrap;gap:.55rem;align-items:center;margin-top:2rem;}
+.chip{font-family:var(--mono);font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);border:1px solid var(--line-2);background:var(--panel);padding:.42rem .85rem;}
+.chip.rate{border-color:var(--cool);color:var(--cool);background:var(--cool-soft);font-weight:700;}
+section{padding:4.75rem 0;border-bottom:1px solid var(--line);}
+.section-head{display:flex;align-items:flex-start;gap:1.3rem;margin-bottom:2.7rem;}
+.section-head .idx{font-family:var(--mono);font-size:1rem;font-weight:700;color:var(--cool);line-height:1;padding-top:.5rem;letter-spacing:.02em;}
+.section-head .htext{flex:1;border-top:2px solid var(--steel);padding-top:.7rem;}
+.section-head .sub{font-family:var(--mono);font-size:.72rem;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);font-weight:700;}
+.section-head h2{font-size:1.95rem;font-weight:800;text-transform:uppercase;letter-spacing:-.01em;margin-top:.3rem;color:var(--ink);}
+.about{background:var(--panel);}
+.about p{color:#45464a;font-size:1.08rem;max-width:66ch;margin-bottom:1.15rem;}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:0;border-top:1px solid var(--line);border-left:1px solid var(--line);}
+.cell{border-right:1px solid var(--line);border-bottom:1px solid var(--line);padding:1.7rem 1.6rem;background:var(--panel);position:relative;transition:background .15s,color .15s;}
+.cell .num{font-family:var(--mono);font-size:.74rem;font-weight:700;color:var(--cool);letter-spacing:.06em;display:block;margin-bottom:.7rem;}
+.cell h3{font-size:1.1rem;font-weight:700;text-transform:uppercase;letter-spacing:-.005em;color:var(--ink);line-height:1.28;}
+.cell:hover{background:var(--steel);}
+.cell:hover .num{color:var(--cool-2);}
+.cell:hover h3{color:var(--concrete);}
+.contact{background:var(--steel);color:#e6e6e4;border-bottom:none;}
+.contact .section-head .htext{border-top-color:var(--cool);}
+.contact .section-head .idx{color:var(--cool-2);}
+.contact .section-head .sub{color:var(--muted-2);}
+.contact .section-head h2{color:#fff;}
+.contact-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:0;border-top:1px solid var(--line-steel);border-left:1px solid var(--line-steel);}
+.contact-grid .box{border-right:1px solid var(--line-steel);border-bottom:1px solid var(--line-steel);padding:1.6rem 1.5rem;}
+.contact-grid .lab{font-family:var(--mono);font-size:.7rem;letter-spacing:.16em;text-transform:uppercase;color:var(--cool-2);font-weight:700;margin-bottom:.5rem;}
+.contact-grid a{color:#fff;text-decoration:none;font-weight:700;}
+.contact-grid a:hover{color:var(--cool-2);}
+.contact-grid .val{color:#bcbdc0;font-weight:600;}
+.cta{position:relative;overflow:hidden;background-color:var(--steel);background-image:linear-gradient(var(--grid-dk) 1px,transparent 1px),linear-gradient(90deg,var(--grid-dk) 1px,transparent 1px);background-size:44px 44px;color:#e6e6e4;text-align:left;border-bottom:none;border-top:8px solid var(--cool);}
+.cta .wrap{position:relative;z-index:1;}
+.cta .eyebrow{color:var(--cool-2);border-color:var(--line-steel);background:var(--steel-2);}
+.cta h2{font-size:2.15rem;font-weight:800;text-transform:uppercase;letter-spacing:-.01em;color:#fff;margin-bottom:.9rem;max-width:20ch;}
+.cta p{color:#b7b8bb;max-width:58ch;margin-bottom:2rem;font-size:1.06rem;}
+.cta .btn-solid{background:var(--concrete);color:var(--steel);border-color:var(--concrete);}
+.cta .btn-solid:hover{background:#fff;border-color:#fff;}
+.cta .btn-line{color:#fff;border-color:rgba(255,255,255,.4);}
+.cta .btn-line:hover{border-color:#fff;}
+footer{background:#0f1012;color:#8b8d92;font-family:var(--mono);font-size:.76rem;letter-spacing:.02em;text-align:center;padding:2.5rem 1rem;line-height:1.7;}
+footer a{color:#c8c9cc;text-decoration:underline;text-underline-offset:2px;}
+@media(max-width:720px){.hero{padding:3.7rem 0 3.2rem;}.hero h1{font-size:2.1rem;}.hero:before{display:none;}section{padding:3.3rem 0;}.btn-line{margin-left:0;margin-top:.7rem;}.section-head{gap:.9rem;}.cta h2{font-size:1.6rem;}}
+</style>
+</head>
+<body>
+<div class="banner">// Free website preview built by <a href="https://satechitsolutions.com/#contact" target="_blank" rel="noopener">SaTech IT Solutions</a> for Studio Forge Design — not Studio Forge Design's official website.</div>
+<div class="ruler" aria-hidden="true"></div>
+
+<header class="hero"><div class="wrap">
+  <span class="eyebrow">Website Preview</span>
+  <h1>Local, Dependable, and Ready to Help</h1>
+  <p class="lede">Proudly serving the your area area with service worth recommending.</p>
+  <a class="btn btn-solid" href="mailto:Tom@SaTechITSolutions.com?subject=Interested%20in%20my%20website%20preview">Get in Touch</a>
+  <a class="btn btn-line" href="https://satechitsolutions.com/#contact" target="_blank" rel="noopener">Learn More</a>
+  <div class="trust"><span class="chip rate">★★★★★ 4.7 &middot; 33 Google reviews</span><span class="chip">Locally Owned & Operated</span><span class="chip">Trusted by Neighbors</span><span class="chip">Serving the Community</span></div>
+  <p class="meta"><b>Architecture firm</b> &middot; 123 Main St, Your City, ST</p>
+</div></header>
+
+<section class="about"><div class="wrap">
+  <div class="section-head"><div class="idx">01</div><div class="htext"><div class="sub">About</div><h2>Studio Forge Design</h2></div></div>
+  <p>Studio Forge Design is a locally owned business serving the your area area and the surrounding community — built on doing right by neighbors and earning repeat business the honest way.</p><p>You get responsive service, fair pricing, and people who stand behind their work. That&#x27;s the reputation Studio Forge Design has built, one satisfied customer at a time.</p>
+</div></section>
+
+<section class="services"><div class="wrap">
+  <div class="section-head"><div class="idx">02</div><div class="htext"><div class="sub">Capabilities</div><h2>Services</h2></div></div>
+  <div class="grid"><div class="cell"><span class="num">01</span><h3>Free Consultations</h3></div><div class="cell"><span class="num">02</span><h3>Custom Solutions</h3></div><div class="cell"><span class="num">03</span><h3>Responsive Local Service</h3></div><div class="cell"><span class="num">04</span><h3>Fair, Upfront Pricing</h3></div><div class="cell"><span class="num">05</span><h3>Satisfaction Guaranteed</h3></div></div>
+</div></section>
+
+<section class="contact"><div class="wrap">
+  <div class="section-head"><div class="idx">03</div><div class="htext"><div class="sub">Contact</div><h2>Get in Touch</h2></div></div>
+  <div class="contact-grid"><div class="box"><div class="lab">Call</div><a href="tel:5551234567">(555) 123-4567</a></div><div class="box"><div class="lab">Location</div><span class="val">123 Main St, Your City, ST</span></div></div>
+</div></section>
+
+<section class="cta"><div class="wrap">
+  <span class="eyebrow">Like This Preview?</span>
+  <h2>Make It Your Real Website</h2>
+  <p>This mockup was built by SaTech IT Solutions to show Studio Forge Design what a sharp, modern website could look like. Ready to make it official?</p>
+  <a class="btn btn-solid" href="mailto:Tom@SaTechITSolutions.com?subject=Interested%20in%20my%20website%20preview">Email SaTech IT Solutions</a>
+  <a class="btn btn-line" href="https://satechitsolutions.com/#contact" target="_blank" rel="noopener">Visit SaTech IT Solutions</a>
+</div></section>
+
+<footer>&copy; 2026 Website preview by <a href="https://satechitsolutions.com" target="_blank" rel="noopener">SaTech IT Solutions</a>. Not affiliated with or endorsed by Studio Forge Design.</footer>
+</body>
+</html>

@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="description" content="Seabreeze Boutique — a trusted locally owned business proudly serving the your area area.">
+<meta name="robots" content="noindex,nofollow">
+<title>Seabreeze Boutique — Website Preview by SaTech IT Solutions</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --sea:#4f93a3;--sea-deep:#3a7280;--sea-soft:#e4f0f0;
+  --ink:#2f4750;--muted:#6f818a;--soft-muted:#93a3aa;
+  --sand:#efe7d6;--sand-deep:#e6d9c2;--foam:#f5f9f9;--shell:#ffffff;
+  --line:#e4e2d7;--line-sea:#d3e2e2;--coral:#dd8f79;
+  --script:'Iowan Old Style','Palatino Linotype','Book Antiqua',Palatino,Georgia,'Times New Roman',serif;
+  --sans:system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+}
+html{scroll-behavior:smooth;}
+body{font-family:var(--sans);color:var(--ink);background:var(--foam);line-height:1.72;-webkit-font-smoothing:antialiased;}
+.wrap{max-width:1010px;margin:0 auto;padding:0 26px;}
+.script{font-family:var(--script);font-style:italic;}
+/* scalloped "cabana valance" wave edge — pure CSS, no image */
+.scallop{height:20px;background:radial-gradient(circle at 13px 22px,var(--shell) 13px,transparent 14px) repeat-x;background-size:26px 20px;background-position:0 -8px;}
+.banner{background:var(--ink);color:#dbe6e6;font-size:.82rem;text-align:center;padding:.72rem 1rem;line-height:1.55;letter-spacing:.01em;}
+.banner a{color:#9fd0d4;font-weight:600;text-decoration:underline;text-underline-offset:2px;}
+.eyebrow{font-family:var(--script);font-style:italic;font-size:1.02rem;color:var(--sea-deep);letter-spacing:.01em;}
+.eyebrow .wave{font-style:normal;color:var(--sea);margin:0 .35rem;letter-spacing:.1em;}
+.hero{position:relative;overflow:hidden;text-align:center;padding:5.75rem 0 4.75rem;
+  background:radial-gradient(120% 100% at 50% -20%,var(--sea-soft) 0%,var(--foam) 46%,#faf6ec 100%);}
+.hero:before{content:"";position:absolute;top:-120px;left:50%;transform:translateX(-50%);width:150%;height:230px;border-radius:0 0 60% 60%;background:rgba(79,147,163,.06);}
+.hero .wrap{position:relative;z-index:1;}
+.hero .eyebrow{display:block;margin-bottom:1.35rem;font-size:1.1rem;}
+.hero h1{font-size:2.95rem;font-weight:600;letter-spacing:-.008em;line-height:1.14;max-width:20ch;margin:0 auto 1.15rem;}
+.hero p.lead{font-size:1.2rem;color:var(--muted);max-width:52ch;margin:0 auto 2.2rem;}
+.hero .meta{margin-top:2rem;font-size:.86rem;color:var(--soft-muted);letter-spacing:.05em;text-transform:uppercase;}
+.btn{display:inline-block;padding:.92rem 2.05rem;border-radius:999px;font-weight:600;font-size:.98rem;text-decoration:none;min-height:44px;line-height:1.6;transition:background .2s,border-color .2s,color .2s;}
+.btn-fill{background:var(--sea);color:#fff;box-shadow:0 10px 24px rgba(79,147,163,.24);}
+.btn-fill:hover{background:var(--sea-deep);}
+.btn-soft{background:var(--shell);color:var(--sea-deep);border:1px solid var(--line-sea);margin-left:.6rem;box-shadow:0 4px 14px rgba(47,71,80,.05);}
+.btn-soft:hover{border-color:var(--sea);}
+.trust{display:flex;flex-wrap:wrap;gap:.6rem;justify-content:center;margin-top:2rem;}
+.chip{font-size:.8rem;color:var(--muted);background:var(--shell);border:1px solid var(--line-sea);border-radius:999px;padding:.42rem 1.05rem;}
+.chip.rate{color:var(--sea-deep);border-color:var(--sea);font-weight:700;background:var(--sea-soft);}
+.chip.rate .star{color:var(--coral);}
+section{padding:4.75rem 0;}
+.section-head{text-align:center;margin-bottom:2.7rem;}
+.section-head .sub{font-family:var(--script);font-style:italic;font-size:1.05rem;color:var(--sea);}
+.section-head h2{font-size:2.05rem;font-weight:600;letter-spacing:-.01em;margin-top:.35rem;}
+.section-head h2 .rule{display:block;width:56px;height:2px;background:var(--sea);opacity:.55;border-radius:2px;margin:.85rem auto 0;}
+.about{position:relative;background:var(--sand);}
+.about .scallop{position:absolute;top:0;left:0;right:0;background:radial-gradient(circle at 13px 22px,var(--sand) 13px,transparent 14px) repeat-x;background-size:26px 20px;background-position:0 -8px;}
+.about-inner{max-width:680px;margin:0 auto;text-align:center;}
+.about-inner p{color:var(--ink);font-size:1.1rem;margin-bottom:1.15rem;}
+.about-inner p:last-child{margin-bottom:0;}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(232px,1fr));gap:1.4rem;}
+.card{background:var(--shell);border:1px solid var(--line);border-radius:20px;padding:1.95rem 1.6rem;text-align:center;box-shadow:0 8px 22px rgba(47,71,80,.05);}
+.card .ico{width:54px;height:54px;border-radius:50%;background:var(--sea-soft);color:var(--sea-deep);display:flex;align-items:center;justify-content:center;font-size:1.5rem;font-weight:700;margin:0 auto 1rem;box-shadow:inset 0 0 0 1px var(--line-sea);}
+.card h3{font-size:1.1rem;font-weight:600;}
+.contact{background:var(--foam);}
+.contact-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1.7rem;text-align:center;max-width:800px;margin:0 auto;}
+.contact-grid .lab{font-family:var(--script);font-style:italic;font-size:1rem;color:var(--sea);margin-bottom:.4rem;}
+.contact-grid a{color:var(--sea-deep);text-decoration:none;font-weight:600;border-bottom:1px solid var(--line-sea);padding-bottom:2px;}
+.contact-grid a:hover{border-color:var(--sea);}
+.contact-grid .val{color:var(--muted);font-weight:500;}
+.cta{position:relative;background:linear-gradient(165deg,var(--sea) 0%,var(--sea-deep) 100%);color:#fff;text-align:center;overflow:hidden;}
+.cta:before{content:"";position:absolute;bottom:-140px;right:-90px;width:300px;height:300px;border-radius:50%;background:rgba(255,255,255,.06);}
+.cta .wrap{position:relative;z-index:1;}
+.cta .section-head .sub{color:#cdeaea;}
+.cta h2{color:#fff;}
+.cta h2 .rule{background:#fff;opacity:.7;}
+.cta p{color:#e3f2f2;max-width:54ch;margin:.2rem auto 2.1rem;font-size:1.08rem;}
+.cta .btn-fill{background:#fff;color:var(--sea-deep);box-shadow:0 10px 24px rgba(0,0,0,.14);}
+.cta .btn-soft{background:transparent;color:#fff;border-color:rgba(255,255,255,.6);box-shadow:none;}
+.cta .btn-soft:hover{border-color:#fff;}
+footer{background:var(--ink);color:#c3d2d4;text-align:center;padding:2.5rem 1rem;font-size:.82rem;line-height:1.6;}
+footer a{color:#9fd0d4;}
+@media(max-width:640px){.hero{padding:3.75rem 0 3.25rem;}.hero h1{font-size:2.1rem;}section{padding:3.3rem 0;}.btn-soft{margin-left:0;margin-top:.6rem;}}
+</style>
+</head>
+<body>
+<div class="banner">Free website preview built by <a href="https://satechitsolutions.com/#contact" target="_blank" rel="noopener">SaTech IT Solutions</a> for Seabreeze Boutique — not Seabreeze Boutique's official website.</div>
+<div class="scallop" aria-hidden="true"></div>
+
+<header class="hero"><div class="wrap">
+  <span class="eyebrow"><span class="wave">&#8776;</span>Website Preview<span class="wave">&#8776;</span></span>
+  <h1>Local, Dependable, and Ready to Help</h1>
+  <p class="lead">Proudly serving the your area area with service worth recommending.</p>
+  <a class="btn btn-fill" href="mailto:Tom@SaTechITSolutions.com?subject=Interested%20in%20my%20website%20preview">Say Hello</a>
+  <a class="btn btn-soft" href="https://satechitsolutions.com/#contact" target="_blank" rel="noopener">Learn More</a>
+  <div class="trust"><span class="chip rate"><span class="star">★★★★★</span> 4.8 &middot; 44 Google reviews</span><span class="chip">Locally Owned & Operated</span><span class="chip">Trusted by Neighbors</span><span class="chip">Serving the Community</span></div>
+  <p class="meta">Clothing store &middot; 123 Main St, Your City, ST</p>
+</div></header>
+
+<section class="about"><div class="scallop" aria-hidden="true"></div><div class="wrap">
+  <div class="section-head"><div class="sub">Our Story</div><h2>Welcome to Seabreeze Boutique<span class="rule"></span></h2></div>
+  <div class="about-inner"><p>Seabreeze Boutique is a locally owned business serving the your area area and the surrounding community — built on doing right by neighbors and earning repeat business the honest way.</p><p>You get responsive service, fair pricing, and people who stand behind their work. That&#x27;s the reputation Seabreeze Boutique has built, one satisfied customer at a time.</p></div>
+</div></section>
+
+<section class="services"><div class="wrap">
+  <div class="section-head"><div class="sub">What We Offer</div><h2>Services<span class="rule"></span></h2></div>
+  <div class="grid"><div class="card"><div class="ico">&#8776;</div><h3>Free Consultations</h3></div><div class="card"><div class="ico">&#8776;</div><h3>Custom Solutions</h3></div><div class="card"><div class="ico">&#8776;</div><h3>Responsive Local Service</h3></div><div class="card"><div class="ico">&#8776;</div><h3>Fair, Upfront Pricing</h3></div><div class="card"><div class="ico">&#8776;</div><h3>Satisfaction Guaranteed</h3></div></div>
+</div></section>
+
+<section class="contact"><div class="wrap">
+  <div class="section-head"><div class="sub">Come Say Hi</div><h2>Get in Touch<span class="rule"></span></h2></div>
+  <div class="contact-grid"><div><div class="lab">Call Us</div><a href="tel:5551234567">(555) 123-4567</a></div><div><div class="lab">Find Us</div><span class="val">123 Main St, Your City, ST</span></div></div>
+</div></section>
+
+<section class="cta"><div class="wrap">
+  <div class="section-head"><div class="sub">Like This Preview?</div><h2>Let's Make It Yours<span class="rule"></span></h2></div>
+  <p>This breezy mockup was built by SaTech IT Solutions to show Seabreeze Boutique what a bright, welcoming coastal website could look like. Want to make it official?</p>
+  <a class="btn btn-fill" href="mailto:Tom@SaTechITSolutions.com?subject=Interested%20in%20my%20website%20preview">Email SaTech IT Solutions</a>
+  <a class="btn btn-soft" href="https://satechitsolutions.com/#contact" target="_blank" rel="noopener">Visit SaTech IT Solutions</a>
+</div></section>
+
+<footer>&copy; 2026 Website preview by <a href="https://satechitsolutions.com" target="_blank" rel="noopener">SaTech IT Solutions</a>. Not affiliated with or endorsed by Seabreeze Boutique.</footer>
+</body>
+</html>
