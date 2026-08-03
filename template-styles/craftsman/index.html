@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="description" content="Sample Handyman Services — reliable handyman for home repairs, assembly, and small projects in the your area area.">
+<meta name="robots" content="noindex,nofollow">
+<title>Sample Handyman Services — Website Preview by SaTech IT Solutions</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --paper:#f6f0e2;--paper-2:#efe6d3;--card:#fdfaf1;
+  --ink:#3a2b20;--wood:#7a4d2e;--wood-dark:#5d3a21;--wood-deep:#2f2117;
+  --blueprint:#2c4a5a;--blueprint-2:#3d6373;
+  --muted:#8a7761;--line:#d9cbb0;--grid:rgba(44,74,90,.07);
+  --serif:'Iowan Old Style','Palatino Linotype','Book Antiqua',Palatino,Georgia,'Times New Roman',serif;
+  --sans:system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  --mono:ui-monospace,'Cascadia Code','SFMono-Regular',Consolas,'Courier New',monospace;
+}
+html{scroll-behavior:smooth;}
+body{font-family:var(--sans);color:var(--ink);background:var(--paper);line-height:1.68;-webkit-font-smoothing:antialiased;}
+.wrap{max-width:1020px;margin:0 auto;padding:0 26px;}
+h1,h2,h3{font-family:var(--serif);}
+.banner{background:var(--wood-deep);color:#f0e4d2;font-size:.82rem;text-align:center;padding:.7rem 1rem;line-height:1.5;}
+.banner a{color:#e8b784;font-weight:600;text-decoration:underline;}
+.stamp{display:inline-block;font-family:var(--mono);font-size:.7rem;letter-spacing:.22em;text-transform:uppercase;color:var(--blueprint);font-weight:700;border:2px solid var(--blueprint);border-radius:2px;padding:.4rem .85rem;box-shadow:inset 0 0 0 2px var(--paper);}
+.hero{background-color:var(--paper);background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:27px 27px;padding:5.5rem 0 4.75rem;border-bottom:2px dashed var(--line);}
+.hero .stamp{margin-bottom:1.5rem;}
+.hero h1{font-size:3rem;font-weight:700;letter-spacing:-.01em;line-height:1.1;max-width:19ch;margin-bottom:1.1rem;color:var(--wood-dark);}
+.hero p.lede{font-size:1.2rem;color:var(--ink);max-width:52ch;margin-bottom:2.2rem;border-left:3px solid var(--wood);padding-left:1.1rem;}
+.hero .meta{margin-top:2rem;font-family:var(--mono);font-size:.8rem;color:var(--muted);letter-spacing:.02em;}
+.hero .meta b{color:var(--wood-dark);font-weight:700;}
+.btn{display:inline-block;padding:.9rem 1.9rem;font-weight:700;font-size:.98rem;text-decoration:none;min-height:44px;line-height:1.6;border-radius:3px;}
+.btn-wood{background:var(--wood);color:#fff8ee;box-shadow:0 4px 0 var(--wood-dark);}
+.btn-wood:hover{background:var(--wood-dark);box-shadow:0 4px 0 var(--wood-deep);}
+.btn-draft{color:var(--blueprint);border:2px dashed var(--blueprint-2);margin-left:.6rem;}
+.btn-draft:hover{background:rgba(44,74,90,.06);}
+.trust{display:flex;flex-wrap:wrap;gap:.6rem;align-items:center;margin-top:2rem;}
+.chip{font-size:.8rem;color:var(--wood-dark);background:var(--card);border:1px dashed var(--line);border-radius:3px;padding:.4rem .9rem;}
+.chip.rate{border:1px solid var(--wood);border-left:5px solid var(--wood);font-weight:700;color:var(--wood-dark);}
+section{padding:4.5rem 0;}
+.section-head{margin-bottom:2.6rem;}
+.section-head .sub{font-family:var(--mono);font-size:.72rem;letter-spacing:.16em;text-transform:uppercase;color:var(--blueprint);font-weight:700;}
+.section-head h2{font-size:2rem;font-weight:700;color:var(--wood-dark);margin-top:.35rem;position:relative;padding-bottom:.7rem;}
+.section-head h2:after{content:"";position:absolute;left:0;bottom:0;width:64px;height:0;border-bottom:2px dashed var(--wood);}
+.about{background:var(--paper-2);border-top:2px dashed var(--line);border-bottom:2px dashed var(--line);}
+.about p{color:var(--ink);font-size:1.08rem;max-width:66ch;margin-bottom:1.1rem;}
+.about p:first-of-type:first-letter{font-family:var(--serif);float:left;font-size:3.1rem;line-height:.9;font-weight:700;color:var(--wood);padding:.35rem .55rem 0 0;}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:1.3rem;}
+.card{background:var(--card);border:1px dashed var(--line);border-radius:4px;padding:1.6rem 1.5rem;position:relative;}
+.card:before{content:attr(data-idx);position:absolute;top:1.1rem;right:1.2rem;font-family:var(--mono);font-size:.78rem;font-weight:700;color:var(--blueprint);opacity:.75;}
+.card .tick{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;background:var(--wood);color:#fff8ee;font-weight:800;font-size:1rem;border-radius:3px;margin-bottom:.9rem;}
+.card h3{font-size:1.14rem;font-weight:700;color:var(--wood-dark);line-height:1.3;padding-right:2.2rem;}
+.contact-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:1.5rem;}
+.contact-grid .box{background:var(--card);border:1px dashed var(--line);border-radius:4px;border-top:4px solid var(--wood);padding:1.4rem 1.4rem;}
+.contact-grid .lab{font-family:var(--mono);font-size:.7rem;letter-spacing:.14em;text-transform:uppercase;color:var(--blueprint);font-weight:700;margin-bottom:.45rem;}
+.contact-grid a{color:var(--wood-dark);text-decoration:none;font-weight:700;}
+.contact-grid a:hover{text-decoration:underline;}
+.contact-grid .val{color:var(--ink);font-weight:600;}
+.cta{background-color:var(--wood-deep);background-image:linear-gradient(rgba(255,255,255,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.045) 1px,transparent 1px);background-size:27px 27px;color:#f2e7d6;text-align:center;border-top:6px solid var(--wood);}
+.cta .stamp{color:#e8b784;border-color:#e8b784;box-shadow:inset 0 0 0 2px var(--wood-deep);margin-bottom:1.3rem;}
+.cta h2{font-size:2.1rem;font-weight:700;color:#fff8ee;margin-bottom:.9rem;}
+.cta p{color:#e4d6c2;max-width:56ch;margin:0 auto 2rem;font-size:1.06rem;}
+.cta .btn-wood{background:#e8b784;color:var(--wood-deep);box-shadow:0 4px 0 #b9895a;}
+.cta .btn-wood:hover{background:#f0c79a;}
+.cta .btn-draft{color:#f2e7d6;border-color:rgba(242,231,214,.5);}
+.cta .btn-draft:hover{background:rgba(255,255,255,.08);}
+footer{background:#241a12;color:#a89478;text-align:center;padding:2.5rem 1rem;font-size:.82rem;line-height:1.6;}
+footer a{color:#e8b784;}
+@media(max-width:640px){.hero{padding:3.6rem 0 3rem;}.hero h1{font-size:2.05rem;}section{padding:3.2rem 0;}.btn-draft{margin-left:0;margin-top:.7rem;}.cta h2{font-size:1.6rem;}}
+</style>
+</head>
+<body>
+<div class="banner">Free website preview built by <a href="https://satechitsolutions.com/#contact" target="_blank" rel="noopener">SaTech IT Solutions</a> for Sample Handyman Services — not Sample Handyman Services's official website.</div>
+
+<header class="hero"><div class="wrap">
+  <span class="stamp">Website Preview</span>
+  <h1>One Call for the Whole Punch List</h1>
+  <p class="lede">Trusted handyman service for the your area area — the repairs and projects that keep piling up.</p>
+  <a class="btn btn-wood" href="mailto:Tom@SaTechITSolutions.com?subject=Interested%20in%20my%20website%20preview">Get a Free Estimate</a>
+  <a class="btn btn-draft" href="https://satechitsolutions.com/#contact" target="_blank" rel="noopener">Learn More</a>
+  <div class="trust"><span class="chip rate">★★★★★ 4.9 &middot; 52 Google reviews</span><span class="chip">Locally Owned & Operated</span><span class="chip">Trusted by Neighbors</span><span class="chip">Serving the Community</span></div>
+  <p class="meta"><b>Handyman</b> &middot; 123 Main St, Your City, ST</p>
+</div></header>
+
+<section class="about"><div class="wrap">
+  <div class="section-head"><div class="sub">// About the Craftsman</div><h2>Sample Handyman Services</h2></div>
+  <p>Sample Handyman Services knocks out the the your area area to-do list that never seems to end — the wobbly railing, the door that won&#x27;t latch, the shelves still in the box, the drywall ding by the stairs.</p><p>One skilled, reliable pro for a dozen small jobs, so you&#x27;re not chasing five different contractors. We show up when we say, do it right, and clean up after ourselves.</p>
+</div></section>
+
+<section class="services"><div class="wrap">
+  <div class="section-head"><div class="sub">// The Work</div><h2>What We Do</h2></div>
+  <div class="grid"><div class="card" data-idx="No.01"><span class="tick">&#10003;</span><h3>General Home Repairs</h3></div><div class="card" data-idx="No.02"><span class="tick">&#10003;</span><h3>Furniture &amp; Fixture Assembly</h3></div><div class="card" data-idx="No.03"><span class="tick">&#10003;</span><h3>Drywall Patching &amp; Painting</h3></div><div class="card" data-idx="No.04"><span class="tick">&#10003;</span><h3>Doors, Trim &amp; Hardware</h3></div><div class="card" data-idx="No.05"><span class="tick">&#10003;</span><h3>TV Mounting &amp; Mounting Jobs</h3></div></div>
+</div></section>
+
+<section class="contact"><div class="wrap">
+  <div class="section-head"><div class="sub">// Get in Touch</div><h2>Let's Talk About Your Project</h2></div>
+  <div class="contact-grid"><div class="box"><div class="lab">Call the Shop</div><a href="tel:5551234567">(555) 123-4567</a></div><div class="box"><div class="lab">Based In</div><span class="val">123 Main St, Your City, ST</span></div></div>
+</div></section>
+
+<section class="cta"><div class="wrap">
+  <span class="stamp">Like This Preview?</span>
+  <h2>Let's Build Your Real Website</h2>
+  <p>This mockup was hand-built by SaTech IT Solutions to show Sample Handyman Services what a warm, professional website could look like. Ready to make it official?</p>
+  <a class="btn btn-wood" href="mailto:Tom@SaTechITSolutions.com?subject=Interested%20in%20my%20website%20preview">Email SaTech IT Solutions</a>
+  <a class="btn btn-draft" href="https://satechitsolutions.com/#contact" target="_blank" rel="noopener">Visit SaTech IT Solutions</a>
+</div></section>
+
+<footer><div class="wrap">&copy; 2026 Website preview by <a href="https://satechitsolutions.com" target="_blank" rel="noopener">SaTech IT Solutions</a>. Not affiliated with or endorsed by Sample Handyman Services.</div></footer>
+</body>
+</html>
