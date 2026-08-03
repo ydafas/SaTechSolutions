@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="description" content="The WorkPlace Business Center — trusted local real estate agent helping buyers and sellers in the Huntsville area.">
+<meta name="robots" content="noindex,nofollow">
+<title>The WorkPlace Business Center — Website Preview by SaTech IT Solutions</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{--ink:#2b2824;--muted:#877e70;--soft-muted:#a89e8e;--line:#e6ddd0;--line-strong:#d8ccb9;--sage:#3f4d40;--sage-dark:#334035;--cream:#faf6ef;--paper:#ffffff;--panel:#f2ece1;}
+html{scroll-behavior:smooth;}
+body{font-family:system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:var(--ink);background:var(--cream);line-height:1.75;-webkit-font-smoothing:antialiased;}
+.serif{font-family:Georgia,'Times New Roman',Times,serif;}
+.wrap{max-width:1040px;margin:0 auto;padding:0 32px;}
+.eyebrow{font-size:.7rem;letter-spacing:.32em;text-transform:uppercase;color:var(--muted);font-weight:600;}
+.banner{background:var(--panel);border-bottom:1px solid var(--line);color:var(--muted);font-size:.82rem;text-align:center;padding:.75rem 1rem;line-height:1.6;letter-spacing:.01em;}
+.banner a{color:var(--sage-dark);font-weight:600;text-decoration:underline;text-underline-offset:2px;}
+.hero{padding:6.5rem 0 5.5rem;border-bottom:1px solid var(--line);}
+.hero .eyebrow{display:block;margin-bottom:1.6rem;}
+.hero h1{font-family:Georgia,'Times New Roman',Times,serif;font-size:3.4rem;font-weight:400;letter-spacing:-.005em;line-height:1.14;max-width:19ch;margin-bottom:1.4rem;color:var(--ink);}
+.hero .lead{font-size:1.2rem;color:var(--muted);max-width:50ch;margin-bottom:2.4rem;font-weight:400;}
+.hero .meta{margin-top:2.2rem;font-size:.82rem;color:var(--soft-muted);letter-spacing:.06em;text-transform:uppercase;padding-top:1.6rem;border-top:1px solid var(--line);max-width:44ch;}
+.btn{display:inline-block;padding:.95rem 2.1rem;font-weight:600;font-size:.82rem;letter-spacing:.14em;text-transform:uppercase;text-decoration:none;min-height:44px;line-height:1.7;transition:background .2s,color .2s;}
+.btn-fill{background:var(--sage);color:var(--cream);}
+.btn-fill:hover{background:var(--sage-dark);}
+.btn-line{color:var(--sage-dark);border:1px solid var(--line-strong);margin-left:.7rem;}
+.btn-line:hover{border-color:var(--sage);}
+.trust{display:flex;flex-wrap:wrap;gap:.7rem;align-items:center;margin-top:2.2rem;}
+.chip{font-size:.74rem;letter-spacing:.08em;color:var(--muted);border:1px solid var(--line-strong);border-radius:999px;padding:.4rem 1.05rem;text-transform:uppercase;}
+.chip.rate{border-color:var(--sage);color:var(--sage-dark);font-weight:600;letter-spacing:.04em;text-transform:none;}
+section{padding:5.5rem 0;border-bottom:1px solid var(--line);}
+.section-head .sub{font-size:.7rem;letter-spacing:.32em;text-transform:uppercase;color:var(--muted);font-weight:600;}
+.section-head h2{font-family:Georgia,'Times New Roman',Times,serif;font-size:2.15rem;font-weight:400;letter-spacing:-.005em;margin-top:.7rem;color:var(--ink);}
+.about-grid{display:grid;grid-template-columns:.8fr 1.2fr;gap:3rem;align-items:start;}
+.about-grid .section-head h2{margin-bottom:0;}
+.about-body p{color:var(--muted);font-size:1.08rem;margin-bottom:1.3rem;}
+.about-body p:last-child{margin-bottom:0;}
+.svc{list-style:none;margin-top:2.6rem;border-top:1px solid var(--line);}
+.svc li{display:flex;align-items:baseline;gap:1.6rem;padding:1.5rem .2rem;border-bottom:1px solid var(--line);}
+.svc .num{font-family:Georgia,'Times New Roman',Times,serif;font-size:1rem;font-style:italic;color:var(--sage);min-width:2.4ch;}
+.svc .name{font-family:Georgia,'Times New Roman',Times,serif;font-size:1.35rem;font-weight:400;color:var(--ink);}
+.contact{background:var(--panel);}
+.contact-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:2rem;margin-top:2.6rem;}
+.contact-grid .lab{font-size:.7rem;letter-spacing:.28em;text-transform:uppercase;color:var(--muted);font-weight:600;margin-bottom:.7rem;}
+.contact-grid a{color:var(--sage-dark);text-decoration:none;font-weight:600;font-size:1.08rem;border-bottom:1px solid var(--line-strong);padding-bottom:2px;}
+.contact-grid a:hover{border-color:var(--sage);}
+.contact-grid .val{color:var(--ink);font-size:1.08rem;}
+.cta{background:var(--sage);color:var(--cream);border-bottom:none;text-align:center;}
+.cta .sub{color:#c3cbbe;}
+.cta h2{font-family:Georgia,'Times New Roman',Times,serif;font-size:2.3rem;font-weight:400;color:var(--cream);margin-top:.7rem;}
+.cta p{color:#d9ddce;max-width:52ch;margin:1.2rem auto 2.4rem;font-size:1.1rem;}
+.cta .btn-fill{background:var(--cream);color:var(--sage-dark);}
+.cta .btn-fill:hover{background:#fff;}
+.cta .btn-line{color:var(--cream);border-color:rgba(250,246,239,.4);}
+.cta .btn-line:hover{border-color:var(--cream);}
+footer{padding:3rem 0;font-size:.82rem;color:var(--muted);text-align:center;line-height:1.7;}
+footer a{color:var(--sage-dark);text-decoration:underline;text-underline-offset:2px;}
+@media(max-width:720px){.hero{padding:4rem 0 3.5rem;}.hero h1{font-size:2.3rem;}section{padding:3.5rem 0;}.about-grid{grid-template-columns:1fr;gap:1.6rem;}.btn-line{margin-left:0;margin-top:.7rem;}.cta h2{font-size:1.8rem;}}
+</style>
+</head>
+<body>
+<div class="banner">Complimentary website preview crafted by <a href="https://satechitsolutions.com/#contact" target="_blank" rel="noopener">SaTech IT Solutions</a> for The WorkPlace Business Center — not The WorkPlace Business Center's official website.</div>
+
+<header class="hero"><div class="wrap">
+  <span class="eyebrow">Website Preview</span>
+  <h1>Local Expertise That Closes</h1>
+  <p class="lead">Buying or selling in the Huntsville area? Work with someone who knows every block.</p>
+  <a class="btn btn-fill" href="mailto:Tom@SaTechITSolutions.com?subject=Interested%20in%20my%20website%20preview">Arrange a Consultation</a>
+  <a class="btn btn-line" href="https://satechitsolutions.com/#contact" target="_blank" rel="noopener">Learn More</a>
+  <div class="trust"><span class="chip rate">★★★★★ 4.8 &middot; 63 Google reviews</span><span class="chip">Locally Owned & Operated</span><span class="chip">Trusted by Neighbors</span><span class="chip">Serving the Community</span></div>
+  <p class="meta">Real Estate Agency &middot; 2317 Meridian St N, Huntsville, AL 35811, USA</p>
+</div></header>
+
+<section class="about"><div class="wrap">
+  <div class="about-grid">
+    <div class="section-head"><div class="sub">About</div><h2>The WorkPlace Business Center</h2></div>
+    <div class="about-body"><p>The WorkPlace Business Center helps the Huntsville area buyers and sellers make confident moves in a market that doesn&#x27;t wait. You get pricing grounded in real local data, sharp negotiation, and a guide through every deadline.</p><p>Selling, we position your home to draw the right offers. Buying, we help you move fast and smart when the right listing hits. Either way, you&#x27;ll always know exactly where things stand.</p></div>
+  </div>
+</div></section>
+
+<section class="services"><div class="wrap">
+  <div class="section-head"><div class="sub">How I Help</div><h2>Offerings</h2></div>
+  <ul class="svc"><li><span class="num">01</span><span class="name">Seller Listing Services</span></li><li><span class="num">02</span><span class="name">Buyer Representation</span></li><li><span class="num">03</span><span class="name">Comparative Market Analysis</span></li><li><span class="num">04</span><span class="name">Home Staging Guidance</span></li><li><span class="num">05</span><span class="name">Neighborhood Expertise</span></li></ul>
+</div></section>
+
+<section class="contact"><div class="wrap">
+  <div class="section-head"><div class="sub">Contact</div><h2>Let's Talk</h2></div>
+  <div class="contact-grid"><div><div class="lab">Call</div><a href="tel:2565392400">(256) 539-2400</a></div><div><div class="lab">Office</div><span class="val">2317 Meridian St N, Huntsville, AL 35811, USA</span></div><div><div class="lab">Directions</div><a href="https://maps.google.com/?cid=15766114553438732476&amp;g_mp=Cidnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLlNlYXJjaFRleHQQAhgEIAA" target="_blank" rel="noopener">View on Google Maps</a></div></div>
+</div></section>
+
+<section class="cta"><div class="wrap">
+  <div class="section-head"><div class="sub">Like This Preview?</div><h2>Make It Your Real Website</h2></div>
+  <p>This mockup was crafted by SaTech IT Solutions to show The WorkPlace Business Center what a refined, photography-forward web presence could look like. Ready to make it official?</p>
+  <a class="btn btn-fill" href="mailto:Tom@SaTechITSolutions.com?subject=Interested%20in%20my%20website%20preview">Email SaTech IT Solutions</a>
+  <a class="btn btn-line" href="https://satechitsolutions.com/#contact" target="_blank" rel="noopener">Visit SaTech IT Solutions</a>
+</div></section>
+
+<footer><div class="wrap">&copy; 2026 Website preview by <a href="https://satechitsolutions.com" target="_blank" rel="noopener">SaTech IT Solutions</a>. Not affiliated with or endorsed by The WorkPlace Business Center.</div></footer>
+</body>
+</html>
