@@ -20,83 +20,91 @@
   <style>
     *{margin:0;padding:0;box-sizing:border-box;}
     :root {
-      --primary-color:#1e40af;
-      --secondary-color:#059669;
-      --accent-color:#f59e0b;
-      --dark-color:#1f2937;
+      --ink:#0b1220;
+      --ink-2:#16213a;
+      --primary-color:#0891b2;
+      --accent-color:#22d3ee;
+      --secondary-color:#10b981;
+      --dark-color:#0f172a;
       --light-color:#f8fafc;
-      --text-color:#374151;
+      --text-color:#475569;
+      --line:#e2e8f0;
     }
-    body{font-family:'Inter',sans-serif;color:var(--text-color);line-height:1.6;}
+    html{scroll-behavior:smooth;}
+    body{font-family:system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:var(--text-color);line-height:1.65;background:#fff;-webkit-font-smoothing:antialiased;}
     .container{max-width:1200px;margin:0 auto;padding:0 20px;}
-    header{background:linear-gradient(135deg,var(--primary-color),#3b82f6);position:fixed;width:100%;top:0;z-index:1000;}
+    header{background:rgba(11,18,32,.88);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid rgba(255,255,255,.08);position:fixed;width:100%;top:0;z-index:1000;}
     nav{display:flex;justify-content:space-between;align-items:center;padding:1rem 0;}
-    .logo{color:#fff;font-size:1.8rem;font-weight:bold;display:flex;align-items:center;}
-    .logo i{margin-right:.5rem;color:var(--accent-color);}
-    .nav-links{display:flex;gap:2rem;list-style:none;}
-    .nav-links a{color:#fff;text-decoration:none;font-weight:500;transition:color .3s;}
-    .nav-links a:hover{color:var(--accent-color);}
-    .cta-button{background:var(--accent-color);color:#fff;padding:.7rem 1.5rem;border-radius:5px;font-weight:600;transition:all .3s;}
-    .cta-button:hover{background:#d97706;transform:translateY(-2px);}
+    .logo{color:#fff;font-size:1.5rem;font-weight:800;letter-spacing:-.01em;display:flex;align-items:center;}
+    .logo i{margin-right:.6rem;color:var(--accent-color);background:rgba(34,211,238,.12);width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.05rem;}
+    .nav-links{display:flex;gap:2.2rem;list-style:none;align-items:center;}
+    .nav-links a{color:#cbd5e1;text-decoration:none;font-weight:600;font-size:.95rem;transition:color .2s;}
+    .nav-links a:hover{color:#fff;}
+    .cta-button{background:var(--accent-color);color:var(--ink);padding:.7rem 1.5rem;border-radius:999px;font-weight:700;font-size:.9rem;transition:all .2s;box-shadow:0 4px 16px rgba(34,211,238,.25);}
+    .cta-button:hover{background:#67e8f9;transform:translateY(-2px);box-shadow:0 8px 22px rgba(34,211,238,.35);}
     .mobile-menu{display:none;font-size:1.5rem;color:#fff;cursor:pointer;}
-    section{padding:80px 0;}
-    .hero{background:linear-gradient(135deg,var(--primary-color),#3b82f6);color:#fff;text-align:center;padding:140px 0 80px;}
-    .hero h1{font-size:2.8rem;margin-bottom:1rem;font-weight:800;}
-    .hero p{font-size:1.2rem;margin-bottom:2rem;opacity:.9;}
-    .hero-buttons{display:flex;gap:1rem;justify-content:center;}
-    .btn-primary,.btn-secondary{padding:1rem 2rem;border-radius:8px;font-size:1rem;font-weight:600;text-decoration:none;transition:all .3s;}
-    .btn-primary{background:var(--accent-color);color:#fff;border:none;}
-    .btn-primary:hover{background:#d97706;transform:translateY(-2px);}
-    .btn-secondary{background:transparent;color:#fff;border:2px solid #fff;}
-    .btn-secondary:hover{background:#fff;color:var(--primary-color);}
-    .section-title{text-align:center;margin-bottom:3rem;}
-    .section-title h2{font-size:2.5rem;color:var(--dark-color);margin-bottom:.5rem;}
-    .section-title p{font-size:1rem;color:var(--text-color);opacity:.8;}
-    .services-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:2rem;}
-    .service-card{background:#fff;padding:2rem;border-radius:15px;box-shadow:0 10px 30px rgba(0,0,0,.1);transition:transform .3s;}
-    .service-card:hover{transform:translateY(-5px);}
-    .service-icon{font-size:2rem;color:var(--primary-color);margin-bottom:1rem;}
-    .service-card h3{font-size:1.3rem;color:var(--dark-color);margin-bottom:.5rem;}
-    .service-card p{font-size:.95rem;margin-bottom:1rem;}
+    section{padding:96px 0;}
+    .eyebrow{display:inline-block;font-size:.72rem;letter-spacing:.16em;text-transform:uppercase;font-weight:800;color:var(--primary-color);margin-bottom:1rem;}
+    .hero{background:radial-gradient(120% 100% at 50% -10%,#1e3a5f 0%,var(--ink) 55%),var(--ink);color:#fff;text-align:center;padding:168px 0 100px;position:relative;overflow:hidden;}
+    .hero .eyebrow{background:rgba(34,211,238,.12);color:var(--accent-color);border:1px solid rgba(34,211,238,.3);border-radius:999px;padding:.45rem 1.1rem;margin-bottom:1.6rem;}
+    .hero h1{font-size:3.1rem;margin-bottom:1.2rem;font-weight:800;letter-spacing:-.02em;line-height:1.12;max-width:18ch;margin-left:auto;margin-right:auto;}
+    .hero p{font-size:1.18rem;margin-bottom:.6rem;opacity:.85;max-width:56ch;margin-left:auto;margin-right:auto;}
+    .hero-buttons{display:flex;gap:1rem;justify-content:center;margin-top:2rem;}
+    .btn-primary,.btn-secondary{padding:1rem 2.1rem;border-radius:999px;font-size:1rem;font-weight:700;text-decoration:none;transition:all .2s;min-height:44px;display:inline-flex;align-items:center;}
+    .btn-primary{background:var(--accent-color);color:var(--ink);border:none;box-shadow:0 8px 24px rgba(34,211,238,.28);}
+    .btn-primary:hover{background:#67e8f9;transform:translateY(-2px);box-shadow:0 12px 28px rgba(34,211,238,.35);}
+    .btn-secondary{background:transparent;color:#fff;border:2px solid rgba(255,255,255,.35);}
+    .btn-secondary:hover{background:rgba(255,255,255,.08);border-color:#fff;transform:translateY(-2px);}
+    .section-title{text-align:center;margin-bottom:3.5rem;}
+    .section-title h2{font-size:2.4rem;color:var(--dark-color);margin-bottom:.6rem;font-weight:800;letter-spacing:-.01em;}
+    .section-title p{font-size:1.05rem;color:var(--text-color);}
+    .services-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1.75rem;}
+    .service-card{background:#fff;padding:2.1rem;border-radius:16px;border:1px solid var(--line);box-shadow:0 1px 3px rgba(15,23,42,.04);transition:all .25s;}
+    .service-card:hover{transform:translateY(-6px);box-shadow:0 20px 40px rgba(15,23,42,.09);border-color:transparent;}
+    .service-icon{width:52px;height:52px;border-radius:12px;background:linear-gradient(135deg,var(--primary-color),var(--accent-color));color:#fff;font-size:1.35rem;display:flex;align-items:center;justify-content:center;margin-bottom:1.3rem;}
+    .service-card h3{font-size:1.22rem;color:var(--dark-color);margin-bottom:.6rem;font-weight:700;}
+    .service-card p{font-size:.95rem;margin-bottom:1.1rem;}
     .service-features{list-style:none;padding-left:0;}
-    .service-features li{display:flex;align-items:center;padding:.3rem 0;}
-    .service-features li i{color:var(--secondary-color);margin-right:.5rem;}
-    .about-content{display:grid;grid-template-columns:1fr 1fr;gap:3rem;align-items:center;}
-    .about-text h2{font-size:2rem;color:var(--dark-color);margin-bottom:1rem;}
-    .about-text p{font-size:1rem;margin-bottom:1rem;}
-    .contact-content{display:grid;grid-template-columns:1fr 1fr;gap:3rem;}
-    .contact-info h2{font-size:2rem;color:var(--dark-color);margin-bottom:1rem;}
-    .contact-item{display:flex;align-items:center;margin-bottom:1rem;}
-    .contact-item i{width:40px;height:40px;background:var(--primary-color);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;margin-right:.8rem;}
-    .contact-form{background:var(--light-color);padding:2rem;border-radius:15px;}
-    .form-group{margin-bottom:1rem;}
-    .form-group label{display:block;margin-bottom:.5rem;font-weight:600;color:var(--dark-color);}
-    .form-group input,.form-group textarea,.form-group select{width:100%;padding:.8rem;border:1px solid #d1d5db;border-radius:8px;}
+    .service-features li{display:flex;align-items:center;padding:.35rem 0;font-size:.92rem;color:var(--text-color);}
+    .service-features li i{color:var(--secondary-color);margin-right:.6rem;font-size:.85rem;}
+    .about-content{display:grid;grid-template-columns:1fr 1fr;gap:3.5rem;align-items:center;}
+    .about-text h2{font-size:2.1rem;color:var(--dark-color);margin-bottom:1.1rem;font-weight:800;letter-spacing:-.01em;}
+    .about-text p{font-size:1.02rem;margin-bottom:1.1rem;}
+    .contact-content{display:grid;grid-template-columns:1fr 1fr;gap:3.5rem;}
+    .contact-info h2{font-size:2.1rem;color:var(--dark-color);margin-bottom:1rem;font-weight:800;letter-spacing:-.01em;}
+    .contact-item{display:flex;align-items:center;margin-bottom:1.2rem;}
+    .contact-item i{width:44px;height:44px;background:linear-gradient(135deg,var(--primary-color),var(--accent-color));color:#fff;border-radius:12px;display:flex;align-items:center;justify-content:center;margin-right:1rem;font-size:1rem;}
+    .contact-form{background:var(--light-color);border:1px solid var(--line);padding:2.2rem;border-radius:18px;}
+    .form-group{margin-bottom:1.1rem;}
+    .form-group label{display:block;margin-bottom:.5rem;font-weight:700;color:var(--dark-color);font-size:.92rem;}
+    .form-group input,.form-group textarea,.form-group select{width:100%;padding:.8rem .9rem;border:1px solid #d1d5db;border-radius:10px;font-family:inherit;font-size:.95rem;transition:border-color .2s,box-shadow .2s;}
+    .form-group input:focus,.form-group textarea:focus,.form-group select:focus{outline:none;border-color:var(--primary-color);box-shadow:0 0 0 3px rgba(8,145,178,.12);}
     .form-group textarea{height:120px;resize:vertical;}
-    footer{background:var(--dark-color);color:#fff;padding:2rem 0;}
-    .footer-content{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:2rem;margin-bottom:1rem;}
-    .footer-section h3{color:var(--accent-color);margin-bottom:.5rem;}
-    .footer-section p,.footer-section a{color:#d1d5db;text-decoration:none;font-size:.9rem;line-height:1.6;}
+    footer{background:var(--ink);color:#fff;padding:3rem 0 2rem;}
+    .footer-content{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:2rem;margin-bottom:2rem;}
+    .footer-section h3{color:#fff;margin-bottom:.7rem;font-size:1.05rem;font-weight:700;}
+    .footer-section p,.footer-section a{color:#94a3b8;text-decoration:none;font-size:.9rem;line-height:1.7;}
     .footer-section a:hover{color:var(--accent-color);}
-    .social-links{display:flex;gap:.5rem;margin-top:.5rem;}
-    .social-links a{width:32px;height:32px;background:var(--primary-color);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;}
-    .footer-bottom{text-align:center;font-size:.8rem;color:#9ca3af;}
-    
+    .social-links{display:flex;gap:.6rem;margin-top:.7rem;}
+    .social-links a{width:34px;height:34px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;}
+    .social-links a:hover{background:var(--accent-color);color:var(--ink);}
+    .footer-bottom{text-align:center;font-size:.82rem;color:#64748b;padding-top:2rem;border-top:1px solid rgba(255,255,255,.08);}
+
     .about-video-embed {
-      border: 4px solid #1e40af;   
-      border-radius: 12px;         
-      overflow: hidden;            
-      max-width: 100%;             
-      margin: 1.5rem auto;         
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      overflow: hidden;
+      max-width: 100%;
+      margin: 1.5rem auto;
+      box-shadow: 0 20px 45px rgba(15,23,42,.12);
     }
 
     .section-divider {
       border: 0;
-      height: 2px;                             
-      background: var(--accent-color);         
-      opacity: 0.3;                            
-      margin: 3rem auto;                       
-      max-width: 80%;                          
+      height: 1px;
+      background: linear-gradient(90deg,transparent,var(--line) 20%,var(--line) 80%,transparent);
+      margin: 0 auto;
+      max-width: 80%;
     }
 
     /* Mobile Styles */
@@ -316,6 +324,7 @@
         <li><a href="#home">Home</a></li>
         <li><a href="#services">Services</a></li>
         <li><a href="#about">About</a></li>
+        <li><a href="templates.html">Templates</a></li>
         <li><a href="#contact">Contact</a></li>
       </ul>
       <a href="#contact" class="cta-button">Get Quote</a>
@@ -325,9 +334,9 @@
 
   <section class="hero" id="home">
     <div class="container">
+      <span class="eyebrow">Huntsville, Alabama · IT Infrastructure Specialists</span>
       <h1>Server Rack Installation & IT Solutions</h1>
       <p>Expert server rack installation, cable management, rack configuration, and website deployment.</p>
-      <p>Serving Huntsville, Alabama</p>
       <div class="hero-buttons">
         <a href="#services" class="btn-primary">Our Services</a>
         <a href="#contact" class="btn-secondary">Free Consultation</a>
@@ -338,6 +347,7 @@
   <section class="services" id="services">
     <div class="container">
       <div class="section-title">
+        <span class="eyebrow">What We Do</span>
         <h2>Our Services</h2>
         <p>Comprehensive solutions to keep your IT infrastructure running smoothly</p>
       </div>
@@ -391,6 +401,7 @@
 <section class="about" id="about">
     <div class="container about-content">
       <div class="about-text">
+        <span class="eyebrow">About Us</span>
         <h2>About SaTech IT Solutions</h2>
         <p>At SaTech IT Solutions, we deliver professional server rack & cable management, rack configuration, and website services tailored to your needs.</p>
         <p>Our experienced team ensures reliable, scalable IT infrastructure for small businesses and enterprises alike, with attention to detail and commitment to excellence.</p>
@@ -416,9 +427,10 @@
   <section class="contact" id="contact">
     <div class="container contact-content">
       <div class="contact-info">
+        <span class="eyebrow">Contact</span>
         <h2>Get In Touch</h2>
         <p>Ready to optimize your IT infrastructure? Request a quote today.</p>
-        <div class="contact-item"><i class="fas fa-phone"></i><div><strong>Phone</strong><br><span>(257) 251-3747</span></div></div>
+        <div class="contact-item"><i class="fas fa-phone"></i><div><strong>Phone</strong><br><span>(256) 202-4765</span></div></div>
         <div class="contact-item"><i class="fas fa-envelope"></i><div><strong>Email</strong><br><span>Tom@SaTechITSolutions.com</span></div></div>
         <div class="contact-item"><i class="fas fa-map-marker-alt"></i><div><strong>Address</strong><br><span>Huntsville, Alabama</span></div></div>
       </div>
@@ -482,15 +494,16 @@
         <a href="#home">Home</a><br>
         <a href="#services">Services</a><br>
         <a href="#about">About</a><br>
+        <a href="templates.html">Templates</a><br>
         <a href="#contact">Contact</a>
       </div>
       <div class="footer-section">
         <h3>Contact Info</h3>
-        <p><i class="fas fa-phone"></i> (256) 251-3747</p>
+        <p><i class="fas fa-phone"></i> (256) 202-4765</p>
         <p><i class="fas fa-envelope"></i> Tom@SaTechITSolutions.com</p>
       </div>
     </div>
-    <div class="footer-bottom">&copy; 2025 SaTech IT Solutions. All rights reserved.</div>
+    <div class="footer-bottom">&copy; 2026 SaTech IT Solutions. All rights reserved.</div>
   </footer>
 
   <script>

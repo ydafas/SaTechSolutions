@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Website Templates & Recent Work — SaTech IT Solutions</title>
+  <meta name="description" content="Browse the website design styles SaTech IT Solutions builds, and see recent work — including free previews built for local businesses.">
+
+ <!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=GT-5DF6JG2M"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'GT-5DF6JG2M');
+</script>
+
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box;}
+    :root {
+      --ink:#0b1220;
+      --ink-2:#16213a;
+      --primary-color:#0891b2;
+      --accent-color:#22d3ee;
+      --secondary-color:#10b981;
+      --dark-color:#0f172a;
+      --light-color:#f8fafc;
+      --text-color:#475569;
+      --line:#e2e8f0;
+    }
+    html{scroll-behavior:smooth;}
+    body{font-family:system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:var(--text-color);line-height:1.65;background:#fff;-webkit-font-smoothing:antialiased;}
+    .container{max-width:1200px;margin:0 auto;padding:0 20px;}
+    header{background:rgba(11,18,32,.88);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid rgba(255,255,255,.08);position:fixed;width:100%;top:0;z-index:1000;}
+    nav{display:flex;justify-content:space-between;align-items:center;padding:1rem 0;}
+    .logo{color:#fff;font-size:1.5rem;font-weight:800;letter-spacing:-.01em;display:flex;align-items:center;}
+    .logo i{margin-right:.6rem;color:var(--accent-color);background:rgba(34,211,238,.12);width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.05rem;}
+    .nav-links{display:flex;gap:2.2rem;list-style:none;align-items:center;}
+    .nav-links a{color:#cbd5e1;text-decoration:none;font-weight:600;font-size:.95rem;transition:color .2s;}
+    .nav-links a:hover,.nav-links a.active{color:#fff;}
+    .cta-button{background:var(--accent-color);color:var(--ink);padding:.7rem 1.5rem;border-radius:999px;font-weight:700;font-size:.9rem;transition:all .2s;box-shadow:0 4px 16px rgba(34,211,238,.25);}
+    .cta-button:hover{background:#67e8f9;transform:translateY(-2px);box-shadow:0 8px 22px rgba(34,211,238,.35);}
+    .mobile-menu{display:none;font-size:1.5rem;color:#fff;cursor:pointer;}
+    section{padding:96px 0;}
+    section.tight{padding:64px 0;}
+    .eyebrow{display:inline-block;font-size:.72rem;letter-spacing:.16em;text-transform:uppercase;font-weight:800;color:var(--primary-color);margin-bottom:1rem;}
+    .page-hero{background:radial-gradient(120% 100% at 50% -10%,#1e3a5f 0%,var(--ink) 55%),var(--ink);color:#fff;text-align:center;padding:168px 0 84px;}
+    .page-hero .eyebrow{background:rgba(34,211,238,.12);color:var(--accent-color);border:1px solid rgba(34,211,238,.3);border-radius:999px;padding:.45rem 1.1rem;margin-bottom:1.6rem;}
+    .page-hero h1{font-size:2.7rem;margin-bottom:1rem;font-weight:800;letter-spacing:-.02em;line-height:1.15;max-width:22ch;margin-left:auto;margin-right:auto;}
+    .page-hero p{font-size:1.1rem;opacity:.85;max-width:60ch;margin:0 auto;}
+    .section-title{text-align:center;margin-bottom:3rem;}
+    .section-title h2{font-size:2.1rem;color:var(--dark-color);margin-bottom:.6rem;font-weight:800;letter-spacing:-.01em;}
+    .section-title p{font-size:1.02rem;color:var(--text-color);max-width:62ch;margin:0 auto;}
+
+    .style-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1.75rem;}
+    .style-card{background:#fff;border:1px solid var(--line);border-radius:18px;overflow:hidden;transition:all .25s;text-decoration:none;display:block;box-shadow:0 1px 3px rgba(15,23,42,.04);}
+    .style-card:hover{transform:translateY(-6px);box-shadow:0 20px 40px rgba(15,23,42,.1);}
+    .style-swatch{height:120px;position:relative;}
+    .style-swatch.minimal{background:linear-gradient(135deg,#f8fafc,#e5e7eb);}
+    .style-swatch.corporate{background:linear-gradient(135deg,#0b1f3a,#132c4f);}
+    .style-swatch.warm{background:linear-gradient(135deg,#fff8f0,#ffe9d0);}
+    .style-swatch.rugged{background:linear-gradient(135deg,#161616,#2a2a2a);}
+    .style-swatch .dot{position:absolute;bottom:16px;left:20px;width:14px;height:14px;border-radius:50%;}
+    .style-swatch.minimal .dot{background:#0d9488;}
+    .style-swatch.corporate .dot{background:#c9a24b;}
+    .style-swatch.warm .dot{background:#c2571f;}
+    .style-swatch.rugged .dot{background:#f5a623;}
+    .style-body{padding:1.6rem;}
+    .style-body h3{font-size:1.15rem;color:var(--dark-color);margin-bottom:.5rem;font-weight:700;}
+    .style-body p{font-size:.92rem;color:var(--text-color);margin-bottom:1rem;}
+    .style-body .best-for{font-size:.78rem;font-weight:700;color:var(--primary-color);text-transform:uppercase;letter-spacing:.05em;}
+    .style-cta{font-size:.88rem;font-weight:700;color:var(--primary-color);display:flex;align-items:center;gap:.4rem;margin-top:1rem;}
+    .style-card:hover .style-cta{color:var(--ink);}
+
+    .featured-card{display:grid;grid-template-columns:1fr 1fr;gap:2.5rem;align-items:center;background:var(--light-color);border:1px solid var(--line);border-radius:20px;padding:2.5rem;}
+    .featured-card .badge{display:inline-block;background:#dcfce7;color:#166534;font-size:.72rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:.35rem .9rem;border-radius:999px;margin-bottom:1rem;}
+    .featured-card h3{font-size:1.6rem;color:var(--dark-color);margin-bottom:.7rem;font-weight:800;}
+    .featured-card p{margin-bottom:1.4rem;}
+    .featured-visual{background:linear-gradient(135deg,#1f2937,#374151);border-radius:14px;min-height:200px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:2.5rem;box-shadow:0 20px 45px rgba(15,23,42,.15);}
+
+    .work-note{background:#f0f9ff;border:1px solid #bae6fd;border-radius:14px;padding:1.4rem 1.6rem;margin-bottom:2.5rem;font-size:.94rem;color:#075985;}
+    .work-note strong{color:#0c4a6e;}
+    .work-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1.25rem;}
+    .work-card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:1.4rem;text-decoration:none;transition:all .2s;}
+    .work-card:hover{transform:translateY(-4px);box-shadow:0 14px 30px rgba(15,23,42,.08);border-color:transparent;}
+    .work-card .tag{font-size:.7rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#94a3b8;margin-bottom:.5rem;display:block;}
+    .work-card h4{font-size:1.02rem;color:var(--dark-color);font-weight:700;margin-bottom:.3rem;}
+    .work-card .visit{font-size:.85rem;color:var(--primary-color);font-weight:700;}
+
+    .final-cta{background:var(--ink);color:#fff;text-align:center;}
+    .final-cta h2{font-size:2rem;font-weight:800;margin-bottom:1rem;}
+    .final-cta p{opacity:.8;max-width:56ch;margin:0 auto 2rem;}
+    .btn-primary{padding:1rem 2.1rem;border-radius:999px;font-size:1rem;font-weight:700;text-decoration:none;transition:all .2s;min-height:44px;display:inline-flex;align-items:center;background:var(--accent-color);color:var(--ink);border:none;box-shadow:0 8px 24px rgba(34,211,238,.28);}
+    .btn-primary:hover{background:#67e8f9;transform:translateY(-2px);box-shadow:0 12px 28px rgba(34,211,238,.35);}
+
+    footer{background:var(--ink);color:#fff;padding:3rem 0 2rem;}
+    .footer-content{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:2rem;margin-bottom:2rem;}
+    .footer-section h3{color:#fff;margin-bottom:.7rem;font-size:1.05rem;font-weight:700;}
+    .footer-section p,.footer-section a{color:#94a3b8;text-decoration:none;font-size:.9rem;line-height:1.7;}
+    .footer-section a:hover{color:var(--accent-color);}
+    .social-links{display:flex;gap:.6rem;margin-top:.7rem;}
+    .social-links a{width:34px;height:34px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;}
+    .social-links a:hover{background:var(--accent-color);color:var(--ink);}
+    .footer-bottom{text-align:center;font-size:.82rem;color:#64748b;padding-top:2rem;border-top:1px solid rgba(255,255,255,.08);}
+
+    @media (max-width:768px){
+      .container{padding:0 15px;}
+      .nav-links{position:fixed;top:70px;left:-100%;width:100%;height:calc(100vh - 70px);background:var(--dark-color);flex-direction:column;justify-content:flex-start;align-items:center;padding-top:2rem;transition:left .3s ease;gap:1rem;}
+      .nav-links.active{left:0;}
+      .nav-links li{width:100%;text-align:center;}
+      .nav-links a{display:block;padding:1rem;font-size:1.1rem;}
+      .mobile-menu{display:block;}
+      .cta-button{display:none;}
+      .page-hero{padding:120px 0 60px;}
+      .page-hero h1{font-size:1.9rem;}
+      section{padding:60px 0;}
+      section.tight{padding:48px 0;}
+      .featured-card{grid-template-columns:1fr;}
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <nav class="container">
+      <div class="logo"><i class="fas fa-server"></i> <span id="logoText">SaTech IT Solutions</span></div>
+      <ul class="nav-links">
+        <li><a href="index.html#home">Home</a></li>
+        <li><a href="index.html#services">Services</a></li>
+        <li><a href="index.html#about">About</a></li>
+        <li><a href="templates.html" class="active">Templates</a></li>
+        <li><a href="index.html#contact">Contact</a></li>
+      </ul>
+      <a href="index.html#contact" class="cta-button">Get Quote</a>
+      <div class="mobile-menu"><i class="fas fa-bars"></i></div>
+    </nav>
+  </header>
+
+  <section class="page-hero">
+    <div class="container">
+      <span class="eyebrow">Our Work</span>
+      <h1>Website Templates & Recent Work</h1>
+      <p>Every business we reach out to gets a free custom preview built from one of these professional
+        templates. Browse the styles below, and see real examples of what we've built.</p>
+    </div>
+  </section>
+
+  <section id="styles">
+    <div class="container">
+      <div class="section-title">
+        <span class="eyebrow">Design Styles</span>
+        <h2>A Style for Every Business</h2>
+        <p>Each template is a complete, original design — not a generic theme — matched to the tone of
+          your business. Click through to view a live sample.</p>
+      </div>
+      <div class="style-grid">
+        <a class="style-card" href="template-styles/modern-minimal/" target="_blank" rel="noopener">
+          <div class="style-swatch minimal"><span class="dot"></span></div>
+          <div class="style-body">
+            <h3>Modern Minimal</h3>
+            <p>Clean, spacious, and understated, with one restrained accent color and confident typography.</p>
+            <span class="best-for">Best for: Consultants & professional services</span>
+            <div class="style-cta">View sample <i class="fas fa-arrow-right"></i></div>
+          </div>
+        </a>
+        <a class="style-card" href="template-styles/bold-corporate/" target="_blank" rel="noopener">
+          <div class="style-swatch corporate"><span class="dot"></span></div>
+          <div class="style-body">
+            <h3>Bold Corporate</h3>
+            <p>Navy and gold color blocking with strong, structured layout and confident headlines.</p>
+            <span class="best-for">Best for: Law, real estate & dental</span>
+            <div class="style-cta">View sample <i class="fas fa-arrow-right"></i></div>
+          </div>
+        </a>
+        <a class="style-card" href="template-styles/warm-local/" target="_blank" rel="noopener">
+          <div class="style-swatch warm"><span class="dot"></span></div>
+          <div class="style-body">
+            <h3>Warm Local</h3>
+            <p>Friendly terracotta tones, rounded corners, and an approachable, welcoming feel.</p>
+            <span class="best-for">Best for: Restaurants, salons & fitness</span>
+            <div class="style-cta">View sample <i class="fas fa-arrow-right"></i></div>
+          </div>
+        </a>
+        <a class="style-card" href="template-styles/rugged-trades/" target="_blank" rel="noopener">
+          <div class="style-swatch rugged"><span class="dot"></span></div>
+          <div class="style-body">
+            <h3>Rugged Trades</h3>
+            <p>High-contrast charcoal and amber, bold uppercase headlines, built to feel sturdy and direct.</p>
+            <span class="best-for">Best for: Plumbing, HVAC, electrical & auto</span>
+            <div class="style-cta">View sample <i class="fas fa-arrow-right"></i></div>
+          </div>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <hr class="section-divider" style="border:0;height:1px;background:linear-gradient(90deg,transparent,var(--line) 20%,var(--line) 80%,transparent);margin:0 auto;max-width:80%;">
+
+  <section id="featured" class="tight">
+    <div class="container">
+      <div class="section-title">
+        <span class="eyebrow">Featured Client Work</span>
+        <h2>A Complete Custom Build</h2>
+      </div>
+      <div class="featured-card">
+        <div>
+          <span class="badge">Live Client Site</span>
+          <h3>Lipscomb's Custom Remodeling</h3>
+          <p>A fully custom site built and delivered for a home renovation and custom-build company —
+            tailored copy, photography, and layout, not a template preview.</p>
+          <a class="btn-primary" href="lipscomb/" target="_blank" rel="noopener">View the Site <i class="fas fa-arrow-up-right-from-square" style="margin-left:.5rem;"></i></a>
+        </div>
+        <div class="featured-visual"><i class="fas fa-hammer"></i></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="work">
+    <div class="container">
+      <div class="section-title">
+        <span class="eyebrow">Recent Previews</span>
+        <h2>Local Businesses We've Reached Out To</h2>
+        <p>These are free sample previews we've built for local businesses that didn't have a website
+          yet — a real look at what we can create for you, too.</p>
+      </div>
+      <div class="work-note">
+        <strong>Heads up:</strong> each preview below is clearly labeled on the page itself as a free
+        sample built by SaTech IT Solutions — not the business's official website, and not affiliated
+        with or endorsed by them.
+      </div>
+      <div class="work-grid">
+        <a class="work-card" href="anything-plumbing/" target="_blank" rel="noopener">
+          <span class="tag">Plumbing</span>
+          <h4>Anything Plumbing</h4>
+          <span class="visit">View preview →</span>
+        </a>
+        <a class="work-card" href="alabama-plumbing-company/" target="_blank" rel="noopener">
+          <span class="tag">Plumbing</span>
+          <h4>Alabama Plumbing Company</h4>
+          <span class="visit">View preview →</span>
+        </a>
+        <a class="work-card" href="alabama-plumbing-specialists/" target="_blank" rel="noopener">
+          <span class="tag">Plumbing</span>
+          <h4>Alabama Plumbing Specialists</h4>
+          <span class="visit">View preview →</span>
+        </a>
+        <a class="work-card" href="hatcher-plumbing/" target="_blank" rel="noopener">
+          <span class="tag">Plumbing</span>
+          <h4>Hatcher Plumbing</h4>
+          <span class="visit">View preview →</span>
+        </a>
+        <a class="work-card" href="michael-baudre-plumbing/" target="_blank" rel="noopener">
+          <span class="tag">Plumbing</span>
+          <h4>Michael Baudre Plumbing</h4>
+          <span class="visit">View preview →</span>
+        </a>
+        <a class="work-card" href="michael-s-plumbing-n-alabama/" target="_blank" rel="noopener">
+          <span class="tag">Plumbing</span>
+          <h4>Michael's Plumbing-N Alabama</h4>
+          <span class="visit">View preview →</span>
+        </a>
+        <a class="work-card" href="rousseau-plumbing-electrical/" target="_blank" rel="noopener">
+          <span class="tag">Plumbing & Electrical</span>
+          <h4>Rousseau Plumbing & Electrical</h4>
+          <span class="visit">View preview →</span>
+        </a>
+        <a class="work-card" href="elite-aire/" target="_blank" rel="noopener">
+          <span class="tag">HVAC</span>
+          <h4>Elite Aire</h4>
+          <span class="visit">View preview →</span>
+        </a>
+        <a class="work-card" href="heating-cooling/" target="_blank" rel="noopener">
+          <span class="tag">HVAC</span>
+          <h4>Heating & Cooling</h4>
+          <span class="visit">View preview →</span>
+        </a>
+        <a class="work-card" href="hvac-4-less/" target="_blank" rel="noopener">
+          <span class="tag">HVAC</span>
+          <h4>HVAC 4 LESS</h4>
+          <span class="visit">View preview →</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <section class="final-cta">
+    <div class="container">
+      <h2>Want a site like these?</h2>
+      <p>Whether you need a free preview or a full custom build, we'll match you with the style that
+        fits your business.</p>
+      <a class="btn-primary" href="index.html#contact">Get a Free Quote</a>
+    </div>
+  </section>
+
+  <footer>
+    <div class="container footer-content">
+      <div class="footer-section">
+        <h3>SaTech IT Solutions</h3>
+        <p>Professional server rack, cabling & web solutions tailored to your business.</p>
+        <div class="social-links">
+          <a href="#"><i class="fab fa-linkedin"></i></a>
+          <a href="#"><i class="fab fa-twitter"></i></a>
+        </div>
+      </div>
+      <div class="footer-section">
+        <h3>Quick Links</h3>
+        <a href="index.html#home">Home</a><br>
+        <a href="index.html#services">Services</a><br>
+        <a href="index.html#about">About</a><br>
+        <a href="templates.html">Templates</a><br>
+        <a href="index.html#contact">Contact</a>
+      </div>
+      <div class="footer-section">
+        <h3>Contact Info</h3>
+        <p><i class="fas fa-phone"></i> (256) 202-4765</p>
+        <p><i class="fas fa-envelope"></i> Tom@SaTechITSolutions.com</p>
+      </div>
+    </div>
+    <div class="footer-bottom">&copy; 2026 SaTech IT Solutions. All rights reserved.</div>
+  </footer>
+
+  <script>
+    document.querySelector('.mobile-menu').onclick = () => {
+      document.querySelector('.nav-links').classList.toggle('active');
+    };
+    document.querySelectorAll('.nav-links a').forEach(link => {
+      link.addEventListener('click', () => {
+        document.querySelector('.nav-links').classList.remove('active');
+      });
+    });
+  </script>
+
+</body>
+</html>
