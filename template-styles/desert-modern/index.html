@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="description" content="Sonoran Ridge Landscaping — lawn care, landscape design, and yard maintenance in the local area.">
+<meta name="robots" content="noindex,nofollow">
+<title>Sonoran Ridge Landscaping — Website Preview by SaTech IT Solutions</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --clay:#b15a34;--clay-deep:#8f4526;--clay-soft:#e9cbb9;
+  --rose:#c68a7c;--rose-soft:#ecd2c9;
+  --sage:#8a9a72;--sage-deep:#5d6e49;--sage-soft:#dbe0cd;
+  --sand:#f4ecdd;--sand-2:#eaddc6;--paper:#fbf6ec;
+  --ink:#3b2c22;--muted:#8a7461;--line:#e3d4bd;
+  --serif:'Iowan Old Style','Palatino Linotype','Book Antiqua',Palatino,Georgia,serif;
+  --sans:system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+}
+html{scroll-behavior:smooth;}
+body{font-family:var(--sans);color:var(--ink);background:var(--sand);line-height:1.68;-webkit-font-smoothing:antialiased;}
+.wrap{max-width:1020px;margin:0 auto;padding:0 26px;}
+/* abstract Southwestern diamond line-lattice — thin crossed diagonals, no cultural symbol */
+.motif-band{height:16px;
+  background:
+    repeating-linear-gradient(45deg,var(--sage-deep) 0 1px,transparent 1px 15px),
+    repeating-linear-gradient(-45deg,var(--sage-deep) 0 1px,transparent 1px 15px),
+    var(--clay);
+  opacity:.9;}
+.banner{background:var(--ink);color:#ecdcc9;font-size:.82rem;text-align:center;padding:.72rem 1rem;line-height:1.55;letter-spacing:.01em;}
+.banner a{color:var(--clay-soft);font-weight:700;text-decoration:underline;text-underline-offset:2px;}
+/* stepped / terraced "mesa" accent — clip-path staircase, adobe terrace silhouette */
+.step{display:inline-block;width:22px;height:16px;background:var(--clay);vertical-align:middle;margin-right:.6rem;
+  clip-path:polygon(0 100%,0 66%,33% 66%,33% 33%,66% 33%,66% 0,100% 0,100% 100%);}
+.eyebrow{display:inline-flex;align-items:center;font-size:.72rem;letter-spacing:.24em;text-transform:uppercase;color:var(--clay-deep);font-weight:800;}
+.hero{position:relative;overflow:hidden;text-align:center;padding:5.75rem 0 4.75rem;
+  background:linear-gradient(180deg,var(--paper) 0%,var(--sand) 100%);}
+/* the adobe arch rising behind the headline */
+.hero:before{content:"";position:absolute;top:52px;left:50%;transform:translateX(-50%);
+  width:min(560px,82%);height:640px;border-radius:280px 280px 22px 22px;
+  background:linear-gradient(180deg,var(--rose-soft) 0%,var(--clay-soft) 100%);opacity:.55;z-index:0;}
+/* a second, narrower nested arch for a terraced-arch depth cue */
+.hero:after{content:"";position:absolute;top:92px;left:50%;transform:translateX(-50%);
+  width:min(430px,66%);height:600px;border-radius:215px 215px 16px 16px;
+  background:linear-gradient(180deg,var(--sage-soft) 0%,transparent 70%);opacity:.55;z-index:0;}
+.hero .wrap{position:relative;z-index:1;}
+.hero .eyebrow{margin-bottom:1.35rem;}
+.hero h1{font-family:var(--serif);font-size:3rem;font-weight:600;letter-spacing:-.01em;line-height:1.12;max-width:19ch;margin:0 auto 1.15rem;color:var(--ink);}
+.hero p.lead{font-size:1.2rem;color:var(--muted);max-width:52ch;margin:0 auto 2.2rem;}
+.hero .meta{margin-top:2rem;font-size:.82rem;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;}
+.btn{display:inline-block;padding:.95rem 2rem;border-radius:5px;font-weight:700;font-size:.96rem;letter-spacing:.02em;text-decoration:none;min-height:44px;line-height:1.55;transition:background .2s,border-color .2s,color .2s;}
+.btn-fill{background:var(--clay);color:#fff;box-shadow:0 10px 22px rgba(177,90,52,.26);}
+.btn-fill:hover{background:var(--clay-deep);}
+.btn-soft{background:transparent;color:var(--clay-deep);border:1.5px solid var(--clay);margin-left:.6rem;}
+.btn-soft:hover{background:var(--clay);color:#fff;}
+.trust{display:flex;flex-wrap:wrap;gap:.6rem;justify-content:center;margin-top:2rem;}
+.chip{font-size:.8rem;color:var(--muted);background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:.42rem 1.05rem;}
+.chip.rate{color:var(--clay-deep);border-color:var(--clay);font-weight:700;background:var(--clay-soft);}
+.chip.rate .star{color:var(--clay);}
+section{padding:4.75rem 0;}
+.section-head{text-align:center;margin-bottom:2.7rem;}
+.section-head .sub{display:inline-flex;align-items:center;font-size:.72rem;letter-spacing:.2em;text-transform:uppercase;color:var(--sage-deep);font-weight:800;}
+.section-head h2{font-family:var(--serif);font-size:2.05rem;font-weight:600;letter-spacing:-.01em;margin-top:.5rem;color:var(--ink);}
+.section-head h2 .rule{display:block;width:60px;height:3px;background:var(--clay);border-radius:2px;margin:.85rem auto 0;}
+.about{position:relative;background:var(--sand-2);}
+.about-inner{max-width:680px;margin:0 auto;text-align:center;}
+.about-inner p{color:var(--ink);font-size:1.1rem;margin-bottom:1.15rem;}
+.about-inner p:last-child{margin-bottom:0;}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(232px,1fr));gap:1.4rem;}
+/* arch-topped card — adobe doorway / arched desert window */
+.card{background:var(--paper);border:1px solid var(--line);border-radius:90px 90px 14px 14px;padding:2.4rem 1.6rem 1.9rem;text-align:center;box-shadow:0 8px 20px rgba(59,44,34,.06);}
+.card .ico{width:56px;height:56px;border-radius:50% 50% 6px 6px;background:var(--sage-soft);color:var(--sage-deep);display:flex;align-items:center;justify-content:center;font-size:1.5rem;font-weight:800;margin:0 auto 1.1rem;box-shadow:inset 0 0 0 1.5px var(--sage);}
+.card h3{font-size:1.1rem;font-weight:700;color:var(--ink);}
+.contact{background:var(--sand);}
+.contact-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1.7rem;text-align:center;max-width:800px;margin:0 auto;}
+.contact-grid .lab{font-size:.72rem;letter-spacing:.16em;text-transform:uppercase;color:var(--sage-deep);font-weight:800;margin-bottom:.45rem;}
+.contact-grid a{color:var(--clay-deep);text-decoration:none;font-weight:700;border-bottom:1px solid var(--line);padding-bottom:2px;}
+.contact-grid a:hover{border-color:var(--clay);}
+.contact-grid .val{color:var(--muted);font-weight:600;}
+.cta{position:relative;background:linear-gradient(160deg,var(--clay) 0%,var(--clay-deep) 100%);color:#fff;text-align:center;overflow:hidden;}
+.cta:before{content:"";position:absolute;top:-90px;left:50%;transform:translateX(-50%);width:420px;height:420px;border-radius:210px 210px 0 0;background:rgba(255,255,255,.06);}
+.cta .wrap{position:relative;z-index:1;}
+.cta .section-head .sub{color:#f3d9cc;}
+.cta .section-head h2{color:#fff;}
+.cta h2 .rule{background:#fff;opacity:.75;}
+.cta p{color:#f6e4da;max-width:54ch;margin:.2rem auto 2.1rem;font-size:1.08rem;}
+.cta .step{background:#f3d9cc;}
+.cta .btn-fill{background:var(--ink);color:#fff;box-shadow:0 10px 24px rgba(0,0,0,.18);}
+.cta .btn-soft{background:transparent;color:#fff;border-color:rgba(255,255,255,.6);}
+.cta .btn-soft:hover{background:#fff;color:var(--clay-deep);}
+footer{background:var(--ink);color:#d8c5b1;text-align:center;padding:2.5rem 1rem;font-size:.82rem;line-height:1.6;}
+footer a{color:var(--clay-soft);}
+@media(max-width:640px){.hero{padding:3.9rem 0 3.25rem;}.hero h1{font-size:2.1rem;}.hero:before{height:520px;}.hero:after{height:480px;}section{padding:3.3rem 0;}.btn-soft{margin-left:0;margin-top:.6rem;}}
+</style>
+</head>
+<body>
+<div class="banner">Free website preview built by <a href="https://satechitsolutions.com/#contact" target="_blank" rel="noopener">SaTech IT Solutions</a> for Sonoran Ridge Landscaping — not Sonoran Ridge Landscaping's official website.</div>
+<div class="motif-band" aria-hidden="true"></div>
+
+<header class="hero"><div class="wrap">
+  <span class="eyebrow"><span class="step" aria-hidden="true"></span>Website Preview</span>
+  <h1>Yards Worth Coming Home To</h1>
+  <p class="lead">Full-service lawn care and landscaping for the local area — dependable crews, season after season.</p>
+  <a class="btn btn-fill" href="mailto:Tom@SaTechITSolutions.com?subject=Interested%20in%20my%20website%20preview">Get in Touch</a>
+  <a class="btn btn-soft" href="https://satechitsolutions.com/#contact" target="_blank" rel="noopener">Learn More</a>
+  <div class="trust"><span class="chip rate"><span class="star">★★★★★</span> 4.8 &middot; 96 Google reviews</span><span class="chip">Locally Owned & Operated</span><span class="chip">Trusted by Neighbors</span><span class="chip">Serving the Community</span></div>
+  <p class="meta">Landscaping &middot; 742 Mesa Verde Trail, Scottsdale, AZ</p>
+</div></header>
+
+<section class="about"><div class="wrap">
+  <div class="section-head"><div class="sub"><span class="step" aria-hidden="true"></span>Our Story</div><h2>Welcome to Sonoran Ridge Landscaping<span class="rule"></span></h2></div>
+  <div class="about-inner"><p>Sonoran Ridge Landscaping keeps the local area properties looking sharp year-round, from weekly mow-and-go service to designing a front yard that finally makes the right impression.</p><p>Same crew, same day each week, and a finished look every time — edged, blown clean, and done. For bigger projects, we&#x27;ll walk the property with you and build a plan that fits your budget.</p></div>
+</div></section>
+
+<section class="services"><div class="wrap">
+  <div class="section-head"><div class="sub"><span class="step" aria-hidden="true"></span>What We Offer</div><h2>Services<span class="rule"></span></h2></div>
+  <div class="grid"><div class="card"><div class="ico">&#9650;</div><h3>Weekly Lawn Maintenance</h3></div><div class="card"><div class="ico">&#9650;</div><h3>Landscape Design &amp; Installation</h3></div><div class="card"><div class="ico">&#9650;</div><h3>Tree &amp; Shrub Trimming</h3></div><div class="card"><div class="ico">&#9650;</div><h3>Mulch &amp; Bed Care</h3></div><div class="card"><div class="ico">&#9650;</div><h3>Spring &amp; Fall Cleanup</h3></div></div>
+</div></section>
+
+<section class="contact"><div class="wrap">
+  <div class="section-head"><div class="sub"><span class="step" aria-hidden="true"></span>Come Visit</div><h2>Get in Touch<span class="rule"></span></h2></div>
+  <div class="contact-grid"><div><div class="lab">Call Us</div><a href="tel:4805550142">(480) 555-0142</a></div><div><div class="lab">Find Us</div><span class="val">742 Mesa Verde Trail, Scottsdale, AZ</span></div><div><div class="lab">Directions</div><a href="https://maps.google.com/?q=Sonoran+Ridge+Landscaping" target="_blank" rel="noopener">Open in Google Maps</a></div></div>
+</div></section>
+
+<section class="cta"><div class="wrap">
+  <div class="section-head"><div class="sub"><span class="step" aria-hidden="true"></span>Like This Preview?</div><h2>Let's Make It Yours<span class="rule"></span></h2></div>
+  <p>This mockup was built by SaTech IT Solutions to show Sonoran Ridge Landscaping what a warm, grounded desert-modern website could look like. Want to make it official?</p>
+  <a class="btn btn-fill" href="mailto:Tom@SaTechITSolutions.com?subject=Interested%20in%20my%20website%20preview">Email SaTech IT Solutions</a>
+  <a class="btn btn-soft" href="https://satechitsolutions.com/#contact" target="_blank" rel="noopener">Visit SaTech IT Solutions</a>
+</div></section>
+
+<footer>&copy; 2026 Website preview by <a href="https://satechitsolutions.com" target="_blank" rel="noopener">SaTech IT Solutions</a>. Not affiliated with or endorsed by Sonoran Ridge Landscaping.</footer>
+</body>
+</html>

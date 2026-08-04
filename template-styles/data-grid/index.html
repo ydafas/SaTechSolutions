@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="description" content="Nexlayer IT Consulting — a trusted locally owned business proudly serving the local area.">
+<meta name="robots" content="noindex,nofollow">
+<title>Nexlayer IT Consulting — Website Preview by SaTech IT Solutions</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#0a0f1a;--bg-2:#0d1420;--panel:#101a2b;--panel-2:#0e1726;--panel-3:#132135;
+  --line:#1e2c44;--line-2:#26374f;--line-soft:rgba(56,224,236,.08);
+  --grid:rgba(45,212,238,.055);
+  --cyan:#2dd4ee;--cyan-2:#67e8f9;--cyan-dim:#1c9fb4;--cyan-soft:rgba(45,212,238,.10);
+  --green:#3ddc84;--amber:#f5b942;--red:#ff5f56;--ylw:#ffbd2e;--grn:#27c93f;
+  --ink:#e6edf6;--soft:#aebccf;--muted:#6d7e97;--faint:#4d5c73;
+  --mono:ui-monospace,'SFMono-Regular','Cascadia Code','JetBrains Mono',Consolas,'Liberation Mono',Menlo,monospace;
+  --sans:system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+}
+html{scroll-behavior:smooth;}
+body{font-family:var(--mono);color:var(--ink);background:var(--bg);line-height:1.6;-webkit-font-smoothing:antialiased;}
+.wrap{max-width:1080px;margin:0 auto;padding:0 26px;position:relative;z-index:1;}
+a{color:inherit;}
+
+.banner{background:var(--bg-2);color:var(--muted);font-family:var(--mono);font-size:.78rem;letter-spacing:.01em;text-align:center;padding:.72rem 1rem;line-height:1.55;border-bottom:1px solid var(--line);}
+.banner:before{content:"// ";color:var(--cyan-dim);}
+.banner a{color:var(--cyan);font-weight:600;text-decoration:underline;text-underline-offset:2px;}
+
+/* ---- terminal window chrome ---- */
+.win{background:var(--panel-2);border:1px solid var(--line-2);border-radius:8px;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,.45);}
+.win-bar{display:flex;align-items:center;gap:.5rem;padding:.7rem 1rem;background:var(--panel-3);border-bottom:1px solid var(--line-2);}
+.dot{width:12px;height:12px;border-radius:50%;flex:none;}
+.dot.r{background:var(--red);}.dot.y{background:var(--ylw);}.dot.g{background:var(--grn);}
+.win-title{margin-left:.7rem;font-family:var(--mono);font-size:.78rem;color:var(--soft);letter-spacing:.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.win-meta{margin-left:auto;font-family:var(--mono);font-size:.7rem;letter-spacing:.14em;text-transform:uppercase;color:var(--green);display:inline-flex;align-items:center;gap:.4rem;}
+.win-meta:before{content:"";width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);}
+.win-body{padding:2.6rem 2rem 2.4rem;}
+
+/* ---- hero ---- */
+.hero{position:relative;padding:4rem 0 4.25rem;border-bottom:1px solid var(--line);
+  background-color:var(--bg);
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:32px 32px;}
+.eyebrow{display:inline-block;font-family:var(--mono);font-size:.74rem;letter-spacing:.16em;text-transform:uppercase;color:var(--cyan);font-weight:600;margin-bottom:1.3rem;}
+.eyebrow .prompt{color:var(--green);margin-right:.5rem;}
+.hero h1{font-family:var(--mono);font-size:2.75rem;font-weight:700;letter-spacing:-.02em;line-height:1.1;max-width:20ch;margin-bottom:1.15rem;color:#fff;}
+.cursor{display:inline-block;width:.62ch;height:1.05em;background:var(--cyan);margin-left:.18em;vertical-align:-.14em;animation:blink 1.05s steps(1) infinite;box-shadow:0 0 10px rgba(45,212,238,.7);}
+@keyframes blink{50%{opacity:0;}}
+@media(prefers-reduced-motion:reduce){.cursor{animation:none;}}
+.hero p.lede{font-family:var(--sans);font-size:1.16rem;color:var(--soft);max-width:54ch;margin-bottom:2.1rem;line-height:1.7;}
+.cta-row{display:flex;flex-wrap:wrap;gap:.7rem;}
+.btn{display:inline-block;padding:.85rem 1.6rem;font-family:var(--mono);font-weight:600;font-size:.86rem;letter-spacing:.04em;text-decoration:none;min-height:44px;line-height:1.7;border-radius:6px;border:1px solid transparent;transition:background .15s,border-color .15s,color .15s,box-shadow .15s;}
+.btn-solid{background:var(--cyan);color:#04222a;box-shadow:0 6px 20px rgba(45,212,238,.22);}
+.btn-solid:hover{background:var(--cyan-2);box-shadow:0 8px 26px rgba(45,212,238,.34);}
+.btn-solid:before{content:"$ ";color:#04222a;opacity:.65;}
+.btn-line{color:var(--cyan);border-color:var(--line-2);background:var(--panel);}
+.btn-line:hover{border-color:var(--cyan);color:var(--cyan-2);}
+.trust{display:flex;flex-wrap:wrap;gap:.55rem;align-items:center;margin-top:1.9rem;}
+.chip{font-family:var(--mono);font-size:.74rem;letter-spacing:.02em;color:var(--soft);background:var(--panel);border:1px solid var(--line-2);border-radius:5px;padding:.4rem .85rem;}
+.chip:before{content:"● ";color:var(--faint);font-size:.7em;}
+.chip.rate{border-color:var(--cyan-dim);color:var(--cyan-2);background:var(--cyan-soft);font-weight:600;}
+.chip.rate:before{content:"★ ";color:var(--amber);}
+.chip.rate b{color:#fff;}
+.meta{margin-top:1.9rem;font-family:var(--mono);font-size:.76rem;color:var(--muted);letter-spacing:.02em;border-top:1px dashed var(--line-2);padding-top:1rem;}
+.meta:before{content:"> ";color:var(--cyan-dim);}
+.meta b{color:var(--cyan);font-weight:600;}
+
+/* ---- sections ---- */
+section{padding:4.25rem 0;border-bottom:1px solid var(--line);background:var(--bg);}
+.section-head{margin-bottom:2.5rem;}
+.section-head .cmd{font-family:var(--mono);font-size:.76rem;letter-spacing:.05em;color:var(--muted);}
+.section-head .cmd b{color:var(--green);font-weight:600;margin-right:.5rem;}
+.section-head .cmd i{color:var(--cyan);font-style:normal;}
+.section-head h2{font-family:var(--mono);font-size:1.7rem;font-weight:700;letter-spacing:-.01em;margin-top:.55rem;color:#fff;}
+
+.about{background:var(--bg-2);}
+.about-body{max-width:70ch;border-left:2px solid var(--line-2);padding-left:1.4rem;}
+.about-body p{font-family:var(--sans);color:var(--soft);font-size:1.06rem;line-height:1.75;margin-bottom:1.15rem;}
+.about-body p:last-child{margin-bottom:0;}
+
+/* ---- services as monitored modules ---- */
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1rem;}
+.mod{background:var(--panel);border:1px solid var(--line-2);border-radius:7px;padding:1.25rem 1.3rem;display:flex;align-items:center;gap:1rem;transition:border-color .15s,transform .15s;}
+.mod:hover{border-color:var(--cyan-dim);transform:translateY(-2px);}
+.mod .idx{font-family:var(--mono);font-size:.72rem;font-weight:600;color:var(--cyan);letter-spacing:.02em;flex:none;padding-top:.15rem;}
+.mod .body{flex:1;min-width:0;}
+.mod h3{font-family:var(--mono);font-size:1rem;font-weight:600;color:var(--ink);letter-spacing:-.005em;line-height:1.35;}
+.mod .stat{margin-top:.4rem;font-family:var(--mono);font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;color:var(--green);display:inline-flex;align-items:center;gap:.4rem;}
+.mod .stat:before{content:"";width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 7px var(--green);}
+
+/* ---- contact key/value readout ---- */
+.contact{background:var(--bg-2);}
+.readout{border:1px solid var(--line-2);border-radius:8px;overflow:hidden;background:var(--panel-2);max-width:820px;}
+.row{display:grid;grid-template-columns:minmax(120px,180px) 1fr;gap:1rem;padding:1.05rem 1.4rem;border-bottom:1px solid var(--line);}
+.row:last-child{border-bottom:none;}
+.row .k{font-family:var(--mono);font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:var(--cyan-dim);padding-top:.15rem;}
+.row .k:before{content:"> ";color:var(--faint);}
+.row .v{font-family:var(--mono);font-size:.95rem;color:var(--ink);word-break:break-word;}
+.row .v a{color:var(--cyan);text-decoration:none;font-weight:600;}
+.row .v a:hover{color:var(--cyan-2);text-decoration:underline;text-underline-offset:2px;}
+
+/* ---- final CTA (terminal window) ---- */
+.cta{position:relative;border-bottom:none;
+  background-color:var(--bg);
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:32px 32px;}
+.cta .win-body{padding:3rem 2.2rem;text-align:left;}
+.cta .cmd{font-family:var(--mono);font-size:.76rem;letter-spacing:.05em;color:var(--muted);margin-bottom:.7rem;}
+.cta .cmd b{color:var(--green);margin-right:.5rem;}
+.cta h2{font-family:var(--mono);font-size:1.95rem;font-weight:700;letter-spacing:-.015em;color:#fff;margin-bottom:.9rem;max-width:22ch;}
+.cta p{font-family:var(--sans);color:var(--soft);font-size:1.06rem;line-height:1.7;max-width:56ch;margin-bottom:1.9rem;}
+
+footer{background:#070b12;color:var(--muted);font-family:var(--mono);font-size:.76rem;letter-spacing:.01em;text-align:center;padding:2.6rem 1rem;line-height:1.75;}
+footer:before{content:"// ";color:var(--cyan-dim);}
+footer a{color:var(--cyan);text-decoration:underline;text-underline-offset:2px;}
+
+@media(max-width:720px){
+  .hero{padding:2.6rem 0 3rem;}
+  .win-body{padding:1.9rem 1.3rem;}
+  .hero h1{font-size:1.95rem;}
+  .win-title{font-size:.7rem;}
+  section{padding:3rem 0;}
+  .cta .win-body{padding:2.1rem 1.3rem;}
+  .cta h2{font-size:1.55rem;}
+  .row{grid-template-columns:1fr;gap:.35rem;}
+}
+</style>
+</head>
+<body>
+<div class="banner">Free website preview built by <a href="https://satechitsolutions.com/#contact" target="_blank" rel="noopener">SaTech IT Solutions</a> for Nexlayer IT Consulting — not Nexlayer IT Consulting's official website.</div>
+
+<header class="hero"><div class="wrap">
+  <div class="win">
+    <div class="win-bar">
+      <span class="dot r" aria-hidden="true"></span><span class="dot y" aria-hidden="true"></span><span class="dot g" aria-hidden="true"></span>
+      <span class="win-title">Nexlayer IT Consulting — dashboard</span>
+      <span class="win-meta">Online</span>
+    </div>
+    <div class="win-body">
+      <span class="eyebrow"><span class="prompt">$</span>website_preview --render</span>
+      <h1>Local, Dependable, and Ready to Help<span class="cursor" aria-hidden="true"></span></h1>
+      <p class="lede">Proudly serving the local area with service worth recommending.</p>
+      <div class="cta-row">
+        <a class="btn btn-solid" href="mailto:Tom@SaTechITSolutions.com?subject=Interested%20in%20my%20website%20preview">Get in Touch</a>
+        <a class="btn btn-line" href="https://satechitsolutions.com/#contact" target="_blank" rel="noopener">Learn More</a>
+      </div>
+      <div class="trust"><span class="chip rate">★★★★★ <b>4.7</b> &middot; 39 Google reviews</span><span class="chip">Locally Owned & Operated</span><span class="chip">Trusted by Neighbors</span><span class="chip">Serving the Community</span></div>
+      <p class="meta"><b>IT services</b> &middot; 800 Innovation Dr, Austin, TX</p>
+    </div>
+  </div>
+</div></header>
+
+<section class="about"><div class="wrap">
+  <div class="section-head"><div class="cmd"><b>$</b>cat <i>about.md</i></div><h2>Nexlayer IT Consulting</h2></div>
+  <div class="about-body"><p>Nexlayer IT Consulting is a locally owned business serving the local area and the surrounding community — built on doing right by neighbors and earning repeat business the honest way.</p><p>You get responsive service, fair pricing, and people who stand behind their work. That&#x27;s the reputation Nexlayer IT Consulting has built, one satisfied customer at a time.</p></div>
+</div></section>
+
+<section class="services"><div class="wrap">
+  <div class="section-head"><div class="cmd"><b>$</b>ls <i>./services</i></div><h2>What We Do</h2></div>
+  <div class="grid"><div class="mod"><span class="idx">svc.01</span><div class="body"><h3>Free Consultations</h3><span class="stat">Online</span></div></div><div class="mod"><span class="idx">svc.02</span><div class="body"><h3>Custom Solutions</h3><span class="stat">Online</span></div></div><div class="mod"><span class="idx">svc.03</span><div class="body"><h3>Responsive Local Service</h3><span class="stat">Online</span></div></div><div class="mod"><span class="idx">svc.04</span><div class="body"><h3>Fair, Upfront Pricing</h3><span class="stat">Online</span></div></div><div class="mod"><span class="idx">svc.05</span><div class="body"><h3>Satisfaction Guaranteed</h3><span class="stat">Online</span></div></div></div>
+</div></section>
+
+<section class="contact"><div class="wrap">
+  <div class="section-head"><div class="cmd"><b>$</b>./connect <i>--info</i></div><h2>Get in Touch</h2></div>
+  <div class="readout"><div class="row"><div class="k">phone</div><div class="v"><a href="tel:5125550183">(512) 555-0183</a></div></div><div class="row"><div class="k">location</div><div class="v">800 Innovation Dr, Austin, TX</div></div><div class="row"><div class="k">directions</div><div class="v"><a href="https://maps.google.com/?q=Nexlayer+IT+Consulting" target="_blank" rel="noopener">View on Google Maps</a></div></div><div class="row"><div class="k">category</div><div class="v">IT services</div></div></div>
+</div></section>
+
+<section class="cta"><div class="wrap">
+  <div class="win">
+    <div class="win-bar">
+      <span class="dot r" aria-hidden="true"></span><span class="dot y" aria-hidden="true"></span><span class="dot g" aria-hidden="true"></span>
+      <span class="win-title">deploy.sh — SaTech IT Solutions</span>
+      <span class="win-meta">Ready</span>
+    </div>
+    <div class="win-body">
+      <div class="cmd"><b>$</b>run deploy --target production</div>
+      <h2>Let's Ship Your Real Website</h2>
+      <p>This mockup was built by SaTech IT Solutions to show Nexlayer IT Consulting what a sharp, modern web presence could look like. Ready to take it live?</p>
+      <div class="cta-row">
+        <a class="btn btn-solid" href="mailto:Tom@SaTechITSolutions.com?subject=Interested%20in%20my%20website%20preview">Email SaTech IT Solutions</a>
+        <a class="btn btn-line" href="https://satechitsolutions.com/#contact" target="_blank" rel="noopener">Visit SaTech IT Solutions</a>
+      </div>
+    </div>
+  </div>
+</div></section>
+
+<footer>&copy; 2026 Website preview by <a href="https://satechitsolutions.com" target="_blank" rel="noopener">SaTech IT Solutions</a>. Not affiliated with or endorsed by Nexlayer IT Consulting.</footer>
+</body>
+</html>
