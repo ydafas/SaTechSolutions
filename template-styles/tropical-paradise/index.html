@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="description" content="Paradise Cove Surf Shop — a trusted locally owned business proudly serving the local area.">
+<meta name="robots" content="noindex,nofollow">
+<title>Paradise Cove Surf Shop — Website Preview by SaTech IT Solutions</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --pink:#ff2e7e;--pink-deep:#d20f5d;
+  --turq:#0fd3c3;--turq-deep:#05918a;--turq-soft:#e6fbf8;
+  --mango:#ff8a1f;--mango-deep:#e96b00;
+  --lime:#9ee62b;--lime-deep:#5fa50a;
+  --gold:#ffd23f;
+  --ink:#0d3a3f;--body:#2d5a5f;--muted:#63898e;
+  --sand:#fff6ea;--cream:#fffdf8;--card:#ffffff;
+  --line:#ffe2ce;--line-turq:#c4f1ec;
+  --sunset:linear-gradient(163deg,#6d1668 0%,#c0106e 22%,#ff2e7e 42%,#ff6a3d 64%,#ff8a1f 82%,#ffd23f 100%);
+  --lagoon:linear-gradient(125deg,var(--turq-deep) 0%,var(--turq) 52%,#7ddc5e 100%);
+  --display:'Trebuchet MS',ui-rounded,'Segoe UI',system-ui,-apple-system,Roboto,Helvetica,Arial,sans-serif;
+  --sans:system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+}
+html{scroll-behavior:smooth;}
+body{font-family:var(--sans);color:var(--body);background:var(--cream);line-height:1.7;-webkit-font-smoothing:antialiased;}
+.wrap{max-width:1050px;margin:0 auto;padding:0 24px;}
+h1,h2,h3,.btn,.eyebrow,.stamp{font-family:var(--display);}
+
+.banner{background:var(--ink);color:#d9f4f1;font-size:.82rem;text-align:center;padding:.72rem 1rem;line-height:1.55;}
+.banner a{color:var(--gold);font-weight:700;text-decoration:underline;text-underline-offset:2px;}
+.sunstrip{height:6px;background:var(--sunset);}
+
+/* ---- Palm frond: a leaf-shaped box (border-radius 100% 0 100% 0) striped with a repeating
+   gradient to suggest leaflets, plus a center rib via ::after. Pure CSS, no image. ---- */
+.frond{position:absolute;width:250px;height:84px;pointer-events:none;z-index:0;
+  background:repeating-linear-gradient(74deg,rgba(4,60,58,.30) 0 2px,transparent 2px 12px),
+             linear-gradient(102deg,var(--turq-deep) 0%,var(--turq) 58%,var(--lime) 100%);
+  border-radius:100% 0 100% 0;}
+.frond:after{content:"";position:absolute;left:5%;top:50%;width:90%;height:3px;border-radius:3px;
+  background:rgba(255,255,255,.55);transform:translateY(-50%) rotate(-5deg);}
+.frond.dark{background:repeating-linear-gradient(74deg,rgba(0,0,0,.34) 0 2px,transparent 2px 12px),
+             linear-gradient(102deg,#06403f 0%,#0a5f57 100%);opacity:.55;}
+.frond.dark:after{background:rgba(255,255,255,.25);}
+
+/* ---- Hero: full sunset gradient, CSS sun disc, turquoise lagoon curve at the horizon ---- */
+.hero{position:relative;overflow:hidden;text-align:center;color:#fff;padding:6rem 0 8rem;background:var(--sunset);}
+.sun{position:absolute;left:50%;top:70px;transform:translateX(-50%);width:380px;height:380px;border-radius:50%;
+  background:radial-gradient(circle,#fff8d4 0%,var(--gold) 38%,rgba(255,180,70,.40) 62%,rgba(255,150,80,0) 72%);}
+.lagoon{position:absolute;left:-8%;right:-8%;bottom:-30px;height:150px;background:var(--lagoon);
+  border-radius:52% 48% 0 0/74px 74px 0 0;box-shadow:0 -10px 34px rgba(5,145,138,.35);}
+.hero .f1{top:18px;left:-70px;transform:rotate(28deg);}
+.hero .f2{top:-24px;left:120px;transform:rotate(58deg) scale(.8);}
+.hero .f3{top:8px;right:-80px;transform:rotate(-32deg) scaleX(-1);}
+.hero .f4{bottom:120px;right:40px;transform:rotate(18deg) scale(.72) scaleX(-1);}
+.hero .wrap{position:relative;z-index:2;}
+.eyebrow{display:inline-block;background:rgba(255,255,255,.22);border:1px solid rgba(255,255,255,.55);
+  color:#fff;border-radius:999px;font-size:.74rem;letter-spacing:.2em;text-transform:uppercase;
+  font-weight:700;padding:.45rem 1.25rem;margin-bottom:1.6rem;backdrop-filter:blur(2px);}
+.hero h1{font-size:3.35rem;font-weight:700;letter-spacing:-.02em;line-height:1.06;max-width:18ch;
+  margin:0 auto 1.05rem;text-shadow:0 4px 22px rgba(90,10,60,.35);}
+.hero p.sub{font-size:1.22rem;color:#fff6ec;max-width:52ch;margin:0 auto 2.2rem;}
+.hero .meta{margin-top:2rem;font-size:.88rem;color:#ffeadb;letter-spacing:.04em;}
+
+/* ---- Buttons: soft glow pills, no bounce/offset shadow ---- */
+.btn{display:inline-block;padding:1rem 2.3rem;border-radius:999px;font-weight:700;font-size:1rem;
+  text-decoration:none;min-height:44px;line-height:1.5;transition:box-shadow .2s,background .2s,color .2s;}
+.btn-sun{background:#fff;color:var(--pink-deep);box-shadow:0 12px 30px rgba(109,10,80,.32);}
+.btn-sun:hover{box-shadow:0 16px 38px rgba(109,10,80,.44);}
+.btn-ghost{background:rgba(255,255,255,.12);color:#fff;border:2px solid rgba(255,255,255,.72);margin-left:.65rem;}
+.btn-ghost:hover{background:rgba(255,255,255,.24);}
+.trust{display:flex;flex-wrap:wrap;gap:.6rem;justify-content:center;margin-top:2.1rem;}
+.chip{font-size:.8rem;color:#fff;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.45);
+  border-radius:999px;padding:.4rem 1.05rem;font-weight:600;}
+.chip.rate{background:#fff;color:var(--pink-deep);border-color:#fff;font-weight:700;}
+.chip.rate .star{color:var(--mango);}
+
+/* ---- Section headings + a three-leaf divider (not a rainbow stripe) ---- */
+section{padding:5rem 0;position:relative;overflow:hidden;}
+.section-head{text-align:center;margin-bottom:2.8rem;}
+.section-head .sub{display:inline-block;font-size:.74rem;letter-spacing:.2em;text-transform:uppercase;
+  font-weight:700;color:var(--turq-deep);}
+.section-head h2{font-size:2.3rem;font-weight:700;letter-spacing:-.015em;margin-top:.45rem;color:var(--ink);}
+.leafrule{display:flex;gap:9px;justify-content:center;align-items:center;margin-top:1rem;}
+.leafrule i{display:block;width:28px;height:13px;border-radius:100% 0 100% 0;}
+.leafrule i:nth-child(1){background:var(--turq);}
+.leafrule i:nth-child(2){background:var(--lime);transform:rotate(180deg);}
+.leafrule i:nth-child(3){background:var(--mango);}
+
+.about{background:linear-gradient(180deg,var(--turq-soft) 0%,var(--sand) 100%);}
+.about .f5{top:-30px;left:-110px;transform:rotate(24deg) scale(.9);opacity:.35;}
+.about .f6{bottom:-34px;right:-110px;transform:rotate(-150deg) scale(.9);opacity:.35;}
+.about-inner{position:relative;z-index:1;max-width:690px;margin:0 auto;text-align:center;}
+.about-inner p{color:var(--body);font-size:1.13rem;margin-bottom:1.15rem;}
+.about-inner p:last-child{margin-bottom:0;}
+
+/* ---- Postcard service cards: white, sunset top band, dashed stamp corner, leaf medallion ---- */
+.services{background:var(--cream);}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(238px,1fr));gap:1.5rem;}
+.card{position:relative;background:var(--card);border-radius:26px;padding:2.4rem 1.6rem 1.9rem;
+  text-align:center;overflow:hidden;border:1px solid var(--line);
+  box-shadow:0 14px 32px rgba(13,58,63,.10);transition:transform .18s,box-shadow .18s;}
+.card:hover{transform:translateY(-6px);box-shadow:0 22px 44px rgba(255,46,126,.20);}
+.card:before{content:"";position:absolute;top:0;left:0;right:0;height:9px;background:var(--sunset);}
+.stamp{position:absolute;top:20px;right:18px;width:36px;height:42px;border:2px dashed var(--line-turq);
+  border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:.82rem;
+  font-weight:700;color:var(--turq-deep);background:var(--turq-soft);}
+.leafico{width:62px;height:34px;margin:.5rem auto 1.1rem;border-radius:100% 0 100% 0;position:relative;
+  background:repeating-linear-gradient(74deg,rgba(4,60,58,.26) 0 2px,transparent 2px 9px),
+             linear-gradient(102deg,var(--turq-deep),var(--lime));}
+.leafico:after{content:"";position:absolute;left:6%;top:50%;width:88%;height:2px;border-radius:2px;
+  background:rgba(255,255,255,.6);transform:translateY(-50%) rotate(-5deg);}
+.card h3{font-size:1.12rem;font-weight:700;color:var(--ink);}
+
+.contact{background:var(--sand);}
+.contact-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(205px,1fr));gap:1.7rem;
+  text-align:center;max-width:830px;margin:0 auto;}
+.contact-grid .box{background:#fff;border:1px solid var(--line);border-radius:22px;padding:1.6rem 1.2rem;
+  box-shadow:0 10px 24px rgba(13,58,63,.07);}
+.contact-grid .lab{font-family:var(--display);font-size:.72rem;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--mango-deep);font-weight:700;margin-bottom:.5rem;}
+.contact-grid a{color:var(--turq-deep);text-decoration:none;font-weight:700;border-bottom:2px solid var(--line-turq);}
+.contact-grid a:hover{color:var(--pink-deep);border-color:var(--pink);}
+.contact-grid .val{color:var(--body);font-weight:600;}
+
+/* ---- CTA: turquoise-to-lime lagoon band (deliberately the opposite end of the palette
+   from the sunset hero), with two big fronds sweeping in from the corners ---- */
+.cta{background:var(--lagoon);color:#fff;text-align:center;}
+.cta .f7{top:-40px;left:-90px;transform:rotate(26deg) scale(1.05);}
+.cta .f8{bottom:-46px;right:-90px;transform:rotate(-152deg) scale(1.05);}
+.cta .wrap{position:relative;z-index:1;}
+.cta .section-head .sub{color:#eaffe0;}
+.cta .section-head h2{color:#fff;}
+.cta .leafrule i:nth-child(1){background:#fff;}
+.cta .leafrule i:nth-child(2){background:var(--gold);}
+.cta .leafrule i:nth-child(3){background:var(--pink);}
+.cta p{color:#ecfffb;max-width:56ch;margin:1.1rem auto 2.1rem;font-size:1.1rem;}
+.cta .btn-sun{color:var(--turq-deep);box-shadow:0 12px 30px rgba(3,70,66,.34);}
+.cta .btn-ghost{border-color:rgba(255,255,255,.8);}
+
+footer{background:var(--ink);color:#c9e9e6;text-align:center;padding:2.6rem 1rem;font-size:.82rem;line-height:1.65;}
+footer a{color:var(--gold);}
+@media(max-width:640px){
+  .hero{padding:4rem 0 6rem;}.hero h1{font-size:2.25rem;}.sun{width:280px;height:280px;top:40px;}
+  section{padding:3.4rem 0;}.btn-ghost{margin-left:0;margin-top:.7rem;}
+  .section-head h2{font-size:1.8rem;}.frond{width:180px;height:62px;}
+}
+</style>
+</head>
+<body>
+<div class="banner">Free website preview built by <a href="https://satechitsolutions.com/#contact" target="_blank" rel="noopener">SaTech IT Solutions</a> for Paradise Cove Surf Shop — a sample design only, not affiliated with or endorsed by Paradise Cove Surf Shop.</div>
+<div class="sunstrip" aria-hidden="true"></div>
+
+<header class="hero">
+  <span class="sun" aria-hidden="true"></span>
+  <span class="frond dark f1" aria-hidden="true"></span>
+  <span class="frond dark f2" aria-hidden="true"></span>
+  <span class="frond dark f3" aria-hidden="true"></span>
+  <span class="frond f4" aria-hidden="true"></span>
+  <div class="wrap">
+    <span class="eyebrow">Website Preview</span>
+    <h1>Local, Dependable, and Ready to Help</h1>
+    <p class="sub">Proudly serving the local area with service worth recommending.</p>
+    <a class="btn btn-sun" href="mailto:Tom@SaTechITSolutions.com?subject=Interested%20in%20my%20website%20preview">Start the Getaway</a>
+    <a class="btn btn-ghost" href="https://satechitsolutions.com/#contact" target="_blank" rel="noopener">See More Designs</a>
+    <div class="trust"><span class="chip rate"><span class="star">★★★★★</span> 4.9 &middot; 88 Google reviews</span><span class="chip">Locally Owned & Operated</span><span class="chip">Trusted by Neighbors</span><span class="chip">Serving the Community</span></div>
+    <p class="meta">Surf shop &middot; 88 Shoreline Ave, Kailua, HI</p>
+  </div>
+  <span class="lagoon" aria-hidden="true"></span>
+</header>
+
+<section class="about">
+  <span class="frond f5" aria-hidden="true"></span>
+  <span class="frond f6" aria-hidden="true"></span>
+  <div class="wrap">
+    <div class="section-head"><div class="sub">Our Island Story</div><h2>Welcome to Paradise Cove Surf Shop</h2>
+      <div class="leafrule" aria-hidden="true"><i></i><i></i><i></i></div></div>
+    <div class="about-inner"><p>Paradise Cove Surf Shop is a locally owned business serving the local area and the surrounding community — built on doing right by neighbors and earning repeat business the honest way.</p><p>You get responsive service, fair pricing, and people who stand behind their work. That&#x27;s the reputation Paradise Cove Surf Shop has built, one satisfied customer at a time.</p></div>
+  </div>
+</section>
+
+<section class="services"><div class="wrap">
+  <div class="section-head"><div class="sub">What We Offer</div><h2>Everything Under the Sun</h2>
+    <div class="leafrule" aria-hidden="true"><i></i><i></i><i></i></div></div>
+  <div class="grid"><div class="card"><div class="stamp">01</div><div class="leafico" aria-hidden="true"></div><h3>Free Consultations</h3></div><div class="card"><div class="stamp">02</div><div class="leafico" aria-hidden="true"></div><h3>Custom Solutions</h3></div><div class="card"><div class="stamp">03</div><div class="leafico" aria-hidden="true"></div><h3>Responsive Local Service</h3></div><div class="card"><div class="stamp">04</div><div class="leafico" aria-hidden="true"></div><h3>Fair, Upfront Pricing</h3></div><div class="card"><div class="stamp">05</div><div class="leafico" aria-hidden="true"></div><h3>Satisfaction Guaranteed</h3></div></div>
+</div></section>
+
+<section class="contact"><div class="wrap">
+  <div class="section-head"><div class="sub">Drop By</div><h2>Get in Touch</h2>
+    <div class="leafrule" aria-hidden="true"><i></i><i></i><i></i></div></div>
+  <div class="contact-grid"><div class="box"><div class="lab">Call the Front Desk</div><a href="tel:8085550177">(808) 555-0177</a></div><div class="box"><div class="lab">Where to Find Us</div><span class="val">88 Shoreline Ave, Kailua, HI</span></div><div class="box"><div class="lab">Directions</div><a href="https://maps.google.com/?q=Paradise+Cove+Surf+Shop" target="_blank" rel="noopener">Open in Google Maps</a></div></div>
+</div></section>
+
+<section class="cta">
+  <span class="frond f7" aria-hidden="true"></span>
+  <span class="frond f8" aria-hidden="true"></span>
+  <div class="wrap">
+    <div class="section-head"><div class="sub">Like This Preview?</div><h2>Let's Make It Yours</h2>
+      <div class="leafrule" aria-hidden="true"><i></i><i></i><i></i></div></div>
+    <p>This bright, sun-soaked mockup was built by SaTech IT Solutions to show Paradise Cove Surf Shop what a bold, welcoming website could look like. Ready to make it the real thing?</p>
+    <a class="btn btn-sun" href="mailto:Tom@SaTechITSolutions.com?subject=Interested%20in%20my%20website%20preview">Email SaTech IT Solutions</a>
+    <a class="btn btn-ghost" href="https://satechitsolutions.com/#contact" target="_blank" rel="noopener">Visit SaTech IT Solutions</a>
+  </div>
+</section>
+
+<footer>&copy; 2026 Website preview by <a href="https://satechitsolutions.com" target="_blank" rel="noopener">SaTech IT Solutions</a>. Not affiliated with or endorsed by Paradise Cove Surf Shop.</footer>
+</body>
+</html>

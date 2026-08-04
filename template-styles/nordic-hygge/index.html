@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="description" content="Birkeland Home Goods — a trusted locally owned business proudly serving the local area.">
+<meta name="robots" content="noindex,nofollow">
+<title>Birkeland Home Goods — Website Preview by SaTech IT Solutions</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --birch:#ead9bd;--birch-soft:#f5ecdb;--birch-deep:#c4a87f;--grain:rgba(150,120,80,.13);
+  --dusty:#7d97ab;--dusty-deep:#5b7688;--dusty-soft:#dbe6ec;--dusty-tint:#eef4f7;
+  --wool:#c3d3dc;--glow:rgba(242,206,150,.40);
+  --white:#fdfbf7;--card:#ffffff;--panel:#f7f1e6;
+  --ink:#413c35;--head:#35302a;--muted:#847a6c;--line:#e8dfd0;--line-blue:#d5e2e9;
+  --shadow:0 16px 40px rgba(150,132,105,.14);
+  --shadow-sm:0 8px 22px rgba(150,132,105,.10);
+  --sans:system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+}
+html{scroll-behavior:smooth;}
+body{font-family:var(--sans);color:var(--ink);background:var(--white);line-height:1.8;font-weight:400;-webkit-font-smoothing:antialiased;}
+.wrap{max-width:1020px;margin:0 auto;padding:0 30px;}
+
+/* --- texture utilities, all CSS-drawn (no images, no requests) --- */
+/* knit: two crossed diagonal gradients read as a loose woven lattice */
+.knit{background-image:
+  repeating-linear-gradient(45deg,rgba(125,151,171,.11) 0 4px,transparent 4px 9px),
+  repeating-linear-gradient(-45deg,rgba(125,151,171,.11) 0 4px,transparent 4px 9px);}
+/* birch: fine vertical grain lines over a blonde-wood base */
+.birchgrain{background-color:var(--birch);background-image:
+  repeating-linear-gradient(90deg,var(--grain) 0 1px,transparent 1px 8px),
+  repeating-linear-gradient(90deg,rgba(150,120,80,.06) 0 2px,transparent 2px 27px);}
+/* blanket stitch: a dashed thread used instead of hard hairline rules */
+.stitch{height:2px;border-radius:2px;background-image:repeating-linear-gradient(90deg,var(--wool) 0 11px,transparent 11px 21px);}
+
+.eyebrow{display:inline-block;font-size:.7rem;letter-spacing:.24em;text-transform:uppercase;color:var(--dusty-deep);font-weight:600;}
+.banner{background:var(--panel);color:var(--muted);font-size:.82rem;text-align:center;padding:.85rem 1.2rem;line-height:1.6;border-bottom:2px dashed var(--line-blue);}
+.banner a{color:var(--dusty-deep);font-weight:600;text-decoration:underline;text-underline-offset:3px;}
+
+/* --- hero: text beside an arched, knit-textured window panel --- */
+.hero{position:relative;overflow:hidden;padding:6rem 0 5rem;background:var(--white);}
+.hero:before{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse 70% 55% at 78% 6%,var(--glow),transparent 62%);}
+.hero .wrap{position:relative;}
+.hgrid{display:grid;grid-template-columns:1.15fr .85fr;gap:3.4rem;align-items:center;}
+.hero h1{font-size:2.9rem;font-weight:600;letter-spacing:-.012em;line-height:1.22;color:var(--head);max-width:16ch;margin:1.4rem 0 1.1rem;}
+.hero p.sub{font-size:1.14rem;color:var(--ink);max-width:44ch;margin-bottom:2.2rem;}
+.actions{display:flex;flex-wrap:wrap;gap:.85rem;}
+.btn{display:inline-block;border-radius:999px;padding:.95rem 2.1rem;font-size:.96rem;font-weight:600;text-decoration:none;min-height:44px;line-height:1.6;transition:background .2s,transform .16s,box-shadow .2s;}
+.btn-fill{background:var(--dusty-deep);color:#fdfbf7;box-shadow:0 12px 26px rgba(91,118,136,.26);}
+.btn-fill:hover{background:#4d6675;transform:translateY(-2px);}
+.btn-soft{background:var(--birch-soft);color:var(--head);border:1px solid var(--birch-deep);}
+.btn-soft:hover{background:var(--birch);transform:translateY(-2px);}
+.trust{display:flex;flex-wrap:wrap;gap:.6rem;margin-top:2.2rem;}
+.chip{font-size:.8rem;color:var(--muted);background:var(--card);border:1px solid var(--line);border-radius:999px;padding:.42rem 1.1rem;box-shadow:var(--shadow-sm);}
+.chip.rate{background:var(--dusty-tint);border-color:var(--line-blue);color:var(--dusty-deep);font-weight:600;}
+
+/* the arch — a rounded "window" of woven wool, the style's signature shape */
+.arch{border-radius:220px 220px 32px 32px;background-color:var(--dusty-soft);padding:3.2rem 2rem 2.4rem;text-align:center;box-shadow:var(--shadow);border:1px solid var(--line-blue);}
+.arch .lamp{width:60px;height:60px;margin:0 auto 1.6rem;border-radius:50%;background:radial-gradient(circle at 50% 42%,#fff6e4 0%,#f4d7a3 55%,#e0bd83 100%);box-shadow:0 0 0 10px rgba(255,247,232,.55),0 10px 26px rgba(196,168,127,.42);}
+.arch .lab{font-size:.68rem;letter-spacing:.2em;text-transform:uppercase;color:var(--dusty-deep);font-weight:600;margin-bottom:.35rem;}
+.arch .val{font-size:1rem;color:var(--head);font-weight:600;line-height:1.55;}
+.arch .row{padding:1rem 0;}
+.arch .row + .row{border-top:2px dashed rgba(125,151,171,.35);}
+.arch .stars{color:var(--birch-deep);letter-spacing:.1em;font-size:1.05rem;}
+
+section{padding:5.2rem 0;}
+.sec-head{margin-bottom:2.6rem;}
+.sec-head h2{font-size:1.95rem;font-weight:600;letter-spacing:-.01em;color:var(--head);margin-top:.7rem;line-height:1.3;}
+
+/* --- about: soft card on a warm panel --- */
+.about{background:var(--panel);}
+.about .card{background:var(--card);border-radius:30px;padding:3rem 3.2rem;box-shadow:var(--shadow);border:1px solid var(--line);max-width:74ch;}
+.about .card p{color:var(--ink);font-size:1.06rem;margin-bottom:1.15rem;}
+.about .card p:last-child{margin-bottom:0;}
+.about .swatch{display:flex;gap:.5rem;margin-bottom:1.6rem;}
+.about .swatch span{width:34px;height:12px;border-radius:999px;}
+.about .swatch span:nth-child(1){background:var(--birch);}
+.about .swatch span:nth-child(2){background:var(--wool);}
+.about .swatch span:nth-child(3){background:var(--dusty);}
+
+/* --- services: rounded cards, each capped with a knit swatch --- */
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(255px,1fr));gap:1.6rem;}
+.scard{background:var(--card);border:1px solid var(--line);border-radius:28px;overflow:hidden;box-shadow:var(--shadow-sm);transition:transform .18s,box-shadow .18s;}
+.scard:hover{transform:translateY(-3px);box-shadow:var(--shadow);}
+.scard .weave{height:56px;background-color:var(--dusty-soft);}
+.scard .body{padding:1.5rem 1.7rem 1.8rem;}
+.scard .num{display:inline-block;font-size:.7rem;font-weight:700;letter-spacing:.14em;color:var(--dusty-deep);background:var(--dusty-tint);border-radius:999px;padding:.25rem .8rem;margin-bottom:.7rem;}
+.scard h3{font-size:1.08rem;font-weight:600;color:var(--head);line-height:1.5;}
+
+/* --- contact: dusty-blue rounded panel --- */
+.contact .panel{background:var(--dusty-tint);border:1px solid var(--line-blue);border-radius:34px;padding:3.2rem;}
+.cgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:1.4rem;}
+.cbox{background:var(--card);border-radius:24px;padding:1.5rem 1.7rem;border:1px solid var(--line-blue);}
+.cbox .lab{font-size:.68rem;letter-spacing:.2em;text-transform:uppercase;color:var(--dusty-deep);font-weight:600;margin-bottom:.5rem;}
+.cbox a{color:var(--head);font-weight:600;text-decoration:none;border-bottom:2px dashed var(--wool);padding-bottom:2px;}
+.cbox a:hover{border-bottom-style:solid;}
+.cbox .val{color:var(--ink);font-weight:500;line-height:1.6;}
+
+/* --- CTA: birch wood panel, centered and calm --- */
+.cta .panel{border-radius:34px;padding:3.6rem 2.4rem;text-align:center;box-shadow:var(--shadow);border:1px solid var(--birch-deep);}
+.cta h2{font-size:2.05rem;font-weight:600;color:var(--head);max-width:20ch;margin:.8rem auto 1rem;line-height:1.3;}
+.cta p{color:#5d5346;max-width:52ch;margin:0 auto 2.2rem;font-size:1.04rem;}
+.cta .actions{justify-content:center;}
+.cta .eyebrow{color:#8a6b3d;}
+
+footer{background:var(--dusty-deep);color:#dfe8ee;text-align:center;padding:3rem 1.2rem;font-size:.82rem;line-height:1.75;}
+footer a{color:#f5ecdb;text-decoration:underline;text-underline-offset:3px;}
+footer .stitch{max-width:180px;margin:0 auto 1.5rem;opacity:.6;}
+
+@media(max-width:760px){
+  .wrap{padding:0 22px;}
+  .hero{padding:3.8rem 0 3.4rem;}
+  .hgrid{grid-template-columns:1fr;gap:2.6rem;}
+  .hero h1{font-size:2.15rem;max-width:100%;}
+  .arch{border-radius:150px 150px 28px 28px;padding:2.6rem 1.5rem 2rem;}
+  section{padding:3.6rem 0;}
+  .about .card{padding:2rem 1.6rem;border-radius:24px;}
+  .contact .panel,.cta .panel{padding:2.2rem 1.4rem;border-radius:26px;}
+  .btn{width:100%;text-align:center;}
+}
+</style>
+</head>
+<body>
+<div class="banner">Free website preview built by <a href="https://satechitsolutions.com/#contact" target="_blank" rel="noopener">SaTech IT Solutions</a> for Birkeland Home Goods — a sample design only, not affiliated with or endorsed by Birkeland Home Goods.</div>
+
+<header class="hero"><div class="wrap"><div class="hgrid">
+  <div>
+    <span class="eyebrow">Website Preview</span>
+    <h1>Local, Dependable, and Ready to Help</h1>
+    <p class="sub">Proudly serving the local area with service worth recommending.</p>
+    <div class="actions">
+      <a class="btn btn-fill" href="mailto:Tom@SaTechITSolutions.com?subject=Interested%20in%20my%20website%20preview">Get in Touch</a>
+      <a class="btn btn-soft" href="https://satechitsolutions.com/#contact" target="_blank" rel="noopener">Learn More</a>
+    </div>
+    <div class="trust"><span class="chip rate">★★★★★ 4.9 &middot; 64 Google reviews</span><span class="chip">Locally Owned & Operated</span><span class="chip">Trusted by Neighbors</span><span class="chip">Serving the Community</span></div>
+  </div>
+  <aside class="arch knit">
+    <div class="lamp" aria-hidden="true"></div>
+    <div class="row"><div class="lab">Local Business</div><div class="val">Home goods store</div></div><div class="row"><div class="lab">Find Us</div><div class="val">5 Fjord St, Minneapolis, MN</div></div><div class="row"><div class="lab">Google Rating</div><div class="val"><span class="stars">★★★★★</span> 4.9 &middot; 64 reviews</div></div>
+  </aside>
+</div></div></header>
+
+<section class="about"><div class="wrap">
+  <div class="sec-head">
+    <span class="eyebrow">About</span>
+    <h2>Birkeland Home Goods</h2>
+  </div>
+  <div class="card">
+    <div class="swatch" aria-hidden="true"><span></span><span></span><span></span></div>
+    <p>Birkeland Home Goods is a locally owned business serving the local area and the surrounding community — built on doing right by neighbors and earning repeat business the honest way.</p><p>You get responsive service, fair pricing, and people who stand behind their work. That&#x27;s the reputation Birkeland Home Goods has built, one satisfied customer at a time.</p>
+  </div>
+</div></section>
+
+<section class="services"><div class="wrap">
+  <div class="sec-head">
+    <span class="eyebrow">What We Do</span>
+    <h2>Services</h2>
+    <div class="stitch" style="margin-top:1.2rem;max-width:220px"></div>
+  </div>
+  <div class="cards"><article class="scard"><div class="weave knit"></div><div class="body"><span class="num">01</span><h3>Free Consultations</h3></div></article><article class="scard"><div class="weave knit"></div><div class="body"><span class="num">02</span><h3>Custom Solutions</h3></div></article><article class="scard"><div class="weave knit"></div><div class="body"><span class="num">03</span><h3>Responsive Local Service</h3></div></article><article class="scard"><div class="weave knit"></div><div class="body"><span class="num">04</span><h3>Fair, Upfront Pricing</h3></div></article><article class="scard"><div class="weave knit"></div><div class="body"><span class="num">05</span><h3>Satisfaction Guaranteed</h3></div></article></div>
+</div></section>
+
+<section class="contact"><div class="wrap">
+  <div class="panel">
+    <div class="sec-head">
+      <span class="eyebrow">Contact</span>
+      <h2>Stop by or give us a call</h2>
+    </div>
+    <div class="cgrid"><div class="cbox"><div class="lab">Call</div><a href="tel:6125550119">(612) 555-0119</a></div><div class="cbox"><div class="lab">Visit</div><div class="val">5 Fjord St, Minneapolis, MN</div></div><div class="cbox"><div class="lab">Directions</div><a href="https://maps.google.com/?q=Birkeland+Home+Goods" target="_blank" rel="noopener">Open in Google Maps</a></div></div>
+  </div>
+</div></section>
+
+<section class="cta"><div class="wrap">
+  <div class="panel birchgrain">
+    <span class="eyebrow">Like This Preview?</span>
+    <h2>Let's make it your real website</h2>
+    <p>This mockup was built by SaTech IT Solutions to show Birkeland Home Goods what a warm, welcoming website could look like. Ready to make it official?</p>
+    <div class="actions">
+      <a class="btn btn-fill" href="mailto:Tom@SaTechITSolutions.com?subject=Interested%20in%20my%20website%20preview">Email SaTech IT Solutions</a>
+      <a class="btn btn-soft" href="https://satechitsolutions.com/#contact" target="_blank" rel="noopener">Visit SaTech IT Solutions</a>
+    </div>
+  </div>
+</div></section>
+
+<footer><div class="wrap">
+  <div class="stitch" aria-hidden="true"></div>
+  &copy; 2026 Website preview by <a href="https://satechitsolutions.com" target="_blank" rel="noopener">SaTech IT Solutions</a>. Not affiliated with or endorsed by Birkeland Home Goods.
+</div></footer>
+</body>
+</html>

@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="description" content="Roast &amp; Ramble Coffee Co — a trusted locally owned business proudly serving the local area.">
+<meta name="robots" content="noindex,nofollow">
+<title>Roast &amp; Ramble Coffee Co — Website Preview by SaTech IT Solutions</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  /* chalkboard panel + its roasted-bean-brown frame */
+  --board:#26302a;--board-2:#1a221d;--board-edge:#54371f;--board-edge-2:#33200f;
+  /* espresso browns -- the core of the palette */
+  --espresso:#3a271c;--espresso-dark:#2a1b12;--espresso-deep:#1c110a;--roast:#513422;
+  /* crema: a muted milky tan, deliberately NOT a gold or a burnt orange */
+  --crema:#c79a6a;--crema-light:#e2c39d;--crema-deep:#a8794c;
+  /* cream / milk paper tones */
+  --cream:#f7efe1;--cream-2:#efe3d0;--milk:#fffaf2;--line:#e4d5bd;
+  --ink:#3b2b20;--muted:#8b7360;
+  /* chalk marks -- never pure white, always slightly dusty */
+  --chalk:#f2efe3;--chalk-dim:#c9d2c4;--chalk-soft:rgba(242,239,227,.74);
+  --hand:'Chalkboard SE','Bradley Hand','Segoe Print','Comic Sans MS','Trebuchet MS',cursive;
+  --sans:system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+}
+html{scroll-behavior:smooth;}
+body{font-family:var(--sans);color:var(--ink);background:var(--cream);line-height:1.72;-webkit-font-smoothing:antialiased;}
+.wrap{max-width:1000px;margin:0 auto;padding:0 26px;}
+
+/* ---- CSS-drawn coffee bean: an ellipse with a curved arc for the center crease ---- */
+.bean{position:relative;display:inline-block;width:17px;height:12px;background:var(--roast);border-radius:50%;transform:rotate(-22deg);flex:none;}
+.bean:after{content:"";position:absolute;left:2px;right:2px;top:1px;height:9px;border-top:1.5px solid var(--crema-light);border-radius:50%;opacity:.85;}
+.bean.chalky{background:var(--chalk-dim);}
+.bean.chalky:after{border-top-color:var(--board-2);opacity:.7;}
+
+/* ---- CSS-drawn steam wisp: a quarter-arc curved border, no image ---- */
+.steam{position:absolute;width:20px;height:58px;border:2px solid var(--chalk-soft);border-color:var(--chalk-soft) var(--chalk-soft) transparent transparent;border-radius:0 100% 0 100%/0 62% 0 62%;opacity:.42;pointer-events:none;}
+
+/* ---- CSS-drawn espresso cup (body + handle + saucer), all border-radius ---- */
+.cupmark{position:relative;width:96px;height:78px;flex:none;}
+.cupmark i{position:absolute;display:block;}
+.cupmark .cup{bottom:12px;left:10px;width:58px;height:42px;background:var(--chalk);border-radius:5px 5px 26px 26px;}
+.cupmark .brew{bottom:44px;left:14px;width:50px;height:8px;background:var(--roast);border-radius:50%;}
+.cupmark .handle{bottom:22px;left:64px;width:24px;height:24px;border:5px solid var(--chalk);border-radius:50%;border-left-color:transparent;}
+.cupmark .saucer{bottom:2px;left:0;width:86px;height:9px;background:var(--chalk-dim);border-radius:50%;}
+.cupmark .steam{top:-16px;left:20px;width:14px;height:34px;transform:rotate(6deg);}
+.cupmark .steam.two{top:-24px;left:40px;height:42px;transform:rotate(-8deg);opacity:.3;}
+
+/* ---- chalkboard surface: dark green board + chalk-dust speckle, drawn with gradients ---- */
+.chalkboard{
+  position:relative;overflow:hidden;
+  background-color:var(--board);
+  background-image:
+    radial-gradient(rgba(242,239,227,.05) 1px,transparent 1px),
+    radial-gradient(rgba(242,239,227,.035) 1px,transparent 1px),
+    radial-gradient(125% 95% at 18% -8%,rgba(242,239,227,.09),transparent 58%),
+    linear-gradient(160deg,var(--board) 0%,var(--board-2) 100%);
+  background-size:7px 7px,13px 13px,100% 100%,100% 100%;
+  background-position:0 0,4px 6px,0 0,0 0;
+  color:var(--chalk);
+}
+.chalkboard .wrap{position:relative;z-index:2;}
+
+.banner{background:var(--cream-2);border-bottom:2px solid var(--crema);color:var(--espresso);font-size:.83rem;text-align:center;padding:.75rem 1rem;line-height:1.55;}
+.banner a{color:var(--crema-deep);font-weight:700;text-decoration:underline;text-underline-offset:2px;}
+
+.eyebrow{display:inline-flex;align-items:center;gap:.6rem;font-family:var(--hand);font-size:.95rem;letter-spacing:.09em;color:var(--crema-light);transform:rotate(-.5deg);}
+
+/* ---- hero: a framed chalkboard menu board ---- */
+.hero{border-bottom:14px solid var(--board-edge);border-top:6px solid var(--board-edge-2);padding:4.8rem 0 4.4rem;}
+.hero .steam.a{top:-10px;right:16%;transform:rotate(10deg);height:120px;width:44px;}
+.hero .steam.b{top:40px;right:9%;transform:rotate(-12deg);height:92px;width:34px;opacity:.28;}
+.hero .bean-drift{position:absolute;opacity:.16;pointer-events:none;}
+.hero .bean-drift.one{top:22%;left:5%;transform:scale(3.4) rotate(-30deg);}
+.hero .bean-drift.two{bottom:12%;right:30%;transform:scale(2.2) rotate(18deg);}
+.hero .headrow{display:flex;align-items:flex-start;gap:2rem;}
+.hero .headtext{flex:1 1 auto;min-width:0;}
+.hero h1{font-family:var(--hand);font-size:3.05rem;font-weight:700;line-height:1.16;max-width:17ch;margin:1rem 0 1rem;color:var(--chalk);transform:rotate(-.7deg);text-shadow:0 0 10px rgba(242,239,227,.22),0 1px 0 rgba(0,0,0,.25);}
+.hero .lede{font-size:1.14rem;color:#dfe4da;max-width:50ch;margin-bottom:2.1rem;}
+.hero .meta{margin-top:2.1rem;font-size:.84rem;color:#b9c2b6;letter-spacing:.03em;}
+.hero .meta b{font-family:var(--hand);color:var(--crema-light);font-weight:700;font-size:.95rem;letter-spacing:.02em;}
+
+/* hand-drawn chalk underline: an arc, not a straight rule */
+.squiggle{display:block;width:132px;height:11px;border-bottom:3px solid var(--crema-light);border-radius:50%;opacity:.8;margin:.2rem 0 0;}
+
+.btn{display:inline-block;padding:.9rem 1.85rem;font-weight:700;font-size:1rem;text-decoration:none;min-height:44px;line-height:1.55;border-radius:9px;}
+.btn-crema{background:var(--crema-light);color:var(--espresso-dark);box-shadow:0 6px 16px rgba(28,17,10,.3);}
+.btn-crema:hover{background:var(--milk);}
+.btn-outline{color:var(--chalk);border:2px solid rgba(242,239,227,.5);margin-left:.6rem;font-family:var(--hand);}
+.btn-outline:hover{background:rgba(242,239,227,.1);}
+
+.trust{display:flex;flex-wrap:wrap;gap:.6rem;align-items:center;margin-top:2rem;}
+.chip{display:inline-flex;align-items:center;gap:.5rem;font-size:.81rem;color:#e6e9e1;background:rgba(242,239,227,.07);border:1px solid rgba(242,239,227,.28);border-radius:8px;padding:.42rem .9rem;}
+.chip.rate{border-color:var(--crema);color:var(--crema-light);font-weight:700;background:rgba(199,154,106,.12);}
+
+section{padding:4.6rem 0;}
+.section-head{margin-bottom:2.5rem;}
+.section-head .sub{display:inline-flex;align-items:center;gap:.55rem;font-family:var(--hand);font-size:.95rem;color:var(--crema-deep);letter-spacing:.06em;transform:rotate(-.4deg);}
+.section-head h2{font-family:var(--hand);font-size:2.1rem;font-weight:700;color:var(--espresso);margin-top:.5rem;transform:rotate(-.5deg);}
+.section-head .squiggle{border-bottom-color:var(--crema);margin-top:.45rem;}
+
+/* ---- about on cream paper, with a faint drawn coffee-ring stain behind it ---- */
+.about{position:relative;overflow:hidden;background:var(--milk);border-top:2px solid var(--line);border-bottom:2px solid var(--line);}
+.about .ring{position:absolute;width:270px;height:270px;border:16px solid rgba(168,121,76,.09);border-radius:50%;top:-70px;right:-56px;pointer-events:none;}
+.about .ring.two{width:150px;height:150px;border-width:11px;top:auto;bottom:-52px;right:auto;left:6%;opacity:.7;}
+.about .wrap{position:relative;z-index:2;}
+.about p{color:var(--ink);font-size:1.08rem;max-width:66ch;margin-bottom:1.15rem;}
+.about p:last-child{margin-bottom:0;}
+
+/* ---- services rendered as a framed chalkboard menu with dotted leader lines ---- */
+.menu-wrap{padding:4.6rem 0;background:var(--cream);}
+.board{border:14px solid var(--board-edge);border-radius:10px;box-shadow:0 14px 34px rgba(42,27,18,.22),inset 0 0 0 2px rgba(242,239,227,.14);padding:2.6rem 2.4rem 2.9rem;}
+.board .wrap{max-width:none;padding:0;}
+.board .board-head{text-align:center;margin-bottom:2rem;}
+.board .board-head .sub{display:inline-flex;align-items:center;gap:.55rem;font-family:var(--hand);font-size:.98rem;color:var(--crema-light);letter-spacing:.08em;}
+.board .board-head h2{font-family:var(--hand);font-size:2.15rem;font-weight:700;color:var(--chalk);margin-top:.4rem;transform:rotate(-.5deg);text-shadow:0 0 9px rgba(242,239,227,.2);}
+.board .board-head .squiggle{margin:.5rem auto 0;border-bottom-color:var(--chalk-dim);}
+.menu{list-style:none;max-width:660px;margin:0 auto;}
+.menu li{display:flex;align-items:baseline;gap:.85rem;padding:.95rem .2rem;}
+.menu li + li{border-top:1px solid rgba(242,239,227,.13);}
+.menu .bean{align-self:center;}
+.menu .item{font-family:var(--hand);font-size:1.2rem;color:var(--chalk);white-space:normal;}
+.menu .dots{flex:1 1 auto;min-width:26px;border-bottom:2px dotted rgba(242,239,227,.34);transform:translateY(-.32rem);}
+.menu .no{font-family:var(--hand);font-size:1rem;color:var(--crema-light);flex:none;opacity:.9;}
+.board .steam.c{top:-6px;left:8%;height:96px;width:36px;transform:rotate(-9deg);opacity:.2;}
+
+/* ---- contact: warm cream cards with a crema edge ---- */
+.contact{background:var(--cream-2);border-top:2px solid var(--line);}
+.contact-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:1.4rem;}
+.contact-grid .box{background:var(--milk);border:1px solid var(--line);border-radius:12px;border-bottom:5px solid var(--crema);padding:1.4rem 1.45rem;}
+.contact-grid .lab{display:flex;align-items:center;gap:.5rem;font-family:var(--hand);font-size:.92rem;color:var(--crema-deep);margin-bottom:.5rem;}
+.contact-grid a{color:var(--roast);text-decoration:none;font-weight:700;}
+.contact-grid a:hover{text-decoration:underline;}
+.contact-grid .val{color:var(--ink);font-weight:600;}
+
+/* ---- CTA: deep espresso pour, steam wisps, back to the agency ---- */
+.cta{background:linear-gradient(165deg,var(--espresso) 0%,var(--espresso-dark) 52%,var(--espresso-deep) 100%);color:#f1e6d8;text-align:center;border-top:10px solid var(--roast);position:relative;overflow:hidden;}
+.cta .steam.d{top:-12px;left:12%;height:120px;width:42px;transform:rotate(12deg);opacity:.16;}
+.cta .steam.e{bottom:-30px;right:14%;height:110px;width:38px;transform:rotate(-160deg);opacity:.14;}
+.cta .wrap{position:relative;z-index:2;}
+.cta .cupmark{margin:0 auto 1.2rem;}
+.cta .cupmark .cup,.cta .cupmark .handle{background:var(--crema-light);border-color:var(--crema-light);}
+.cta .cupmark .handle{background:transparent;border-left-color:transparent;}
+.cta .cupmark .saucer{background:var(--crema-deep);}
+.cta .cupmark .brew{background:var(--espresso-deep);}
+.cta .sub{display:inline-flex;align-items:center;gap:.55rem;font-family:var(--hand);font-size:.98rem;color:var(--crema-light);}
+.cta h2{font-family:var(--hand);font-size:2.2rem;font-weight:700;color:var(--milk);margin:.55rem 0 .9rem;transform:rotate(-.5deg);}
+.cta p{color:#e3d3c0;max-width:56ch;margin:0 auto 2rem;font-size:1.06rem;}
+.cta .btn-outline{border-color:rgba(241,230,216,.5);color:var(--milk);}
+
+footer{background:var(--espresso-deep);color:#b39d87;text-align:center;padding:2.6rem 1rem;font-size:.83rem;line-height:1.65;}
+footer a{color:var(--crema-light);}
+footer .bean{margin:0 .45rem -1px;opacity:.85;}
+
+@media(max-width:720px){
+  .hero{padding:3.4rem 0 3rem;border-bottom-width:10px;}
+  .hero h1{font-size:2.1rem;}
+  .hero .headrow{flex-direction:column;gap:.4rem;}
+  .hero .cupmark{order:-1;}
+  .hero .steam.a,.hero .steam.b{display:none;}
+  section,.menu-wrap{padding:3.2rem 0;}
+  .board{padding:1.9rem 1.2rem 2.1rem;border-width:10px;}
+  .menu .item{font-size:1.06rem;}
+  .btn-outline{margin-left:0;margin-top:.7rem;}
+  .cta h2{font-size:1.65rem;}
+}
+</style>
+</head>
+<body>
+<div class="banner">Free website preview brewed up by <a href="https://satechitsolutions.com/#contact" target="_blank" rel="noopener">SaTech IT Solutions</a> for Roast &amp; Ramble Coffee Co — not affiliated with or endorsed by Roast &amp; Ramble Coffee Co.</div>
+
+<header class="hero chalkboard">
+  <span class="steam a" aria-hidden="true"></span>
+  <span class="steam b" aria-hidden="true"></span>
+  <span class="bean bean-drift one" aria-hidden="true"></span>
+  <span class="bean bean-drift two" aria-hidden="true"></span>
+  <div class="wrap">
+    <div class="headrow">
+      <div class="headtext">
+        <span class="eyebrow"><span class="bean chalky" aria-hidden="true"></span>Website Preview</span>
+        <h1>Local, Dependable, and Ready to Help</h1>
+        <span class="squiggle" aria-hidden="true"></span>
+        <p class="lede">Proudly serving the local area with service worth recommending.</p>
+        <a class="btn btn-crema" href="mailto:Tom@SaTechITSolutions.com?subject=Interested%20in%20my%20website%20preview">Say Hello</a>
+        <a class="btn btn-outline" href="https://satechitsolutions.com/#contact" target="_blank" rel="noopener">Learn More</a>
+        <div class="trust"><span class="chip rate">★★★★★ 4.8 &middot; 214 Google reviews</span><span class="chip"><span class="bean chalky" aria-hidden="true"></span>Locally Owned & Operated</span><span class="chip"><span class="bean chalky" aria-hidden="true"></span>Trusted by Neighbors</span><span class="chip"><span class="bean chalky" aria-hidden="true"></span>Serving the Community</span></div>
+        <p class="meta"><b>Coffee shop</b> &middot; 9 Bean St, Portland, OR</p>
+      </div>
+      <div class="cupmark" aria-hidden="true"><i class="steam"></i><i class="steam two"></i><i class="cup"></i><i class="brew"></i><i class="handle"></i><i class="saucer"></i></div>
+    </div>
+  </div>
+</header>
+
+<section class="about">
+  <span class="ring" aria-hidden="true"></span>
+  <span class="ring two" aria-hidden="true"></span>
+  <div class="wrap">
+    <div class="section-head">
+      <div class="sub"><span class="bean" aria-hidden="true"></span>Our Story</div>
+      <h2>Welcome to Roast &amp; Ramble Coffee Co</h2>
+      <span class="squiggle" aria-hidden="true"></span>
+    </div>
+    <p>Roast &amp; Ramble Coffee Co is a locally owned business serving the local area and the surrounding community — built on doing right by neighbors and earning repeat business the honest way.</p><p>You get responsive service, fair pricing, and people who stand behind their work. That&#x27;s the reputation Roast &amp; Ramble Coffee Co has built, one satisfied customer at a time.</p>
+  </div>
+</section>
+
+<div class="menu-wrap"><div class="wrap">
+  <div class="board chalkboard">
+    <span class="steam c" aria-hidden="true"></span>
+    <div class="wrap">
+      <div class="board-head">
+        <div class="sub"><span class="bean chalky" aria-hidden="true"></span>On the Board</div>
+        <h2>What We Offer</h2>
+        <span class="squiggle" aria-hidden="true"></span>
+      </div>
+      <ul class="menu"><li><span class="bean chalky" aria-hidden="true"></span><span class="item">Free Consultations</span><span class="dots" aria-hidden="true"></span><span class="no">01</span></li><li><span class="bean chalky" aria-hidden="true"></span><span class="item">Custom Solutions</span><span class="dots" aria-hidden="true"></span><span class="no">02</span></li><li><span class="bean chalky" aria-hidden="true"></span><span class="item">Responsive Local Service</span><span class="dots" aria-hidden="true"></span><span class="no">03</span></li><li><span class="bean chalky" aria-hidden="true"></span><span class="item">Fair, Upfront Pricing</span><span class="dots" aria-hidden="true"></span><span class="no">04</span></li><li><span class="bean chalky" aria-hidden="true"></span><span class="item">Satisfaction Guaranteed</span><span class="dots" aria-hidden="true"></span><span class="no">05</span></li></ul>
+    </div>
+  </div>
+</div></div>
+
+<section class="contact"><div class="wrap">
+  <div class="section-head">
+    <div class="sub"><span class="bean" aria-hidden="true"></span>Stop In</div>
+    <h2>Come Say Hi</h2>
+    <span class="squiggle" aria-hidden="true"></span>
+  </div>
+  <div class="contact-grid"><div class="box"><div class="lab"><span class="bean" aria-hidden="true"></span>Give Us a Ring</div><a href="tel:5035550188">(503) 555-0188</a></div><div class="box"><div class="lab"><span class="bean" aria-hidden="true"></span>Find Us Here</div><span class="val">9 Bean St, Portland, OR</span></div><div class="box"><div class="lab"><span class="bean" aria-hidden="true"></span>Directions</div><a href="https://maps.google.com/?q=Roast+Ramble+Coffee+Co" target="_blank" rel="noopener">Open in Google Maps</a></div></div>
+</div></section>
+
+<section class="cta">
+  <span class="steam d" aria-hidden="true"></span>
+  <span class="steam e" aria-hidden="true"></span>
+  <div class="wrap">
+    <div class="cupmark" aria-hidden="true"><i class="steam"></i><i class="steam two"></i><i class="cup"></i><i class="brew"></i><i class="handle"></i><i class="saucer"></i></div>
+    <div class="sub"><span class="bean chalky" aria-hidden="true"></span>Like This Preview?</div>
+    <h2>Let's Make It Your Real Website</h2>
+    <p>This cozy mockup was brewed by SaTech IT Solutions to show Roast &amp; Ramble Coffee Co what a warm, inviting website could look like. Ready to make it official?</p>
+    <a class="btn btn-crema" href="mailto:Tom@SaTechITSolutions.com?subject=Interested%20in%20my%20website%20preview">Email SaTech IT Solutions</a>
+    <a class="btn btn-outline" href="https://satechitsolutions.com" target="_blank" rel="noopener">Visit SaTech IT Solutions</a>
+  </div>
+</section>
+
+<footer>&copy; 2026 Website preview by <a href="https://satechitsolutions.com" target="_blank" rel="noopener">SaTech IT Solutions</a><span class="bean" aria-hidden="true"></span>Not affiliated with or endorsed by Roast &amp; Ramble Coffee Co.</footer>
+</body>
+</html>

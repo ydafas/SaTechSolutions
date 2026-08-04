@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="description" content="Ravensworth Rare Books — a trusted locally owned business proudly serving the local area.">
+<meta name="robots" content="noindex,nofollow">
+<title>Ravensworth Rare Books — Website Preview by SaTech IT Solutions</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --night:#0c0a09;--night-2:#141110;--night-3:#1b1614;--panel:#100d0b;
+  --ox:#5a1620;--ox-2:#3d0e16;--ox-3:#2a0910;--ox-bright:#8b2733;
+  --forest:#1d3b2e;--forest-2:#152c22;--forest-3:#0f1e18;
+  --forest-line:rgba(104,158,128,.26);
+  --amber:#e2a54e;--amber-bright:#f6cd86;--amber-deep:#a9762f;
+  --amber-hair:rgba(226,165,78,.26);--amber-hair-soft:rgba(226,165,78,.12);
+  --paper:#e9dcc3;--paper-2:#cdbb9c;--soft:#bdb09a;--muted:#8a7e6d;
+  --serif:'Iowan Old Style','Palatino Linotype','Book Antiqua',Palatino,'Hoefler Text','Times New Roman',Georgia,serif;
+  --sans:system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  --mono:'Courier New',Courier,ui-monospace,monospace;
+}
+html{scroll-behavior:smooth;}
+/* Aged-paper grain + candlelit lamp pool, all CSS gradients — no image requests. */
+body{
+  font-family:var(--serif);color:var(--soft);line-height:1.78;-webkit-font-smoothing:antialiased;
+  background:
+    radial-gradient(78% 52% at 14% -6%,rgba(226,165,78,.15) 0%,transparent 62%),
+    radial-gradient(58% 42% at 102% 6%,rgba(90,22,32,.26) 0%,transparent 66%),
+    radial-gradient(90% 60% at 50% 108%,rgba(29,59,46,.22) 0%,transparent 60%),
+    repeating-linear-gradient(0deg,rgba(233,220,195,.022) 0 1px,transparent 1px 3px),
+    repeating-linear-gradient(90deg,rgba(0,0,0,.20) 0 1px,transparent 1px 4px),
+    var(--night);
+  background-attachment:fixed;
+}
+.wrap{max-width:1040px;margin:0 auto;padding:0 30px;}
+.sc{font-variant:small-caps;letter-spacing:.14em;}
+
+.banner{background:var(--ox-3);border-bottom:1px solid var(--amber-hair-soft);color:var(--paper-2);font-size:.85rem;text-align:center;padding:.8rem 1.1rem;line-height:1.6;font-variant:small-caps;letter-spacing:.06em;}
+.banner a{color:var(--amber-bright);font-weight:600;text-decoration:underline;text-underline-offset:3px;}
+/* Row of book spines on a shelf */
+.shelf{height:11px;opacity:.9;border-bottom:1px solid rgba(0,0,0,.65);
+  background:repeating-linear-gradient(90deg,
+    var(--ox) 0 13px,var(--forest) 13px 21px,#3a2a17 21px 29px,
+    var(--ox-2) 29px 40px,var(--amber-deep) 40px 44px,var(--forest-2) 44px 57px,
+    var(--ox-3) 57px 64px,#2f2418 64px 73px);}
+
+.hero{position:relative;padding:5.4rem 0 4.6rem;}
+.hero-grid{display:grid;grid-template-columns:1.3fr .95fr;gap:3.2rem;align-items:center;}
+.hero .kicker{display:block;color:var(--amber);font-size:.92rem;margin-bottom:1.1rem;}
+.hero .kicker:before{content:"";display:inline-block;width:34px;height:1px;background:var(--amber-deep);vertical-align:middle;margin-right:.7rem;}
+.hero h1{font-size:3.15rem;font-weight:600;line-height:1.16;letter-spacing:.005em;color:var(--paper);margin-bottom:1.15rem;text-shadow:0 0 34px rgba(226,165,78,.14);}
+.hero .lede{font-size:1.14rem;color:var(--soft);max-width:44ch;margin-bottom:2rem;}
+.hero .meta{margin-top:1.9rem;font-size:.82rem;color:var(--muted);font-variant:small-caps;letter-spacing:.1em;}
+
+/* Ex Libris bookplate */
+.plate{position:relative;padding:2.1rem 1.8rem;background:linear-gradient(158deg,var(--night-3) 0%,var(--panel) 100%);border:1px solid var(--amber-hair);box-shadow:0 20px 44px rgba(0,0,0,.55),inset 0 0 70px rgba(226,165,78,.055);}
+.plate:before{content:"";position:absolute;inset:7px;border:1px solid var(--amber-hair-soft);pointer-events:none;}
+.plate-in{position:relative;text-align:center;}
+.plate .ex{font-size:.8rem;color:var(--amber);font-variant:small-caps;letter-spacing:.3em;}
+.plate .orn{color:var(--amber-deep);font-size:1.05rem;margin:.55rem 0 .9rem;letter-spacing:.3em;}
+.plate .who{font-size:1.55rem;font-weight:600;color:var(--paper);line-height:1.3;}
+.plate .what{margin-top:.7rem;font-size:.86rem;color:var(--muted);font-variant:small-caps;letter-spacing:.11em;}
+.plate .where{margin-top:1.1rem;padding-top:1.1rem;border-top:1px solid rgba(233,220,195,.12);font-size:.95rem;color:var(--soft);}
+.plate .stars{display:block;margin-top:1rem;color:var(--amber);font-size:1.02rem;letter-spacing:.14em;}
+.plate .stars small{display:block;margin-top:.25rem;color:var(--muted);font-size:.78rem;letter-spacing:.06em;font-variant:small-caps;}
+
+.btn{display:inline-block;padding:.82rem 1.85rem;font-family:var(--serif);font-variant:small-caps;letter-spacing:.13em;font-size:1rem;font-weight:600;text-decoration:none;min-height:44px;line-height:1.7;border:1px solid transparent;transition:background .2s,border-color .2s,color .2s;}
+.btn-ox{background:linear-gradient(180deg,var(--ox-bright),var(--ox));color:var(--paper);border-color:rgba(226,165,78,.42);box-shadow:0 0 26px rgba(226,165,78,.10);}
+.btn-ox:hover{background:linear-gradient(180deg,#a02f3c,var(--ox-bright));}
+.btn-quill{color:var(--amber-bright);border-color:var(--amber-hair);margin-left:.65rem;}
+.btn-quill:hover{border-color:var(--amber);color:var(--amber);}
+
+.trust{display:flex;flex-wrap:wrap;gap:.55rem;margin-top:1.9rem;}
+.chip{font-family:var(--sans);font-size:.74rem;letter-spacing:.07em;color:var(--paper-2);border:1px solid rgba(233,220,195,.16);padding:.34rem .85rem;background:rgba(233,220,195,.03);}
+.chip.rate{border-color:var(--amber-hair);color:var(--amber-bright);font-weight:600;}
+.chip.rate .st{color:var(--amber);letter-spacing:.08em;}
+
+section{padding:4.8rem 0;}
+.head{display:flex;align-items:baseline;gap:1.05rem;margin-bottom:2.3rem;}
+.head .num{font-family:var(--mono);font-size:.76rem;color:var(--amber-deep);letter-spacing:.08em;flex:none;}
+.head h2{font-size:2.05rem;font-weight:600;color:var(--paper);letter-spacing:.01em;flex:none;}
+.head .rule{flex:1;height:1px;background:linear-gradient(90deg,var(--amber-hair),rgba(226,165,78,0));}
+
+/* Study — marginalia column + drop-capped body */
+.study{background:linear-gradient(180deg,rgba(20,17,16,.85),rgba(12,10,9,.85));border-top:1px solid rgba(233,220,195,.08);border-bottom:1px solid rgba(233,220,195,.08);}
+.study-grid{display:grid;grid-template-columns:180px 1fr;gap:2.6rem;}
+.margin-note{border-left:2px solid var(--ox);padding-left:1.1rem;font-size:.84rem;color:var(--muted);font-variant:small-caps;letter-spacing:.1em;line-height:1.9;}
+.margin-note .ast{display:block;color:var(--amber-deep);font-size:1.1rem;letter-spacing:.2em;margin-bottom:.5rem;}
+.study .body p{font-size:1.1rem;color:var(--soft);margin-bottom:1.35rem;max-width:66ch;}
+.study .body p:last-child{margin-bottom:0;}
+.study .body p:first-child:first-letter{float:left;font-size:4.2rem;line-height:.8;padding:.3rem .55rem 0 0;color:var(--amber);text-shadow:0 0 26px rgba(226,165,78,.35);font-weight:600;}
+
+/* Card catalog */
+.collection{display:grid;grid-template-columns:repeat(auto-fit,minmax(268px,1fr));gap:1.05rem;}
+.card{position:relative;padding:1.4rem 1.5rem;background:linear-gradient(180deg,rgba(233,220,195,.05),rgba(233,220,195,.015));border:1px solid rgba(233,220,195,.09);border-left:5px solid var(--ox);}
+.card:nth-child(even){border-left-color:var(--forest);}
+.card:nth-child(3n){border-left-color:var(--amber-deep);}
+.card .call{font-family:var(--mono);font-size:.72rem;color:var(--amber-deep);letter-spacing:.1em;display:block;margin-bottom:.55rem;}
+.card .title{font-size:1.22rem;font-weight:600;color:var(--paper);line-height:1.35;}
+.card .hair{margin-top:.9rem;height:1px;background:linear-gradient(90deg,rgba(233,220,195,.20),transparent);}
+
+/* Reading room — forest-green panel */
+.contact{background:linear-gradient(180deg,var(--forest-2) 0%,var(--forest-3) 100%);border-top:1px solid var(--forest-line);border-bottom:1px solid var(--forest-line);}
+.contact .head h2{color:#eadfc9;}
+.rows{max-width:760px;}
+.row{display:flex;gap:1.4rem;align-items:baseline;padding:1.15rem 0;border-bottom:1px dashed rgba(233,220,195,.14);}
+.row:first-child{border-top:1px dashed rgba(233,220,195,.14);}
+.row .lab{flex:none;width:10rem;color:var(--amber);font-variant:small-caps;letter-spacing:.13em;font-size:.95rem;}
+.row .val{color:var(--paper-2);font-size:1.06rem;}
+.row a{color:var(--amber-bright);text-decoration:none;font-size:1.06rem;border-bottom:1px solid var(--amber-hair);padding-bottom:2px;}
+.row a:hover{border-color:var(--amber);}
+
+/* Tilted note card tucked into the book */
+.cta{background:radial-gradient(64% 88% at 24% 4%,rgba(226,165,78,.17) 0%,transparent 62%),transparent;}
+.note{max-width:770px;margin:0 auto;transform:rotate(-.55deg);padding:3rem 2.6rem;border:1px solid var(--amber-hair);background:linear-gradient(152deg,#1c1613 0%,#100c0b 100%);box-shadow:0 24px 50px rgba(0,0,0,.55),inset 0 0 80px rgba(226,165,78,.05);}
+.note-in{transform:rotate(.55deg);}
+.note .orn{color:var(--amber-deep);letter-spacing:.35em;font-size:1.05rem;}
+.note .sub{margin-top:.8rem;color:var(--amber);font-variant:small-caps;letter-spacing:.18em;font-size:.92rem;}
+.note h2{font-size:2.3rem;font-weight:600;color:var(--paper);margin-top:.35rem;line-height:1.2;}
+.note p{color:var(--soft);max-width:58ch;margin:1.15rem 0 2.1rem;font-size:1.08rem;}
+
+/* Footnote-style footer */
+footer{background:var(--night-2);border-top:1px solid rgba(233,220,195,.10);padding:2.9rem 0;}
+footer .fn{max-width:72ch;font-size:.86rem;color:var(--muted);line-height:1.8;}
+footer .fn .dag{color:var(--amber-deep);font-family:var(--mono);margin-right:.5rem;}
+footer .fn+.fn{margin-top:.55rem;}
+footer .hr{width:190px;height:1px;background:rgba(233,220,195,.22);margin-bottom:1.3rem;}
+footer a{color:var(--amber-bright);text-decoration:underline;text-underline-offset:3px;}
+
+@media(max-width:820px){
+  .hero-grid{grid-template-columns:1fr;gap:2.4rem;}
+  .study-grid{grid-template-columns:1fr;gap:1.6rem;}
+  .margin-note{border-left:none;border-top:2px solid var(--ox);padding-left:0;padding-top:.9rem;}
+}
+@media(max-width:640px){
+  .hero{padding:3.6rem 0 3.2rem;}
+  .hero h1{font-size:2.25rem;}
+  section{padding:3.3rem 0;}
+  .head{flex-wrap:wrap;gap:.7rem;}
+  .head h2{font-size:1.65rem;}
+  .btn-quill{margin-left:0;margin-top:.7rem;}
+  .note{padding:2.2rem 1.5rem;transform:none;}
+  .note-in{transform:none;}
+  .note h2{font-size:1.7rem;}
+  .row{flex-direction:column;gap:.3rem;}
+  .row .lab{width:auto;}
+  .study .body p:first-child:first-letter{font-size:3.3rem;}
+}
+</style>
+</head>
+<body>
+<div class="banner">A free website preview set in type by <a href="https://satechitsolutions.com/#contact" target="_blank" rel="noopener">SaTech IT Solutions</a> for Ravensworth Rare Books — not affiliated with or endorsed by Ravensworth Rare Books.</div>
+<div class="shelf" aria-hidden="true"></div>
+
+<header class="hero"><div class="wrap">
+  <div class="hero-grid">
+    <div>
+      <span class="kicker sc">Website Preview</span>
+      <h1>Local, Dependable, and Ready to Help</h1>
+      <p class="lede">Proudly serving the local area with service worth recommending.</p>
+      <a class="btn btn-ox" href="mailto:Tom@SaTechITSolutions.com?subject=Interested%20in%20my%20website%20preview">Send Word</a>
+      <a class="btn btn-quill" href="https://satechitsolutions.com/#contact" target="_blank" rel="noopener">Read Further</a>
+      <div class="trust"><span class="chip rate"><span class="st">★★★★★</span> 4.8 &middot; 37 Google reviews</span><span class="chip">Locally Owned & Operated</span><span class="chip">Trusted by Neighbors</span><span class="chip">Serving the Community</span></div>
+      <p class="meta">Bookstore</p>
+    </div>
+    <aside class="plate">
+      <div class="plate-in">
+        <div class="ex">Ex Libris</div>
+        <div class="orn" aria-hidden="true">&#8258;</div>
+        <div class="who">Ravensworth Rare Books</div>
+        <div class="what">Bookstore</div>
+        <div class="where">14 Ivy Lane, Cambridge, MA</div>
+        <span class="stars">★★★★★<small>4.8 from 37 Google reviews</small></span>
+      </div>
+    </aside>
+  </div>
+</div></header>
+
+<section class="study"><div class="wrap">
+  <div class="head"><span class="num">I.</span><h2>From the Study</h2><span class="rule"></span></div>
+  <div class="study-grid">
+    <div class="margin-note">
+      <span class="ast" aria-hidden="true">&#8258;</span>
+      Ravensworth Rare Books<br>Bookstore
+    </div>
+    <div class="body"><p>Ravensworth Rare Books is a locally owned business serving the local area and the surrounding community — built on doing right by neighbors and earning repeat business the honest way.</p><p>You get responsive service, fair pricing, and people who stand behind their work. That&#x27;s the reputation Ravensworth Rare Books has built, one satisfied customer at a time.</p></div>
+  </div>
+</div></section>
+
+<section class="services"><div class="wrap">
+  <div class="head"><span class="num">II.</span><h2>The Collection</h2><span class="rule"></span></div>
+  <div class="collection"><article class="card"><span class="call">MS &middot; 01</span><div class="title">Free Consultations</div><div class="hair"></div></article><article class="card"><span class="call">MS &middot; 02</span><div class="title">Custom Solutions</div><div class="hair"></div></article><article class="card"><span class="call">MS &middot; 03</span><div class="title">Responsive Local Service</div><div class="hair"></div></article><article class="card"><span class="call">MS &middot; 04</span><div class="title">Fair, Upfront Pricing</div><div class="hair"></div></article><article class="card"><span class="call">MS &middot; 05</span><div class="title">Satisfaction Guaranteed</div><div class="hair"></div></article></div>
+</div></section>
+
+<section class="contact"><div class="wrap">
+  <div class="head"><span class="num">III.</span><h2>The Reading Room</h2><span class="rule"></span></div>
+  <div class="rows"><div class="row"><span class="lab">By Telephone</span><a href="tel:6175550142">(617) 555-0142</a></div><div class="row"><span class="lab">The Premises</span><span class="val">14 Ivy Lane, Cambridge, MA</span></div><div class="row"><span class="lab">Directions</span><a href="https://maps.google.com/?q=Ravensworth+Rare+Books" target="_blank" rel="noopener">View on Google Maps</a></div><div class="row"><span class="lab">Trade</span><span class="val">Bookstore</span></div></div>
+</div></section>
+
+<section class="cta"><div class="wrap">
+  <div class="note"><div class="note-in">
+    <div class="orn" aria-hidden="true">&#8258;</div>
+    <div class="sub">Taken With This Preview?</div>
+    <h2>Let Us Bind It Properly</h2>
+    <p>This mockup was written and set by SaTech IT Solutions to show Ravensworth Rare Books what a warm, well-read web presence could look like. Say the word and we will make it real.</p>
+    <a class="btn btn-ox" href="mailto:Tom@SaTechITSolutions.com?subject=Interested%20in%20my%20website%20preview">Email SaTech IT Solutions</a>
+    <a class="btn btn-quill" href="https://satechitsolutions.com" target="_blank" rel="noopener">Visit SaTech IT Solutions</a>
+  </div></div>
+</div></section>
+
+<footer><div class="wrap">
+  <div class="hr" aria-hidden="true"></div>
+  <p class="fn"><span class="dag" aria-hidden="true">&#8225;</span>This page is a speculative website preview produced by <a href="https://satechitsolutions.com" target="_blank" rel="noopener">SaTech IT Solutions</a>. It is not affiliated with or endorsed by Ravensworth Rare Books, and it is not Ravensworth Rare Books's official website.</p>
+  <p class="fn">&copy; 2026 SaTech IT Solutions. Enquiries to <a href="mailto:Tom@SaTechITSolutions.com?subject=Interested%20in%20my%20website%20preview">Tom@SaTechITSolutions.com</a>.</p>
+</div></footer>
+</body>
+</html>

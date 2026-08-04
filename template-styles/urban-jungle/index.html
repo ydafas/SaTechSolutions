@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="description" content="Terra Greenhouse &amp; Nursery — a trusted locally owned business proudly serving the local area.">
+<meta name="robots" content="noindex,nofollow">
+<title>Terra Greenhouse &amp; Nursery — Website Preview by SaTech IT Solutions</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --jungle:#07200f;--jungle-2:#0b2d16;--jungle-3:#123a1e;
+  --canopy:#1c5c2f;--frond:#2f8f45;--lime:#8fd14f;--lime-soft:#b9e389;
+  --terra:#c96f3f;--terra-lite:#e08b57;--terra-deep:#8f4626;--clay:#f2d9c7;
+  --frame:#040c06;--frame-2:#0a1a0d;
+  --paper:#f1f7ea;--muted:#9fbda4;--muted-2:#7fa085;
+  --mullion:rgba(4,12,6,.55);--mullion-soft:rgba(4,12,6,.28);
+}
+html{scroll-behavior:smooth;}
+body{font-family:system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:var(--paper);background:var(--jungle);line-height:1.7;-webkit-font-smoothing:antialiased;}
+.wrap{max-width:1040px;margin:0 auto;padding:0 26px;position:relative;z-index:3;}
+
+/* ---- glasshouse glazing: two-axis mullion grid laid over every band ---- */
+.glass{position:relative;}
+.glass:after{content:"";position:absolute;inset:0;pointer-events:none;z-index:2;
+  background-image:
+    repeating-linear-gradient(90deg,var(--mullion) 0 2px,transparent 2px 168px),
+    repeating-linear-gradient(0deg,var(--mullion-soft) 0 2px,transparent 2px 132px);}
+/* thick framed edge between bands, like a glazing bar */
+.bar{height:12px;background:var(--frame);border-top:2px solid var(--canopy);border-bottom:2px solid var(--canopy);position:relative;z-index:4;}
+.bar:before{content:"";display:block;height:2px;background:var(--lime);opacity:.5;margin-top:3px;}
+
+/* ---- CSS-drawn foliage ---- */
+.flora{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:1;}
+.mon{position:absolute;background:var(--canopy);
+  clip-path:polygon(50% 0%,62% 10%,57% 18%,72% 22%,65% 32%,80% 38%,71% 48%,86% 56%,73% 64%,84% 76%,67% 78%,70% 92%,56% 86%,50% 100%,44% 86%,30% 92%,33% 78%,16% 76%,27% 64%,14% 56%,29% 48%,20% 38%,35% 32%,28% 22%,43% 18%,38% 10%);}
+.frd{position:absolute;background:var(--frond);border-radius:100% 0 100% 0;}
+.spr{position:absolute;background:var(--lime);border-radius:0 100% 0 100%;}
+
+.f1{width:340px;height:340px;top:-90px;left:-110px;transform:rotate(24deg);opacity:.42;}
+.f2{width:260px;height:260px;top:36%;right:-96px;transform:rotate(-38deg);opacity:.34;background:var(--frond);}
+.f3{width:190px;height:190px;bottom:-70px;left:22%;transform:rotate(9deg);opacity:.26;}
+.f4{width:300px;height:120px;top:-30px;right:16%;transform:rotate(52deg);opacity:.38;}
+.f5{width:240px;height:96px;bottom:-24px;right:-40px;transform:rotate(-18deg);opacity:.3;}
+.f6{width:150px;height:60px;top:44%;left:-46px;transform:rotate(-64deg);opacity:.34;}
+.f7{width:110px;height:110px;top:12%;left:38%;transform:rotate(-14deg);opacity:.16;}
+.f8{width:180px;height:72px;bottom:12%;left:6%;transform:rotate(28deg);opacity:.22;background:var(--lime);}
+
+/* ---- banner ---- */
+.banner{background:var(--terra);color:#20100a;font-size:.83rem;text-align:center;padding:.72rem 1rem;line-height:1.55;font-weight:600;border-bottom:3px solid var(--frame);position:relative;z-index:6;}
+.banner a{color:#2b1108;font-weight:800;text-decoration:underline;text-underline-offset:2px;}
+
+/* ---- hero, capped by a pitched glasshouse ridge ---- */
+.ridge{height:56px;background:var(--frame);clip-path:polygon(0 100%,50% 0,100% 100%);position:relative;z-index:5;}
+.hero{position:relative;overflow:hidden;padding:5rem 0 5.25rem;background:radial-gradient(120% 100% at 18% 0%,var(--jungle-3) 0%,var(--jungle-2) 46%,var(--jungle) 100%);border-bottom:3px solid var(--frame);}
+.tag{display:inline-flex;align-items:center;gap:.55rem;background:var(--frame);border:2px solid var(--lime);color:var(--lime);font-size:.68rem;letter-spacing:.26em;text-transform:uppercase;font-weight:800;padding:.45rem 1.1rem;margin-bottom:1.5rem;}
+.hero h1{font-size:3.15rem;font-weight:800;letter-spacing:-.025em;line-height:1.05;max-width:17ch;margin-bottom:1.15rem;color:var(--paper);text-shadow:0 3px 0 rgba(4,12,6,.45);}
+.hero h1 em{font-style:normal;color:var(--lime);}
+.hero p.lede{font-size:1.2rem;color:var(--muted);max-width:50ch;margin-bottom:2rem;}
+.hero .meta{margin-top:2rem;font-size:.78rem;color:var(--muted-2);letter-spacing:.14em;text-transform:uppercase;}
+.hero .meta b{color:var(--lime-soft);font-weight:800;}
+
+.btn{display:inline-block;padding:.95rem 2rem;font-weight:800;font-size:.94rem;letter-spacing:.03em;text-decoration:none;min-height:44px;line-height:1.55;border:2px solid var(--frame);}
+.btn-terra{background:var(--terra);color:#20100a;box-shadow:5px 5px 0 var(--frame);}
+.btn-terra:hover{background:var(--terra-lite);}
+.btn-leaf{background:transparent;color:var(--lime);border-color:var(--lime);margin-left:.7rem;}
+.btn-leaf:hover{background:rgba(143,209,79,.14);}
+
+.trust{display:flex;flex-wrap:wrap;gap:.6rem;align-items:center;margin-top:2rem;}
+.chip{font-size:.79rem;color:var(--muted);background:rgba(4,12,6,.5);border:1px solid var(--canopy);padding:.4rem .95rem;font-weight:600;}
+.chip.rate{color:#20100a;background:var(--clay);border-color:var(--terra-deep);border-left:6px solid var(--terra);font-weight:800;}
+
+/* ---- section rhythm ---- */
+section{padding:4.9rem 0;position:relative;overflow:hidden;}
+.section-head{margin-bottom:2.8rem;}
+.section-head .sub{display:inline-block;font-size:.68rem;letter-spacing:.26em;text-transform:uppercase;color:var(--terra-lite);font-weight:800;border-bottom:2px solid var(--terra);padding-bottom:.3rem;}
+.section-head h2{font-size:2.05rem;font-weight:800;letter-spacing:-.015em;color:var(--paper);margin-top:.8rem;}
+
+.about{background:var(--jungle-2);}
+.about-panel{background:rgba(4,12,6,.42);border:2px solid var(--frame);border-left:8px solid var(--canopy);padding:2.2rem 2.1rem;max-width:70ch;}
+.about-panel p{color:#d9e8d4;font-size:1.07rem;margin-bottom:1.05rem;}
+.about-panel p:last-child{margin-bottom:0;}
+
+/* ---- service cards: black-framed panes standing in terracotta pots ---- */
+.services{background:var(--jungle-3);}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:1.5rem;}
+.card{background:linear-gradient(170deg,rgba(28,92,47,.42),rgba(4,12,6,.55));border:2px solid var(--frame);padding:1.6rem 1.4rem 1.5rem;position:relative;}
+.card:before{content:"";position:absolute;inset:7px;border:1px solid rgba(143,209,79,.28);pointer-events:none;}
+.card:after{content:"";position:absolute;left:0;right:0;top:50%;height:1px;background:rgba(4,12,6,.6);pointer-events:none;}
+.pot{width:58px;height:40px;margin-bottom:1rem;background:linear-gradient(180deg,var(--terra-lite),var(--terra-deep));clip-path:polygon(0 0,100% 0,82% 100%,18% 100%);position:relative;z-index:1;display:flex;align-items:flex-start;justify-content:center;}
+.pot span{display:block;width:100%;height:7px;background:var(--terra);}
+.sprout{position:absolute;top:-26px;left:50%;width:26px;height:34px;background:var(--frond);border-radius:100% 0 100% 0;transform:translateX(-50%) rotate(-12deg);}
+.card h3{font-size:1.06rem;font-weight:800;color:var(--paper);position:relative;z-index:1;line-height:1.45;}
+.card .no{display:block;font-size:.68rem;letter-spacing:.2em;color:var(--lime);font-weight:800;margin-bottom:.35rem;position:relative;z-index:1;}
+
+/* ---- contact: potted blocks ---- */
+.contact{background:var(--jungle-2);}
+.contact-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:1.4rem;}
+.contact-grid .box{background:rgba(4,12,6,.45);border:2px solid var(--frame);border-bottom:8px solid var(--terra);padding:1.4rem 1.3rem;}
+.contact-grid .lab{font-size:.66rem;letter-spacing:.22em;text-transform:uppercase;color:var(--terra-lite);font-weight:800;margin-bottom:.5rem;}
+.contact-grid a{color:var(--lime);text-decoration:none;font-weight:800;border-bottom:2px solid var(--canopy);}
+.contact-grid a:hover{color:var(--lime-soft);}
+.contact-grid .val{color:#cfe0cb;font-weight:600;}
+
+/* ---- CTA ---- */
+.cta{background:linear-gradient(150deg,var(--canopy) 0%,var(--jungle) 78%);border-top:3px solid var(--frame);border-bottom:3px solid var(--frame);}
+.cta .section-head .sub{color:var(--clay);border-bottom-color:var(--clay);}
+.cta p{color:#dcebd6;max-width:56ch;margin-bottom:2rem;font-size:1.08rem;}
+
+footer{background:var(--frame);color:var(--muted-2);text-align:center;padding:2.5rem 1rem;font-size:.82rem;line-height:1.75;border-top:2px solid var(--canopy);position:relative;z-index:4;}
+footer a{color:var(--lime);text-decoration:underline;text-underline-offset:2px;}
+
+@media(max-width:640px){
+  .hero{padding:3.5rem 0 3.4rem;}
+  .hero h1{font-size:2.1rem;}
+  section{padding:3.3rem 0;}
+  .btn-leaf{margin-left:0;margin-top:.75rem;}
+  .about-panel{padding:1.5rem 1.3rem;}
+  .glass:after{background-image:repeating-linear-gradient(90deg,var(--mullion) 0 2px,transparent 2px 108px),repeating-linear-gradient(0deg,var(--mullion-soft) 0 2px,transparent 2px 108px);}
+}
+</style>
+</head>
+<body>
+<div class="banner">Free website preview built by <a href="https://satechitsolutions.com/#contact" target="_blank" rel="noopener">SaTech IT Solutions</a> — not affiliated with or endorsed by Terra Greenhouse &amp; Nursery.</div>
+<div class="ridge"></div>
+
+<header class="hero glass">
+  <div class="flora">
+    <i class="mon f1"></i><i class="mon f2"></i><i class="mon f3"></i>
+    <i class="frd f4"></i><i class="frd f5"></i><i class="frd f6"></i>
+    <i class="mon f7"></i><i class="spr f8"></i>
+  </div>
+  <div class="wrap">
+    <span class="tag">&#9670; Website Preview</span>
+    <h1>Local, Dependable, and Ready to Help</h1>
+    <p class="lede">Proudly serving the local area with service worth recommending.</p>
+    <a class="btn btn-terra" href="mailto:Tom@SaTechITSolutions.com?subject=Interested%20in%20my%20website%20preview">Get in Touch</a>
+    <a class="btn btn-leaf" href="https://satechitsolutions.com/#contact" target="_blank" rel="noopener">Learn More</a>
+    <div class="trust"><span class="chip rate">★★★★★ 4.9 &middot; 76 Google reviews</span><span class="chip">Locally Owned & Operated</span><span class="chip">Trusted by Neighbors</span><span class="chip">Serving the Community</span></div>
+    <p class="meta"><b>&#9670;</b> Plant nursery &middot; 42 Fern Hollow Rd, Asheville, NC</p>
+  </div>
+</header>
+<div class="bar"></div>
+
+<section class="about glass">
+  <div class="flora"><i class="mon f2"></i><i class="frd f6"></i><i class="mon f7"></i></div>
+  <div class="wrap">
+    <div class="section-head"><div class="sub">Rooted Here</div><h2>Welcome to Terra Greenhouse &amp; Nursery</h2></div>
+    <div class="about-panel"><p>Terra Greenhouse &amp; Nursery is a locally owned business serving the local area and the surrounding community — built on doing right by neighbors and earning repeat business the honest way.</p><p>You get responsive service, fair pricing, and people who stand behind their work. That&#x27;s the reputation Terra Greenhouse &amp; Nursery has built, one satisfied customer at a time.</p></div>
+  </div>
+</section>
+<div class="bar"></div>
+
+<section class="services glass">
+  <div class="flora"><i class="mon f1"></i><i class="frd f5"></i><i class="spr f8"></i></div>
+  <div class="wrap">
+    <div class="section-head"><div class="sub">The Collection</div><h2>What We Do</h2></div>
+    <div class="grid"><div class="card"><div class="pot"><span></span><i class="sprout"></i></div><span class="no">SPECIES 01</span><h3>Free Consultations</h3></div><div class="card"><div class="pot"><span></span><i class="sprout"></i></div><span class="no">SPECIES 02</span><h3>Custom Solutions</h3></div><div class="card"><div class="pot"><span></span><i class="sprout"></i></div><span class="no">SPECIES 03</span><h3>Responsive Local Service</h3></div><div class="card"><div class="pot"><span></span><i class="sprout"></i></div><span class="no">SPECIES 04</span><h3>Fair, Upfront Pricing</h3></div><div class="card"><div class="pot"><span></span><i class="sprout"></i></div><span class="no">SPECIES 05</span><h3>Satisfaction Guaranteed</h3></div></div>
+  </div>
+</section>
+<div class="bar"></div>
+
+<section class="contact glass">
+  <div class="flora"><i class="frd f4"></i><i class="mon f3"></i></div>
+  <div class="wrap">
+    <div class="section-head"><div class="sub">Find Us</div><h2>Stop By</h2></div>
+    <div class="contact-grid"><div class="box"><div class="lab">Call</div><a href="tel:8285550121">(828) 555-0121</a></div><div class="box"><div class="lab">Visit</div><span class="val">42 Fern Hollow Rd, Asheville, NC</span></div><div class="box"><div class="lab">Directions</div><a href="https://maps.google.com/?q=Terra+Greenhouse+Nursery" target="_blank" rel="noopener">Open in Google Maps</a></div></div>
+  </div>
+</section>
+
+<section class="cta glass">
+  <div class="flora"><i class="mon f1"></i><i class="frd f5"></i><i class="mon f2"></i><i class="spr f8"></i></div>
+  <div class="wrap">
+    <div class="section-head"><div class="sub">Like This Preview?</div><h2>Let's Make It Your Real Website</h2></div>
+    <p>This mockup was grown by SaTech IT Solutions to show Terra Greenhouse &amp; Nursery what a lush, memorable website could look like. Want to make it official?</p>
+    <a class="btn btn-terra" href="mailto:Tom@SaTechITSolutions.com?subject=Interested%20in%20my%20website%20preview">Email SaTech IT Solutions</a>
+    <a class="btn btn-leaf" href="https://satechitsolutions.com/#contact" target="_blank" rel="noopener">Visit SaTech IT Solutions</a>
+  </div>
+</section>
+
+<footer>&copy; 2026 Website preview by <a href="https://satechitsolutions.com" target="_blank" rel="noopener">SaTech IT Solutions</a>. Not affiliated with or endorsed by Terra Greenhouse &amp; Nursery.</footer>
+</body>
+</html>

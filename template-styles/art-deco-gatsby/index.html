@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="description" content="The Gilded Room Event Hall — a trusted locally owned business proudly serving the local area.">
+<meta name="robots" content="noindex,nofollow">
+<title>The Gilded Room Event Hall — Website Preview by SaTech IT Solutions</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --onyx:#0a0a0c;--onyx-2:#111013;--onyx-3:#17161a;--jet:#050506;
+  --gold:#d4af37;--gold-bright:#f4e0a0;--gold-deep:#9a7b21;
+  --gold-hair:rgba(212,175,55,.34);--gold-hair-soft:rgba(212,175,55,.16);
+  --emerald:#0c5a44;--emerald-2:#083c2e;--emerald-3:#0f6e53;--emerald-bright:#3fae86;
+  --emerald-hair:rgba(63,174,134,.30);
+  --ivory:#f3efe3;--ivory-2:#e8e2d1;--ink:#15141a;--muted:#6d6858;
+  --cream:#f0e9d7;--cream-soft:#cdc4a9;
+  --deco:'Futura','Century Gothic','Avant Garde','ITC Avant Garde Gothic','Twentieth Century','URW Gothic',Verdana,system-ui,sans-serif;
+  --sans:system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+}
+html{scroll-behavior:smooth;}
+body{font-family:var(--sans);color:var(--ink);background:var(--onyx);line-height:1.72;-webkit-font-smoothing:antialiased;}
+.wrap{max-width:1000px;margin:0 auto;padding:0 30px;}
+.deco{font-family:var(--deco);text-transform:uppercase;}
+
+/* ---- Disclosure banner ---- */
+.banner{background:var(--jet);border-bottom:1px solid var(--gold-hair-soft);color:var(--cream-soft);font-size:.82rem;text-align:center;padding:.8rem 1rem;line-height:1.6;letter-spacing:.02em;}
+.banner a{color:var(--gold-bright);font-weight:700;text-decoration:underline;text-underline-offset:2px;}
+
+/* ---- Diamond-lattice chevron band: the section separator motif ---- */
+.chevband{height:16px;background:
+  repeating-linear-gradient(135deg,var(--gold) 0 2px,transparent 2px 10px),
+  repeating-linear-gradient(45deg,var(--gold) 0 2px,transparent 2px 10px),
+  var(--jet);}
+.chevband.em{background:
+  repeating-linear-gradient(135deg,var(--emerald-bright) 0 2px,transparent 2px 10px),
+  repeating-linear-gradient(45deg,var(--gold) 0 2px,transparent 2px 10px),
+  var(--jet);}
+.goldbar{height:4px;background:linear-gradient(90deg,var(--gold-deep),var(--gold-bright) 50%,var(--gold-deep));}
+
+/* ---- Stepped ziggurat crown, drawn with a symmetric clip-path ---- */
+.zig{width:132px;height:18px;margin:0 auto;background:var(--gold);
+  clip-path:polygon(0 100%,0 70%,20% 70%,20% 38%,38% 38%,38% 0,62% 0,62% 38%,80% 38%,80% 70%,100% 70%,100% 100%);}
+.zig.em{background:var(--emerald-bright);}
+.zig.flip{transform:rotate(180deg);}
+
+/* ---- Half-fan rule used in every section head ---- */
+.fanrule{display:flex;align-items:flex-end;justify-content:center;gap:16px;}
+.fanrule:before,.fanrule:after{content:"";height:1px;width:78px;margin-bottom:5px;background:linear-gradient(90deg,transparent,var(--gold-hair));}
+.fanrule:after{background:linear-gradient(90deg,var(--gold-hair),transparent);}
+.fan{width:64px;height:32px;background:repeating-conic-gradient(from 180deg at 50% 100%,var(--gold) 0deg 1.4deg,transparent 1.4deg 9deg);}
+.fan.em{background:repeating-conic-gradient(from 180deg at 50% 100%,var(--emerald-bright) 0deg 1.4deg,transparent 1.4deg 9deg);}
+
+/* ---- Hero: sunburst backdrop + concentric stepped frame, everything centered ---- */
+.hero{position:relative;overflow:hidden;background:var(--onyx);padding:5.6rem 0 5rem;text-align:center;color:var(--cream);}
+.sunburst{position:absolute;left:50%;bottom:0;width:min(1500px,200%);aspect-ratio:2 / 1;transform:translateX(-50%);pointer-events:none;
+  background:repeating-conic-gradient(from 180deg at 50% 100%,rgba(212,175,55,.17) 0deg 1.7deg,transparent 1.7deg 7.6deg);
+  -webkit-mask-image:radial-gradient(closest-side at 50% 100%,#000 26%,rgba(0,0,0,.5) 62%,transparent 100%);
+  mask-image:radial-gradient(closest-side at 50% 100%,#000 26%,rgba(0,0,0,.5) 62%,transparent 100%);}
+.hero .glow{position:absolute;left:50%;bottom:-30%;width:760px;height:760px;transform:translateX(-50%);pointer-events:none;
+  background:radial-gradient(circle,rgba(12,90,68,.34) 0%,transparent 62%);}
+.hero .frame{position:absolute;inset:24px;pointer-events:none;border:1px solid var(--gold-hair);}
+.hero .frame:before{content:"";position:absolute;inset:7px;border:3px solid var(--gold-hair-soft);}
+.hero .wrap{position:relative;z-index:1;}
+.eyebrow{font-family:var(--deco);font-size:.68rem;letter-spacing:.44em;text-indent:.44em;text-transform:uppercase;color:var(--gold);font-weight:700;display:block;}
+.hero .zig{margin-bottom:1.5rem;}
+.hero .eyebrow{margin-bottom:1.5rem;}
+.hero h1{font-family:var(--deco);font-size:3.1rem;font-weight:700;text-transform:uppercase;letter-spacing:.15em;text-indent:.15em;line-height:1.2;max-width:17ch;margin:0 auto 1.4rem;color:#fbf5e6;}
+.hero p.lede{font-size:1.12rem;color:var(--cream-soft);max-width:50ch;margin:0 auto 2.2rem;font-weight:300;}
+.hero .meta{margin-top:2rem;font-family:var(--deco);font-size:.7rem;color:var(--cream-soft);letter-spacing:.2em;text-indent:.2em;text-transform:uppercase;}
+
+/* ---- Buttons: hard-edged, stepped shadow, wide-tracked caps ---- */
+.btn{display:inline-block;font-family:var(--deco);padding:.9rem 2.1rem;font-weight:700;font-size:.74rem;letter-spacing:.2em;text-indent:.2em;text-transform:uppercase;text-decoration:none;min-height:44px;line-height:1.9;transition:background .2s,color .2s,box-shadow .2s;}
+.btn-gold{background:linear-gradient(180deg,var(--gold-bright),var(--gold));color:#141005;box-shadow:0 0 0 1px var(--gold-deep),0 0 0 4px var(--onyx),0 0 0 5px var(--gold-hair);}
+.btn-gold:hover{background:linear-gradient(180deg,#fbeec0,var(--gold-bright));}
+.btn-em{background:transparent;color:var(--emerald-bright);margin-left:1.3rem;box-shadow:0 0 0 1px var(--emerald-hair),0 0 0 4px var(--onyx),0 0 0 5px var(--emerald-hair);}
+.btn-em:hover{color:#63c9a2;box-shadow:0 0 0 1px var(--emerald-bright),0 0 0 4px var(--onyx),0 0 0 5px var(--emerald-bright);}
+
+/* ---- Trust chips: chamfered, strictly aligned ---- */
+.trust{display:flex;flex-wrap:wrap;gap:.75rem;justify-content:center;margin-top:2.2rem;}
+.chip{font-family:var(--deco);font-size:.68rem;letter-spacing:.16em;text-indent:.16em;text-transform:uppercase;color:var(--cream-soft);padding:.5rem 1.1rem;border:1px solid var(--gold-hair-soft);
+  clip-path:polygon(9px 0,100% 0,100% calc(100% - 9px),calc(100% - 9px) 100%,0 100%,0 9px);}
+.chip.rate{border-color:var(--gold);color:var(--gold-bright);font-weight:700;letter-spacing:.08em;text-indent:.08em;text-transform:none;font-family:var(--sans);}
+.chip.rate .stars{color:var(--gold);letter-spacing:.12em;}
+
+/* ---- Section heads ---- */
+section{padding:5rem 0;}
+.section-head{text-align:center;margin-bottom:2.8rem;}
+.section-head .fanrule{margin-bottom:1.1rem;}
+.section-head .sub{font-family:var(--deco);font-size:.68rem;letter-spacing:.4em;text-indent:.4em;text-transform:uppercase;color:var(--gold-deep);font-weight:700;}
+.section-head h2{font-family:var(--deco);font-size:2.05rem;font-weight:700;text-transform:uppercase;letter-spacing:.13em;text-indent:.13em;margin-top:.75rem;color:var(--ink);}
+
+/* ---- About: ivory panel, lattice wash, two mirrored columns ---- */
+.about{background:var(--ivory);position:relative;overflow:hidden;}
+.about:before{content:"";position:absolute;inset:0;pointer-events:none;background:
+  repeating-linear-gradient(45deg,rgba(12,90,68,.055) 0 1px,transparent 1px 15px),
+  repeating-linear-gradient(135deg,rgba(12,90,68,.055) 0 1px,transparent 1px 15px);}
+.about .wrap{position:relative;z-index:1;}
+.about-cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:0;max-width:860px;margin:0 auto;}
+.about-cols .col{padding:0 2.4rem;}
+.about-cols .col+.col{border-left:1px solid var(--gold-hair);}
+.about-cols p{color:var(--muted);font-size:1.06rem;}
+.about .zig{margin-top:2.6rem;}
+
+/* ---- Services: onyx, balanced rows flanked by a numeral plate and a mirrored fan ---- */
+.services{background:var(--onyx);position:relative;}
+.services .section-head h2{color:#fbf5e6;}
+.services .section-head .sub{color:var(--gold);}
+.svc{list-style:none;max-width:760px;margin:0 auto;border-top:1px solid var(--gold-hair-soft);border-bottom:1px solid var(--gold-hair-soft);}
+.svc li{display:flex;align-items:center;gap:1.4rem;padding:1.3rem 1.2rem;border-top:1px solid var(--gold-hair-soft);}
+.svc li:first-child{border-top:none;}
+.svc .num{flex:none;width:54px;height:54px;display:flex;align-items:center;justify-content:center;font-family:var(--deco);font-size:.95rem;font-weight:700;letter-spacing:.08em;color:#141005;background:linear-gradient(180deg,var(--gold-bright),var(--gold));
+  clip-path:polygon(0 26%,13% 26%,13% 13%,26% 13%,26% 0,74% 0,74% 13%,87% 13%,87% 26%,100% 26%,100% 74%,87% 74%,87% 87%,74% 87%,74% 100%,26% 100%,26% 87%,13% 87%,13% 74%,0 74%);}
+.svc .name{flex:1;text-align:center;font-family:var(--deco);font-size:1.06rem;font-weight:700;text-transform:uppercase;letter-spacing:.13em;text-indent:.13em;color:var(--cream);}
+.svc .mark{flex:none;width:54px;height:27px;background:repeating-conic-gradient(from 180deg at 50% 100%,var(--emerald-bright) 0deg 1.6deg,transparent 1.6deg 10deg);}
+
+/* ---- Contact: emerald panel, stepped concentric boxes ---- */
+.contact{background:var(--emerald);color:var(--cream);position:relative;}
+.contact .section-head h2{color:#f7f2e2;}
+.contact .section-head .sub{color:var(--gold-bright);}
+.contact .fanrule:before,.contact .fanrule:after{background:linear-gradient(90deg,transparent,rgba(240,233,215,.42));}
+.contact .fanrule:after{background:linear-gradient(90deg,rgba(240,233,215,.42),transparent);}
+.contact-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:2.4rem;max-width:840px;margin:0 auto;text-align:center;}
+.contact-grid .box{background:var(--emerald-2);padding:1.9rem 1.3rem;box-shadow:0 0 0 1px var(--gold-hair),0 0 0 5px var(--emerald-2),0 0 0 6px var(--gold-hair-soft);}
+.contact-grid .lab{font-family:var(--deco);font-size:.66rem;letter-spacing:.3em;text-indent:.3em;text-transform:uppercase;color:var(--gold-bright);font-weight:700;margin-bottom:.8rem;}
+.contact-grid a{color:#fbf5e6;text-decoration:none;font-weight:700;font-size:1.04rem;border-bottom:1px solid var(--gold-hair);padding-bottom:2px;}
+.contact-grid a:hover{border-color:var(--gold-bright);}
+.contact-grid .val{color:var(--cream-soft);font-size:1.02rem;}
+
+/* ---- CTA: sunburst again, stepped frame, dead-center ---- */
+.cta{background:var(--jet);position:relative;overflow:hidden;text-align:center;color:var(--cream);}
+.cta .sunburst{opacity:.85;}
+.cta .wrap{position:relative;z-index:1;}
+.cta-frame{max-width:740px;margin:0 auto;padding:3.2rem 2.2rem;background:rgba(10,10,12,.72);box-shadow:0 0 0 1px var(--gold-hair),0 0 0 6px var(--jet),0 0 0 7px var(--gold-hair-soft);}
+.cta .sub{font-family:var(--deco);font-size:.68rem;letter-spacing:.4em;text-indent:.4em;text-transform:uppercase;color:var(--gold);font-weight:700;margin-top:1.2rem;}
+.cta h2{font-family:var(--deco);font-size:2.1rem;font-weight:700;text-transform:uppercase;letter-spacing:.13em;text-indent:.13em;color:#fbf5e6;margin-top:.8rem;}
+.cta p{color:var(--cream-soft);max-width:52ch;margin:1.2rem auto 2.2rem;font-size:1.06rem;font-weight:300;}
+
+footer{background:var(--jet);color:var(--cream-soft);text-align:center;padding:2.9rem 1rem;font-size:.82rem;line-height:1.75;}
+footer a{color:var(--gold-bright);text-decoration:underline;text-underline-offset:2px;}
+footer .zig{margin-bottom:1.5rem;}
+
+@media(max-width:720px){
+  .hero{padding:4rem 0 3.6rem;}
+  .hero .frame{inset:13px;}
+  .hero h1{font-size:2rem;letter-spacing:.1em;text-indent:.1em;}
+  section{padding:3.4rem 0;}
+  .section-head h2{font-size:1.55rem;}
+  .cta h2{font-size:1.55rem;}
+  .btn-em{margin-left:0;margin-top:1.4rem;}
+  .about-cols .col{padding:0;}
+  .about-cols .col+.col{border-left:none;border-top:1px solid var(--gold-hair);margin-top:1.5rem;padding-top:1.5rem;}
+  .svc li{gap:.9rem;padding:1.1rem .5rem;}
+  .svc .name{font-size:.92rem;letter-spacing:.09em;text-indent:.09em;}
+  .svc .num{width:44px;height:44px;font-size:.82rem;}
+  .svc .mark{width:36px;height:18px;}
+  .cta-frame{padding:2.2rem 1.2rem;}
+  .fanrule:before,.fanrule:after{width:40px;}
+}
+</style>
+</head>
+<body>
+<div class="banner">Free website preview crafted by <a href="https://satechitsolutions.com/#contact" target="_blank" rel="noopener">SaTech IT Solutions</a> for The Gilded Room Event Hall — a design demonstration only, not affiliated with or endorsed by The Gilded Room Event Hall.</div>
+<div class="goldbar" aria-hidden="true"></div>
+
+<header class="hero">
+  <div class="sunburst" aria-hidden="true"></div>
+  <div class="glow" aria-hidden="true"></div>
+  <div class="frame" aria-hidden="true"></div>
+  <div class="wrap">
+    <div class="zig" aria-hidden="true"></div>
+    <span class="eyebrow">Website Preview</span>
+    <h1>Local, Dependable, and Ready to Help</h1>
+    <p class="lede">Proudly serving the local area with service worth recommending.</p>
+    <div class="fanrule" aria-hidden="true"><span class="fan em"></span></div>
+    <div style="margin-top:1.9rem">
+      <a class="btn btn-gold" href="mailto:Tom@SaTechITSolutions.com?subject=Interested%20in%20my%20website%20preview">Reserve a Consultation</a>
+      <a class="btn btn-em" href="https://satechitsolutions.com/#contact" target="_blank" rel="noopener">See the Collection</a>
+    </div>
+    <div class="trust"><span class="chip rate"><span class="stars">★★★★★</span> 4.9 &middot; 91 Google reviews</span><span class="chip">Locally Owned & Operated</span><span class="chip">Trusted by Neighbors</span><span class="chip">Serving the Community</span></div>
+    <p class="meta">Event venue &middot; 300 Grand Blvd, New York, NY</p>
+  </div>
+</header>
+<div class="chevband" aria-hidden="true"></div>
+
+<section class="about"><div class="wrap">
+  <div class="section-head">
+    <div class="fanrule" aria-hidden="true"><span class="fan"></span></div>
+    <div class="sub">The Establishment</div><h2>The Gilded Room Event Hall</h2>
+  </div>
+  <div class="about-cols"><div class="col"><p>The Gilded Room Event Hall is a locally owned business serving the local area and the surrounding community — built on doing right by neighbors and earning repeat business the honest way.</p></div><div class="col"><p>You get responsive service, fair pricing, and people who stand behind their work. That&#x27;s the reputation The Gilded Room Event Hall has built, one satisfied customer at a time.</p></div></div>
+  <div class="zig em flip" aria-hidden="true"></div>
+</div></section>
+<div class="chevband em" aria-hidden="true"></div>
+
+<section class="services"><div class="wrap">
+  <div class="section-head">
+    <div class="fanrule" aria-hidden="true"><span class="fan"></span></div>
+    <div class="sub">What We Offer</div><h2>The Programme</h2>
+  </div>
+  <ul class="svc"><li><span class="num">01</span><span class="name">Free Consultations</span><span class="mark" aria-hidden="true"></span></li><li><span class="num">02</span><span class="name">Custom Solutions</span><span class="mark" aria-hidden="true"></span></li><li><span class="num">03</span><span class="name">Responsive Local Service</span><span class="mark" aria-hidden="true"></span></li><li><span class="num">04</span><span class="name">Fair, Upfront Pricing</span><span class="mark" aria-hidden="true"></span></li><li><span class="num">05</span><span class="name">Satisfaction Guaranteed</span><span class="mark" aria-hidden="true"></span></li></ul>
+</div></section>
+<div class="goldbar" aria-hidden="true"></div>
+
+<section class="contact"><div class="wrap">
+  <div class="section-head">
+    <div class="fanrule" aria-hidden="true"><span class="fan"></span></div>
+    <div class="sub">Correspondence</div><h2>Call Upon Us</h2>
+  </div>
+  <div class="contact-grid"><div class="box"><div class="lab">Telephone</div><a href="tel:2125550155">(212) 555-0155</a></div><div class="box"><div class="lab">The Address</div><span class="val">300 Grand Blvd, New York, NY</span></div><div class="box"><div class="lab">Directions</div><a href="https://maps.google.com/?q=The+Gilded+Room+Event+Hall" target="_blank" rel="noopener">View on Google Maps</a></div></div>
+</div></section>
+<div class="chevband" aria-hidden="true"></div>
+
+<section class="cta">
+  <div class="sunburst" aria-hidden="true"></div>
+  <div class="wrap">
+    <div class="cta-frame">
+      <div class="zig" aria-hidden="true"></div>
+      <div class="sub">Taken With This Preview?</div>
+      <h2>Make It the Real Thing</h2>
+      <p>This mockup was designed by SaTech IT Solutions to show The Gilded Room Event Hall how a bold, glamorous web presence could look. Ready to make it official?</p>
+      <a class="btn btn-gold" href="mailto:Tom@SaTechITSolutions.com?subject=Interested%20in%20my%20website%20preview">Email SaTech IT Solutions</a>
+      <a class="btn btn-em" href="https://satechitsolutions.com/#contact" target="_blank" rel="noopener">Visit SaTech IT Solutions</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="zig" aria-hidden="true"></div>
+  &copy; 2026 Website preview by <a href="https://satechitsolutions.com" target="_blank" rel="noopener">SaTech IT Solutions</a>. Not affiliated with or endorsed by The Gilded Room Event Hall.
+</footer>
+</body>
+</html>

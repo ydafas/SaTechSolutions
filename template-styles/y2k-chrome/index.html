@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="description" content="PixelPop Device Repair — a trusted locally owned business proudly serving the local area.">
+<meta name="robots" content="noindex,nofollow">
+<title>PixelPop Device Repair — Website Preview by SaTech IT Solutions</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --white:#ffffff;--silver-1:#f6f9fc;--silver-2:#e9eef4;--silver-3:#d7e0ea;--silver-4:#c2cddb;
+  --edge:#b3c0d0;--edge-soft:#dbe3ec;
+  --ink:#1f2c3a;--head:#16222f;--soft:#4c5d70;--muted:#7c8b9c;
+  --blue:#0a7cff;--blue-deep:#0053c4;--blue-lite:#5fb0ff;--blue-pale:#e3f1ff;
+  --chrome:linear-gradient(180deg,#ffffff 0%,#f0f5fa 15%,#cfdae6 46%,#bcc9d8 50%,#dfe7f0 78%,#fdfeff 100%);
+  --brushed:linear-gradient(180deg,#fdfeff 0%,#eef3f9 40%,#e2e9f2 62%,#f7fafd 100%);
+  --gloss:linear-gradient(180deg,rgba(255,255,255,.95) 0%,rgba(255,255,255,.62) 46%,rgba(255,255,255,.06) 100%);
+  --bevel:inset 0 1px 0 rgba(255,255,255,.95),inset 0 -1px 0 rgba(255,255,255,.55);
+  --lift:0 10px 26px rgba(96,116,142,.20);
+  --round:'Trebuchet MS','Lucida Grande','Lucida Sans Unicode','Segoe UI',system-ui,sans-serif;
+  --body:'Lucida Grande','Segoe UI',Tahoma,Verdana,system-ui,-apple-system,sans-serif;
+}
+html{scroll-behavior:smooth;}
+body{font-family:var(--body);color:var(--ink);line-height:1.7;-webkit-font-smoothing:antialiased;
+  background:linear-gradient(180deg,#ffffff 0%,#eff4f9 38%,#e4ebf3 100%) fixed;}
+.wrap{max-width:1020px;margin:0 auto;padding:0 26px;position:relative;z-index:2;}
+a{color:inherit;}
+
+.banner{background:var(--silver-2);color:var(--soft);font-size:.82rem;text-align:center;
+  padding:.7rem 1rem;line-height:1.55;border-bottom:1px solid var(--edge-soft);}
+.banner a{color:var(--blue-deep);font-weight:700;text-decoration:underline;text-underline-offset:2px;}
+
+/* ---- brushed-aluminum toolbar strip (iMac/iTunes window chrome) ---- */
+.chrome-bar{background:var(--chrome);border-bottom:1px solid var(--edge);
+  box-shadow:0 2px 5px rgba(110,130,155,.22),var(--bevel);}
+.chrome-bar .wrap{display:flex;align-items:center;justify-content:space-between;gap:1rem;
+  min-height:56px;padding-top:.5rem;padding-bottom:.5rem;flex-wrap:wrap;}
+.brandmark{display:flex;align-items:center;gap:.6rem;font-family:var(--round);font-weight:700;
+  font-size:1.06rem;letter-spacing:-.01em;color:var(--head);text-transform:lowercase;}
+.orb-dot{width:15px;height:15px;border-radius:50%;flex:none;
+  background:radial-gradient(circle at 32% 26%,#ffffff 0%,#7bbcff 34%,var(--blue) 64%,var(--blue-deep) 100%);
+  box-shadow:0 1px 3px rgba(0,60,140,.4),inset 0 -1px 2px rgba(0,50,120,.45);}
+.tabs{display:flex;gap:.4rem;flex-wrap:wrap;}
+.tabs a{position:relative;overflow:hidden;display:inline-block;font-family:var(--round);
+  font-size:.82rem;text-transform:lowercase;letter-spacing:.01em;color:var(--soft);
+  text-decoration:none;padding:.4rem 1.05rem;border-radius:999px;border:1px solid var(--edge);
+  background:var(--brushed);box-shadow:var(--bevel);}
+.tabs a:before{content:"";position:absolute;left:3px;right:3px;top:1px;height:46%;border-radius:999px;
+  background:var(--gloss);pointer-events:none;}
+.tabs a:hover{color:var(--blue-deep);border-color:var(--blue-lite);}
+
+/* ---- translucent glass blobs (bulging, not blurred glow) ---- */
+.blob{position:absolute;border-radius:52% 48% 46% 54%;pointer-events:none;z-index:0;
+  background:radial-gradient(circle at 30% 24%,rgba(255,255,255,.98) 0%,rgba(255,255,255,.55) 16%,rgba(163,209,255,.55) 48%,rgba(102,171,255,.42) 78%,rgba(255,255,255,.18) 100%);
+  border:1px solid rgba(255,255,255,.9);
+  box-shadow:0 18px 40px rgba(112,146,186,.30),inset 0 -14px 26px rgba(80,140,210,.30),inset 0 10px 20px rgba(255,255,255,.9);}
+.blob.b1{width:250px;height:250px;top:-46px;right:-56px;}
+.blob.b2{width:132px;height:132px;bottom:-34px;right:180px;border-radius:48% 52% 55% 45%;
+  background:radial-gradient(circle at 34% 28%,rgba(255,255,255,.98) 0%,rgba(255,255,255,.6) 18%,rgba(214,229,244,.75) 55%,rgba(178,199,222,.5) 100%);}
+.blob.b3{width:78px;height:78px;top:190px;left:-40px;animation:bob 7s ease-in-out infinite;}
+@keyframes bob{0%,100%{transform:translateY(0);}50%{transform:translateY(-12px);}}
+@media(prefers-reduced-motion:reduce){.blob.b3{animation:none;}}
+
+/* ---- hero ---- */
+.hero{position:relative;overflow:hidden;padding:4.6rem 0 4.4rem;
+  background:linear-gradient(180deg,#ffffff 0%,#f2f7fc 55%,#e7eef6 100%);border-bottom:1px solid var(--edge-soft);}
+.hero .wrap{display:grid;grid-template-columns:1.25fr .75fr;gap:2rem;align-items:center;}
+.badge{position:relative;overflow:hidden;display:inline-block;font-family:var(--round);font-size:.72rem;
+  letter-spacing:.14em;text-transform:uppercase;font-weight:700;color:var(--blue-deep);
+  padding:.4rem 1.05rem;border-radius:999px;border:1px solid var(--blue-lite);
+  background:linear-gradient(180deg,#ffffff 0%,var(--blue-pale) 100%);box-shadow:var(--bevel);margin-bottom:1.4rem;}
+.badge:before{content:"";position:absolute;left:3px;right:3px;top:1px;height:45%;border-radius:999px;background:var(--gloss);}
+h1{font-family:var(--round);font-size:3.15rem;font-weight:700;text-transform:lowercase;
+  letter-spacing:-.035em;line-height:1.06;color:var(--head);max-width:16ch;margin-bottom:1.1rem;}
+h1 .shine{background:linear-gradient(180deg,#4aa4ff 0%,var(--blue) 48%,var(--blue-deep) 100%);
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent;}
+.hero p.lead{font-size:1.14rem;color:var(--soft);max-width:50ch;margin-bottom:2.1rem;}
+.hero .meta{margin-top:2rem;font-family:var(--round);font-size:.84rem;color:var(--muted);text-transform:lowercase;}
+.hero .meta b{color:var(--blue-deep);font-weight:700;}
+.hero-art{position:relative;height:280px;}
+
+/* ---- glossy lozenge buttons (aqua-style) ---- */
+.btn{position:relative;overflow:hidden;display:inline-block;font-family:var(--round);font-weight:700;
+  font-size:.95rem;text-transform:lowercase;letter-spacing:.005em;text-decoration:none;
+  padding:.85rem 2rem;min-height:44px;line-height:1.6;border-radius:999px;
+  transition:transform .14s,box-shadow .14s,filter .14s;}
+.btn:before{content:"";position:absolute;left:4px;right:4px;top:2px;height:44%;border-radius:999px;
+  background:var(--gloss);pointer-events:none;}
+.btn-aqua{color:#fff;border:1px solid var(--blue-deep);text-shadow:0 1px 1px rgba(0,42,100,.45);
+  background:linear-gradient(180deg,#63b3ff 0%,#1683ff 48%,#0a6ce0 52%,#0f8bff 100%);
+  box-shadow:0 8px 18px rgba(10,110,220,.34),var(--bevel);}
+.btn-aqua:hover{transform:translateY(-2px);box-shadow:0 12px 24px rgba(10,110,220,.44),var(--bevel);}
+.btn-steel{color:var(--head);border:1px solid var(--edge);margin-left:.6rem;
+  background:var(--brushed);box-shadow:0 6px 14px rgba(110,132,160,.20),var(--bevel);}
+.btn-steel:hover{transform:translateY(-2px);border-color:var(--blue-lite);color:var(--blue-deep);}
+
+.trust{display:flex;flex-wrap:wrap;gap:.55rem;margin-top:2rem;}
+.chip{position:relative;overflow:hidden;font-family:var(--round);font-size:.8rem;color:var(--soft);
+  padding:.4rem 1rem;border-radius:999px;border:1px solid var(--edge);background:var(--brushed);box-shadow:var(--bevel);}
+.chip:before{content:"";position:absolute;left:3px;right:3px;top:1px;height:44%;border-radius:999px;background:var(--gloss);}
+.chip.rate{border-color:var(--blue-lite);color:var(--blue-deep);font-weight:700;
+  background:linear-gradient(180deg,#ffffff 0%,var(--blue-pale) 100%);}
+.chip span,.chip b{position:relative;z-index:1;}
+
+/* ---- sections ---- */
+section{padding:4.6rem 0;position:relative;}
+section+section{border-top:1px solid var(--edge-soft);}
+.section-head{margin-bottom:2.5rem;}
+.section-head .sub{font-family:var(--round);font-size:.74rem;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--blue);font-weight:700;}
+.section-head h2{font-family:var(--round);font-size:2.15rem;font-weight:700;text-transform:lowercase;
+  letter-spacing:-.03em;color:var(--head);margin-top:.35rem;}
+.panel{position:relative;overflow:hidden;border-radius:22px;border:1px solid var(--edge);
+  background:var(--brushed);box-shadow:var(--lift),var(--bevel);padding:2.2rem 2rem;}
+.panel:before{content:"";position:absolute;left:6px;right:6px;top:3px;height:38%;border-radius:20px;
+  background:var(--gloss);pointer-events:none;}
+.panel>*{position:relative;z-index:1;}
+.about p{color:var(--soft);font-size:1.06rem;margin-bottom:1.1rem;max-width:70ch;}
+.about p:last-child{margin-bottom:0;}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(238px,1fr));gap:1.1rem;}
+.card{position:relative;overflow:hidden;border-radius:20px;border:1px solid var(--edge);
+  background:var(--brushed);box-shadow:var(--lift),var(--bevel);padding:1.6rem 1.4rem;
+  display:flex;align-items:center;gap:1rem;transition:transform .15s,box-shadow .15s,border-color .15s;}
+.card:before{content:"";position:absolute;left:6px;right:6px;top:3px;height:42%;border-radius:18px;
+  background:var(--gloss);pointer-events:none;}
+.card:hover{transform:translateY(-3px);border-color:var(--blue-lite);box-shadow:0 16px 32px rgba(96,116,142,.26),var(--bevel);}
+.card .pip{position:relative;z-index:1;flex:none;width:46px;height:46px;border-radius:50%;color:#fff;
+  font-family:var(--round);font-weight:700;font-size:.98rem;display:flex;align-items:center;justify-content:center;
+  text-shadow:0 1px 1px rgba(0,42,100,.5);border:1px solid var(--blue-deep);
+  background:radial-gradient(circle at 34% 24%,#c9e6ff 0%,#5bb0ff 30%,var(--blue) 62%,var(--blue-deep) 100%);
+  box-shadow:0 5px 12px rgba(10,110,220,.35),inset 0 -3px 6px rgba(0,50,120,.4),inset 0 3px 6px rgba(255,255,255,.7);}
+.card h3{position:relative;z-index:1;font-family:var(--round);font-size:1.05rem;font-weight:700;color:var(--head);line-height:1.35;}
+
+.contact-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(212px,1fr));gap:1.1rem;}
+.contact-grid .box{position:relative;overflow:hidden;border-radius:18px;border:1px solid var(--edge);
+  background:var(--brushed);box-shadow:var(--lift),var(--bevel);padding:1.4rem 1.35rem;}
+.contact-grid .box:before{content:"";position:absolute;left:6px;right:6px;top:3px;height:40%;border-radius:16px;
+  background:var(--gloss);pointer-events:none;}
+.contact-grid .box>*{position:relative;z-index:1;}
+.contact-grid .lab{font-family:var(--round);font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--blue);font-weight:700;margin-bottom:.45rem;}
+.contact-grid a{color:var(--head);text-decoration:none;font-weight:700;}
+.contact-grid a:hover{color:var(--blue-deep);text-decoration:underline;text-underline-offset:2px;}
+.contact-grid .val{color:var(--soft);font-weight:600;}
+
+.cta{position:relative;overflow:hidden;text-align:center;
+  background:linear-gradient(180deg,#eef4fa 0%,#ffffff 100%);}
+.cta .panel{max-width:700px;margin:0 auto;padding:3rem 2.3rem;border-radius:28px;}
+.cta .sub{font-family:var(--round);font-size:.74rem;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--blue);font-weight:700;}
+.cta h2{font-family:var(--round);font-size:2.25rem;font-weight:700;text-transform:lowercase;
+  letter-spacing:-.03em;color:var(--head);margin:.5rem 0 .85rem;}
+.cta p{color:var(--soft);max-width:52ch;margin:0 auto 2rem;font-size:1.05rem;}
+
+footer{background:var(--chrome);border-top:1px solid var(--edge);box-shadow:var(--bevel);
+  padding:2.4rem 0;font-size:.82rem;color:var(--soft);text-align:center;line-height:1.7;}
+footer a{color:var(--blue-deep);text-decoration:underline;text-underline-offset:2px;font-weight:700;}
+
+@media(max-width:760px){
+  .hero{padding:3.4rem 0 3.2rem;}
+  .hero .wrap{grid-template-columns:1fr;}
+  .hero-art{display:none;}
+  h1{font-size:2.25rem;}
+  .section-head h2{font-size:1.65rem;}
+  section{padding:3.2rem 0;}
+  .btn-steel{margin-left:0;margin-top:.65rem;}
+  .cta .panel{padding:2.1rem 1.4rem;}
+  .cta h2{font-size:1.7rem;}
+}
+</style>
+</head>
+<body>
+<div class="banner">Free website preview built by <a href="https://satechitsolutions.com/#contact" target="_blank" rel="noopener">SaTech IT Solutions</a> for PixelPop Device Repair — not affiliated with or endorsed by PixelPop Device Repair.</div>
+
+<div class="chrome-bar"><div class="wrap">
+  <div class="brandmark"><span class="orb-dot" aria-hidden="true"></span>PixelPop Device Repair</div>
+  <nav class="tabs">
+    <a href="#about">about</a>
+    <a href="#services">services</a>
+    <a href="#contact">contact</a>
+  </nav>
+</div></div>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="hero-copy">
+      <span class="badge">Website Preview</span>
+      <h1><span class="shine">Local, Dependable, and Ready to Help</span></h1>
+      <p class="lead">Proudly serving the local area with service worth recommending.</p>
+      <a class="btn btn-aqua" href="mailto:Tom@SaTechITSolutions.com?subject=Interested%20in%20my%20website%20preview">get started</a>
+      <a class="btn btn-steel" href="https://satechitsolutions.com/#contact" target="_blank" rel="noopener">learn more</a>
+      <div class="trust"><span class="chip rate"><span>★★★★★ <b>4.6</b> &middot; 108 Google reviews</span></span><span class="chip"><span>Locally Owned & Operated</span></span><span class="chip"><span>Trusted by Neighbors</span></span><span class="chip"><span>Serving the Community</span></span></div>
+      <p class="meta"><b>&#9679;</b> Electronics repair shop &middot; 77 Circuit Way, San Jose, CA</p>
+    </div>
+    <div class="hero-art" aria-hidden="true">
+      <span class="blob b1"></span>
+      <span class="blob b2"></span>
+      <span class="blob b3"></span>
+    </div>
+  </div>
+</header>
+
+<section class="about" id="about"><div class="wrap">
+  <div class="section-head"><div class="sub">About</div><h2>PixelPop Device Repair</h2></div>
+  <div class="panel"><p>PixelPop Device Repair is a locally owned business serving the local area and the surrounding community — built on doing right by neighbors and earning repeat business the honest way.</p><p>You get responsive service, fair pricing, and people who stand behind their work. That&#x27;s the reputation PixelPop Device Repair has built, one satisfied customer at a time.</p></div>
+</div></section>
+
+<section class="services" id="services"><div class="wrap">
+  <div class="section-head"><div class="sub">What We Do</div><h2>services</h2></div>
+  <div class="grid"><div class="card"><span class="pip">01</span><h3>Free Consultations</h3></div><div class="card"><span class="pip">02</span><h3>Custom Solutions</h3></div><div class="card"><span class="pip">03</span><h3>Responsive Local Service</h3></div><div class="card"><span class="pip">04</span><h3>Fair, Upfront Pricing</h3></div><div class="card"><span class="pip">05</span><h3>Satisfaction Guaranteed</h3></div></div>
+</div></section>
+
+<section class="contact" id="contact"><div class="wrap">
+  <div class="section-head"><div class="sub">Contact</div><h2>get in touch</h2></div>
+  <div class="contact-grid"><div class="box"><div class="lab">Call</div><a href="tel:4085550166">(408) 555-0166</a></div><div class="box"><div class="lab">Visit</div><span class="val">77 Circuit Way, San Jose, CA</span></div><div class="box"><div class="lab">Directions</div><a href="https://maps.google.com/?q=PixelPop+Device+Repair" target="_blank" rel="noopener">Open in Google Maps</a></div></div>
+</div></section>
+
+<section class="cta"><div class="wrap">
+  <div class="panel">
+    <div class="sub">Like This Preview?</div>
+    <h2>let's make it your real website</h2>
+    <p>This mockup was built by SaTech IT Solutions to show PixelPop Device Repair what a bright, polished web presence could look like. Ready to make it official?</p>
+    <a class="btn btn-aqua" href="mailto:Tom@SaTechITSolutions.com?subject=Interested%20in%20my%20website%20preview">email SaTech IT Solutions</a>
+    <a class="btn btn-steel" href="https://satechitsolutions.com/#contact" target="_blank" rel="noopener">visit SaTech IT Solutions</a>
+  </div>
+</div></section>
+
+<footer><div class="wrap">&copy; 2026 Website preview by <a href="https://satechitsolutions.com" target="_blank" rel="noopener">SaTech IT Solutions</a>. Not affiliated with or endorsed by PixelPop Device Repair.</div></footer>
+</body>
+</html>
