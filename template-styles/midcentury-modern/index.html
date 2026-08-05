@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="description" content="Atomic Era Furniture Co — a trusted locally owned business proudly serving the local area.">
+<meta name="robots" content="noindex,nofollow">
+<title>Atomic Era Furniture Co — Website Preview by SaTech IT Solutions</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --oat:#f4ead7;--oat-2:#ecdfc6;--card:#fff8ec;
+  --mustard:#e0a326;--mustard-dark:#bd831a;--mustard-tint:#f7e3b6;
+  --teal:#2b8a86;--teal-dark:#1c625f;--teal-tint:#d9e9e7;
+  --burnt:#c85c2e;--burnt-dark:#9f441d;
+  --walnut:#4b3524;--walnut-2:#5f4531;--walnut-deep:#2f2118;
+  --ink:#33241a;--muted:#7a6753;--line:#dcc9a8;
+  --geo:'Century Gothic','Futura','Avenir Next','Trebuchet MS',system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  --body-font:system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+}
+html{scroll-behavior:smooth;}
+body{font-family:var(--body-font);color:var(--ink);background:var(--oat);line-height:1.7;-webkit-font-smoothing:antialiased;}
+.wrap{max-width:1060px;margin:0 auto;padding:0 28px;}
+
+.banner{background:var(--walnut-deep);color:#f0e2c9;font-size:.82rem;text-align:center;padding:.72rem 1rem;line-height:1.5;letter-spacing:.01em;}
+.banner a{color:var(--mustard);font-weight:700;text-decoration:underline;text-underline-offset:2px;}
+
+/* ---- atomic-age motif primitives (all pure CSS, no images) ---- */
+/* six-point starburst: one gradient bar + two rotated copies + a center dot */
+.star{position:relative;display:inline-block;width:30px;height:30px;flex:none;
+  background:radial-gradient(circle at 50% 50%,var(--burnt) 0 3px,transparent 3.5px),
+             linear-gradient(90deg,transparent calc(50% - 1px),var(--teal) calc(50% - 1px) calc(50% + 1px),transparent calc(50% + 1px));}
+.star:before,.star:after{content:"";position:absolute;inset:0;background:inherit;}
+.star:before{transform:rotate(60deg);}
+.star:after{transform:rotate(-60deg);}
+.star.sm{width:20px;height:20px;}
+.star.gold{background:radial-gradient(circle at 50% 50%,var(--walnut) 0 3px,transparent 3.5px),
+             linear-gradient(90deg,transparent calc(50% - 1px),var(--mustard) calc(50% - 1px) calc(50% + 1px),transparent calc(50% + 1px));}
+.star.pale{background:radial-gradient(circle at 50% 50%,var(--mustard) 0 3px,transparent 3.5px),
+             linear-gradient(90deg,transparent calc(50% - 1px),rgba(244,234,215,.62) calc(50% - 1px) calc(50% + 1px),transparent calc(50% + 1px));}
+/* boomerang: two adjacent borders of a ring = a swept arc */
+.boom{display:inline-block;width:104px;height:104px;flex:none;border:15px solid transparent;border-radius:50%;
+  border-top-color:var(--burnt);border-right-color:var(--burnt);transform:rotate(-140deg);}
+.boom.b2{border-top-color:var(--mustard);border-right-color:var(--mustard);transform:rotate(35deg) scale(.78);}
+.boom.b3{border-top-color:var(--teal);border-right-color:var(--teal);transform:rotate(-55deg) scale(.9);}
+
+/* HERO — asymmetric catalog spread: copy left, atomic diagram right */
+.hero{position:relative;overflow:hidden;background:var(--oat);border-bottom:3px solid var(--walnut);padding:4.6rem 0 4.2rem;}
+.hero:before{content:"";position:absolute;right:-140px;top:-120px;width:420px;height:340px;
+  border-radius:62% 38% 46% 54% / 58% 44% 56% 42%;background:var(--mustard-tint);opacity:.75;pointer-events:none;}
+.hero .wrap{position:relative;z-index:1;display:grid;grid-template-columns:1.28fr .72fr;gap:2.6rem;align-items:center;}
+.eyebrow{display:inline-flex;align-items:center;gap:.6rem;font-family:var(--geo);font-size:.7rem;letter-spacing:.34em;
+  text-transform:uppercase;color:var(--teal-dark);font-weight:700;margin-bottom:1.4rem;}
+.hero h1{font-family:var(--geo);font-size:2.95rem;font-weight:600;letter-spacing:.045em;text-transform:uppercase;
+  line-height:1.16;max-width:16ch;color:var(--walnut);margin-bottom:1.2rem;}
+.hero h1 .ul{box-shadow:inset 0 -.16em 0 var(--mustard);}
+.hero p.lede{font-size:1.13rem;color:var(--muted);max-width:44ch;margin-bottom:2rem;}
+.hero .meta{margin-top:2rem;font-family:var(--geo);font-size:.76rem;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);
+  border-top:1px solid var(--line);padding-top:1rem;}
+.hero .meta b{color:var(--burnt-dark);font-weight:700;}
+
+/* atomic orbit diagram — three tilted rings, hairline spokes, mustard nucleus */
+.atom{position:relative;width:100%;max-width:270px;aspect-ratio:1/1;margin-left:auto;}
+.atom .spokes{position:absolute;inset:0;border-radius:50%;
+  background:repeating-conic-gradient(from 0deg at 50% 50%,var(--walnut) 0deg .35deg,transparent .35deg 12deg);
+  -webkit-mask-image:radial-gradient(circle at 50% 50%,transparent 0 30%,#000 33% 47%,transparent 49%);
+  mask-image:radial-gradient(circle at 50% 50%,transparent 0 30%,#000 33% 47%,transparent 49%);opacity:.5;}
+.atom .ring{position:absolute;inset:30% 4%;border:2px solid var(--teal);border-radius:50%;}
+.atom .ring.r2{border-color:var(--burnt);transform:rotate(60deg);}
+.atom .ring.r3{border-color:var(--walnut);transform:rotate(-60deg);}
+.atom .ring:after{content:"";position:absolute;top:-7px;left:50%;width:13px;height:13px;margin-left:-6.5px;
+  border-radius:50%;background:var(--teal);}
+.atom .ring.r2:after{background:var(--burnt);}
+.atom .ring.r3:after{background:var(--walnut);}
+.atom .nucleus{position:absolute;left:50%;top:50%;width:56px;height:56px;margin:-28px 0 0 -28px;border-radius:50%;
+  background:var(--mustard);border:3px solid var(--card);box-shadow:0 0 0 2px var(--mustard-dark);}
+
+.btn{display:inline-block;font-family:var(--geo);padding:.88rem 1.9rem;font-weight:700;font-size:.8rem;letter-spacing:.16em;
+  text-transform:uppercase;text-decoration:none;min-height:44px;line-height:1.85;border-radius:999px;}
+.btn-mustard{background:var(--mustard);color:var(--walnut-deep);border:2px solid var(--mustard-dark);}
+.btn-mustard:hover{background:var(--mustard-dark);color:#fff8ec;}
+.btn-teal{background:transparent;color:var(--teal-dark);border:2px solid var(--teal);margin-left:.55rem;}
+.btn-teal:hover{background:var(--teal-tint);}
+.trust{display:flex;flex-wrap:wrap;gap:.55rem;align-items:center;margin-top:1.9rem;}
+.chip{font-size:.78rem;font-weight:600;color:var(--walnut);background:var(--card);border:1px solid var(--line);
+  border-radius:999px;padding:.38rem 1rem;}
+.chip.rate{background:var(--teal-dark);color:#eaf5f3;border-color:var(--teal-dark);font-weight:700;}
+
+/* boomerang + starburst divider band */
+.band{background:var(--walnut);display:flex;align-items:center;justify-content:center;gap:2.6rem;
+  padding:1.5rem 1rem;overflow:hidden;border-bottom:6px solid var(--mustard);}
+
+section{padding:4.6rem 0;}
+.section-head{margin-bottom:2.6rem;}
+.section-head .sub{display:inline-flex;align-items:center;gap:.55rem;font-family:var(--geo);font-size:.7rem;letter-spacing:.3em;
+  text-transform:uppercase;font-weight:700;color:var(--burnt-dark);}
+.section-head h2{font-family:var(--geo);font-size:1.95rem;font-weight:600;letter-spacing:.07em;text-transform:uppercase;
+  color:var(--walnut);margin-top:.6rem;padding-bottom:.85rem;position:relative;}
+.section-head h2:after{content:"";position:absolute;left:0;bottom:0;width:84px;height:6px;
+  background:linear-gradient(90deg,var(--mustard) 0 33%,var(--burnt) 33% 66%,var(--teal) 66% 100%);}
+
+/* ABOUT — teal panel with a kidney-table blob */
+.about{position:relative;overflow:hidden;background:var(--teal-dark);color:#e8f3f1;}
+.about:before{content:"";position:absolute;left:-120px;bottom:-150px;width:400px;height:300px;
+  border-radius:58% 42% 62% 38% / 46% 58% 42% 54%;background:rgba(224,163,38,.16);pointer-events:none;}
+.about .wrap{position:relative;z-index:1;}
+.about .section-head .sub{color:var(--mustard);}
+.about .section-head h2{color:#fff8ec;}
+.about .section-head h2:after{background:linear-gradient(90deg,var(--mustard) 0 50%,var(--burnt) 50% 100%);}
+.about p{font-size:1.08rem;color:#dcece9;max-width:64ch;margin-bottom:1.1rem;}
+
+/* SERVICES — furniture-catalog plates on hairpin legs */
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:3.1rem 1.5rem;}
+.card{position:relative;background:var(--card);border:2px solid var(--walnut);border-radius:14px 14px 4px 4px;
+  padding:1.75rem 1.5rem 1.6rem;}
+.card .no{display:inline-block;font-family:var(--geo);font-size:.68rem;letter-spacing:.24em;text-transform:uppercase;
+  color:var(--card);background:var(--burnt);border-radius:999px;padding:.28rem .85rem;margin-bottom:.9rem;font-weight:700;}
+.card h3{font-family:var(--geo);font-size:1.06rem;font-weight:600;letter-spacing:.05em;color:var(--walnut);line-height:1.4;}
+.card .rule{display:block;width:44px;height:4px;margin-top:1rem;border-radius:999px;background:var(--mustard);}
+/* tapered hairpin legs */
+.card .legs{position:absolute;left:0;right:0;bottom:-24px;height:26px;pointer-events:none;}
+.card .legs:before,.card .legs:after{content:"";position:absolute;top:0;width:3px;height:26px;
+  background:linear-gradient(180deg,var(--walnut) 0%,var(--walnut-2) 62%,rgba(95,69,49,.35) 100%);border-radius:0 0 3px 3px;}
+.card .legs:before{left:26px;transform:rotate(11deg);transform-origin:top center;}
+.card .legs:after{right:26px;transform:rotate(-11deg);transform-origin:top center;}
+
+/* CONTACT */
+.contact{background:var(--oat-2);border-top:3px solid var(--walnut);border-bottom:3px solid var(--walnut);}
+.contact-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:1.7rem;}
+.contact-grid .lab{font-family:var(--geo);font-size:.68rem;letter-spacing:.22em;text-transform:uppercase;
+  color:var(--teal-dark);font-weight:700;margin-bottom:.45rem;}
+.contact-grid a{color:var(--burnt-dark);text-decoration:none;font-weight:700;border-bottom:2px solid var(--mustard);}
+.contact-grid a:hover{color:var(--walnut);}
+.contact-grid .val{color:var(--muted);font-weight:600;}
+
+/* CTA — walnut ground, starburst corner accents */
+.cta{position:relative;overflow:hidden;background:var(--walnut);color:#f0e2c9;}
+.cta:before{content:"";position:absolute;right:-90px;top:-90px;width:260px;height:260px;border:14px solid transparent;
+  border-radius:50%;border-top-color:rgba(224,163,38,.22);border-right-color:rgba(224,163,38,.22);transform:rotate(20deg);pointer-events:none;}
+.cta .wrap{position:relative;z-index:1;}
+.cta .section-head .sub{color:var(--mustard);}
+.cta .section-head h2{color:#fff8ec;}
+.cta .section-head h2:after{background:linear-gradient(90deg,var(--mustard) 0 50%,var(--teal) 50% 100%);}
+.cta p{color:#e2d3ba;max-width:58ch;margin-bottom:2rem;font-size:1.06rem;}
+.cta .btn-teal{color:#fff8ec;border-color:var(--mustard);}
+.cta .btn-teal:hover{background:rgba(224,163,38,.16);}
+
+footer{background:var(--walnut-deep);color:#c3ae93;text-align:center;padding:2.5rem 1rem;font-size:.82rem;line-height:1.65;}
+footer a{color:var(--mustard);}
+footer .fstars{display:flex;justify-content:center;gap:1.1rem;margin-bottom:1.1rem;}
+
+@media(max-width:820px){
+  .hero .wrap{grid-template-columns:1fr;gap:2.2rem;}
+  .atom{margin:0 auto;max-width:220px;}
+}
+@media(max-width:640px){
+  .hero{padding:3.4rem 0 3rem;}
+  .hero h1{font-size:2.05rem;letter-spacing:.03em;}
+  section{padding:3.3rem 0;}
+  .btn-teal{margin-left:0;margin-top:.7rem;}
+  .band{gap:1.2rem;padding:1.1rem .5rem;}
+  .boom{width:70px;height:70px;border-width:11px;}
+  .section-head h2{font-size:1.55rem;}
+}
+</style>
+</head>
+<body>
+<div class="banner">Free website preview built by <a href="https://satechitsolutions.com/#contact" target="_blank" rel="noopener">SaTech IT Solutions</a> for Atomic Era Furniture Co — a sample design, not affiliated with or endorsed by Atomic Era Furniture Co.</div>
+
+<header class="hero"><div class="wrap">
+  <div>
+    <span class="eyebrow"><span class="star sm" aria-hidden="true"></span>Website Preview</span>
+    <h1><span class="ul">Local, Dependable, and Ready to Help</span></h1>
+    <p class="lede">Proudly serving the local area with service worth recommending.</p>
+    <a class="btn btn-mustard" href="mailto:Tom@SaTechITSolutions.com?subject=Interested%20in%20my%20website%20preview">Get in Touch</a>
+    <a class="btn btn-teal" href="https://satechitsolutions.com/#contact" target="_blank" rel="noopener">Learn More</a>
+    <div class="trust"><span class="chip rate">★★★★★ 4.8 &middot; 67 Google reviews</span><span class="chip">Locally Owned & Operated</span><span class="chip">Trusted by Neighbors</span><span class="chip">Serving the Community</span></div>
+    <p class="meta"><b>&#9670;</b> Furniture store &middot; 1958 Boulevard Dr, Palm Springs, CA</p>
+  </div>
+  <div class="atom" aria-hidden="true">
+    <span class="spokes"></span>
+    <span class="ring r1"></span><span class="ring r2"></span><span class="ring r3"></span>
+    <span class="nucleus"></span>
+  </div>
+</div></header>
+
+<div class="band" aria-hidden="true">
+  <span class="boom b1"></span><span class="star pale"></span><span class="boom b2"></span>
+  <span class="star pale"></span><span class="boom b3"></span>
+</div>
+
+<section class="about"><div class="wrap">
+  <div class="section-head"><div class="sub"><span class="star sm gold" aria-hidden="true"></span>Our Story</div><h2>Welcome to Atomic Era Furniture Co</h2></div>
+  <p>Atomic Era Furniture Co is a locally owned business serving the local area and the surrounding community — built on doing right by neighbors and earning repeat business the honest way.</p><p>You get responsive service, fair pricing, and people who stand behind their work. That&#x27;s the reputation Atomic Era Furniture Co has built, one satisfied customer at a time.</p>
+</div></section>
+
+<section class="services"><div class="wrap">
+  <div class="section-head"><div class="sub"><span class="star sm" aria-hidden="true"></span>The Collection</div><h2>What We Do</h2></div>
+  <div class="grid"><article class="card"><span class="no">No.&nbsp;01</span><h3>Free Consultations</h3><span class="rule"></span><span class="legs" aria-hidden="true"></span></article><article class="card"><span class="no">No.&nbsp;02</span><h3>Custom Solutions</h3><span class="rule"></span><span class="legs" aria-hidden="true"></span></article><article class="card"><span class="no">No.&nbsp;03</span><h3>Responsive Local Service</h3><span class="rule"></span><span class="legs" aria-hidden="true"></span></article><article class="card"><span class="no">No.&nbsp;04</span><h3>Fair, Upfront Pricing</h3><span class="rule"></span><span class="legs" aria-hidden="true"></span></article><article class="card"><span class="no">No.&nbsp;05</span><h3>Satisfaction Guaranteed</h3><span class="rule"></span><span class="legs" aria-hidden="true"></span></article></div>
+</div></section>
+
+<section class="contact"><div class="wrap">
+  <div class="section-head"><div class="sub"><span class="star sm" aria-hidden="true"></span>Pay Us a Visit</div><h2>Get in Touch</h2></div>
+  <div class="contact-grid"><div><div class="lab">Telephone</div><a href="tel:7605550133">(760) 555-0133</a></div><div><div class="lab">Showroom</div><span class="val">1958 Boulevard Dr, Palm Springs, CA</span></div><div><div class="lab">Directions</div><a href="https://maps.google.com/?q=Atomic+Era+Furniture+Co" target="_blank" rel="noopener">Open in Google Maps</a></div></div>
+</div></section>
+
+<section class="cta"><div class="wrap">
+  <div class="section-head"><div class="sub"><span class="star sm gold" aria-hidden="true"></span>Like This Preview?</div><h2>Let's Make It the Real Thing</h2></div>
+  <p>This mockup was designed by SaTech IT Solutions to show Atomic Era Furniture Co what a bright, confident mid-century-modern website could look like. Ready to make it official?</p>
+  <a class="btn btn-mustard" href="mailto:Tom@SaTechITSolutions.com?subject=Interested%20in%20my%20website%20preview">Email SaTech IT Solutions</a>
+  <a class="btn btn-teal" href="https://satechitsolutions.com/#contact" target="_blank" rel="noopener">Visit SaTech IT Solutions</a>
+</div></section>
+
+<footer>
+  <div class="fstars" aria-hidden="true"><span class="star sm gold"></span><span class="star sm pale"></span><span class="star sm gold"></span></div>
+  &copy; 2026 Website preview by <a href="https://satechitsolutions.com" target="_blank" rel="noopener">SaTech IT Solutions</a>. Not affiliated with or endorsed by Atomic Era Furniture Co.
+</footer>
+</body>
+</html>

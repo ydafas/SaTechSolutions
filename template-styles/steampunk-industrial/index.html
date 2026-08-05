@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="description" content="Ironworks Custom Machining — a trusted locally owned business proudly serving the local area.">
+<meta name="robots" content="noindex,nofollow">
+<title>Ironworks Custom Machining — Website Preview by SaTech IT Solutions</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --iron:#241f1c;--iron-2:#2e2723;--iron-3:#191512;--iron-deep:#110e0c;--iron-lt:#3a322c;
+  --brass:#c9a227;--brass-lt:#eccd6d;--brass-pale:#f6e3ac;--brass-dk:#8f6f18;--brass-deep:#63490c;
+  --copper:#b4621f;--copper-lt:#e0a163;--copper-dk:#7a3d12;--copper-deep:#4e260d;
+  --parch:#f3e7cf;--parch-2:#e8d8b6;--parch-3:#dcc79f;
+  --ink:#2b211a;--muted:#6f5c47;--dim:#a8937a;--dim-2:#c9b696;
+  --patina:#517f6b;
+  --serif:'Bookman Old Style',Rockwell,'Cambria','Palatino Linotype','Times New Roman',Georgia,serif;
+  --sans:'Segoe UI',system-ui,-apple-system,Roboto,Helvetica,Arial,sans-serif;
+}
+html{scroll-behavior:smooth;}
+body{font-family:var(--sans);color:var(--ink);background:var(--iron-deep);line-height:1.68;-webkit-font-smoothing:antialiased;}
+.wrap{max-width:1060px;margin:0 auto;padding:0 26px;}
+
+/* ---- brass cog: layered radial gradients + a repeating-conic tooth ring ---- */
+.gear{position:relative;width:66px;height:66px;border-radius:50%;flex:none;
+  background:
+    radial-gradient(circle at 50% 50%,var(--iron-3) 0 12%,transparent 12.6%),
+    radial-gradient(circle at 50% 50%,var(--brass-pale) 0 23%,transparent 23.6%),
+    radial-gradient(circle at 50% 50%,transparent 0 23%,var(--iron-3) 23% 31%,transparent 31.6%),
+    radial-gradient(circle at 32% 30%,rgba(255,255,255,.30),transparent 46%),
+    radial-gradient(circle at 50% 50%,var(--brass) 0 77%,transparent 77.6%),
+    repeating-conic-gradient(from 7.5deg,var(--brass-dk) 0deg 15deg,transparent 15deg 30deg);
+  filter:drop-shadow(0 3px 6px rgba(0,0,0,.5));}
+.gear.sm{width:38px;height:38px;}
+.gear.lg{width:150px;height:150px;}
+.gear.xl{width:250px;height:250px;}
+.gear.copperized{background:
+    radial-gradient(circle at 50% 50%,var(--iron-3) 0 12%,transparent 12.6%),
+    radial-gradient(circle at 50% 50%,var(--copper-lt) 0 23%,transparent 23.6%),
+    radial-gradient(circle at 50% 50%,transparent 0 23%,var(--iron-3) 23% 31%,transparent 31.6%),
+    radial-gradient(circle at 32% 30%,rgba(255,255,255,.24),transparent 46%),
+    radial-gradient(circle at 50% 50%,var(--copper) 0 77%,transparent 77.6%),
+    repeating-conic-gradient(from 9deg,var(--copper-dk) 0deg 18deg,transparent 18deg 36deg);}
+@keyframes cogturn{to{transform:rotate(360deg);}}
+.turning{animation:cogturn 52s linear infinite;}
+.turning.rev{animation-direction:reverse;animation-duration:38s;}
+@media(prefers-reduced-motion:reduce){.turning{animation:none;}}
+
+/* ---- copper pipe run with cast collars + riveted centerline ---- */
+.pipe-run{background:var(--iron-3);padding:15px 0;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),inset 0 -1px 0 rgba(0,0,0,.5);}
+.pipe{position:relative;max-width:1060px;margin:0 auto;height:26px;border-radius:13px;
+  background:linear-gradient(180deg,var(--copper-deep) 0%,var(--copper) 20%,var(--copper-lt) 40%,var(--copper) 62%,#3d1d09 100%);
+  box-shadow:0 5px 12px rgba(0,0,0,.55),inset 0 0 0 1px rgba(0,0,0,.45);}
+.pipe:before{content:"";position:absolute;inset:0;border-radius:13px;
+  background-image:radial-gradient(circle,rgba(255,226,175,.95) 0 1.7px,rgba(66,32,10,.9) 1.9px 3.4px,transparent 3.7px);
+  background-size:32px 26px;background-position:center;}
+.collar{position:absolute;top:-5px;bottom:-5px;left:52px;width:15px;border-radius:4px;
+  background:linear-gradient(180deg,#5c2d10 0%,var(--copper-lt) 45%,#4a250c 100%);
+  box-shadow:0 3px 7px rgba(0,0,0,.5);}
+.collar.r{left:auto;right:52px;}
+
+/* ---- riveted iron panel ---- */
+.iron{position:relative;background-color:var(--iron);
+  background-image:linear-gradient(180deg,rgba(255,255,255,.05) 0%,transparent 18%,transparent 80%,rgba(0,0,0,.4) 100%),
+    repeating-linear-gradient(90deg,rgba(255,255,255,.022) 0 2px,transparent 2px 7px);}
+.iron:before,.iron:after{content:"";position:absolute;left:0;right:0;height:16px;pointer-events:none;
+  background-image:radial-gradient(circle,rgba(246,227,172,.85) 0 1.7px,rgba(20,14,10,.9) 1.9px 3.4px,transparent 3.7px);
+  background-size:36px 16px;background-position:center;}
+.iron:before{top:0;}
+.iron:after{bottom:0;}
+
+/* ---- bolted plate (parchment or brass framed) ---- */
+.plate{position:relative;border:2px solid var(--brass-dk);border-radius:7px;background:var(--parch);
+  box-shadow:0 6px 16px rgba(0,0,0,.42),inset 0 0 0 1px rgba(255,255,255,.5);}
+.plate:before{content:"";position:absolute;inset:7px;border-radius:3px;pointer-events:none;
+  background-image:
+    radial-gradient(circle at 0 0,var(--brass-pale) 0 1.6px,var(--brass-deep) 1.8px 3.3px,transparent 3.6px),
+    radial-gradient(circle at 100% 0,var(--brass-pale) 0 1.6px,var(--brass-deep) 1.8px 3.3px,transparent 3.6px),
+    radial-gradient(circle at 0 100%,var(--brass-pale) 0 1.6px,var(--brass-deep) 1.8px 3.3px,transparent 3.6px),
+    radial-gradient(circle at 100% 100%,var(--brass-pale) 0 1.6px,var(--brass-deep) 1.8px 3.3px,transparent 3.6px);}
+
+.banner{background:var(--iron-deep);color:var(--dim-2);font-size:.83rem;text-align:center;padding:.75rem 1rem;line-height:1.55;border-bottom:1px solid var(--brass-deep);}
+.banner a{color:var(--brass-lt);font-weight:700;text-decoration:underline;text-underline-offset:2px;}
+.banner .bolt{color:var(--copper-lt);margin-right:.35rem;}
+
+.eyebrow{display:inline-block;font-family:var(--serif);font-size:.74rem;letter-spacing:.32em;text-transform:uppercase;font-weight:700;
+  color:var(--brass-lt);border-top:1px solid var(--brass-deep);border-bottom:1px solid var(--brass-deep);padding:.35rem 0;}
+
+.hero{position:relative;overflow:hidden;padding:5.5rem 0 4.75rem;color:var(--parch);text-align:center;}
+.hero .cogwork{position:absolute;inset:0;pointer-events:none;opacity:.5;}
+.hero .cogwork .gear{position:absolute;}
+.hero .cogwork .a{top:-70px;left:-64px;}
+.hero .cogwork .b{top:96px;left:104px;}
+.hero .cogwork .c{bottom:-56px;right:-48px;}
+.hero .cogwork .d{bottom:118px;right:150px;}
+.hero .wrap{position:relative;z-index:1;}
+.hero h1{font-family:var(--serif);font-size:3.05rem;font-weight:700;line-height:1.12;letter-spacing:.005em;
+  max-width:20ch;margin:1.35rem auto 1.15rem;color:var(--parch);
+  text-shadow:0 2px 0 rgba(0,0,0,.55),0 0 26px rgba(201,162,39,.20);}
+.hero p.lede{font-size:1.18rem;color:var(--dim-2);max-width:53ch;margin:0 auto 2.2rem;}
+.hero .meta{margin-top:2.1rem;font-family:var(--serif);font-size:.79rem;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);}
+.hero .meta .sep{color:var(--copper-lt);margin:0 .55rem;}
+
+.btn{display:inline-block;padding:.95rem 2rem;border-radius:5px;font-family:var(--serif);font-weight:700;font-size:.86rem;
+  letter-spacing:.16em;text-transform:uppercase;text-decoration:none;min-height:44px;line-height:1.6;
+  transition:filter .18s,border-color .18s,color .18s;}
+.btn-brass{color:#2b1f05;border:1px solid var(--brass-deep);
+  background:linear-gradient(180deg,var(--brass-pale) 0%,var(--brass) 46%,var(--brass-dk) 100%);
+  box-shadow:0 5px 14px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.6);}
+.btn-brass:hover{filter:brightness(1.09);}
+.btn-rivet{color:var(--brass-lt);border:1px solid var(--brass-deep);background:linear-gradient(180deg,var(--iron-lt),var(--iron-3));
+  box-shadow:0 5px 14px rgba(0,0,0,.4);margin-left:.6rem;}
+.btn-rivet:hover{color:var(--brass-pale);border-color:var(--brass);}
+
+.trust{display:flex;flex-wrap:wrap;gap:.65rem;justify-content:center;margin-top:2.1rem;}
+.tag{font-family:var(--serif);font-size:.73rem;letter-spacing:.13em;text-transform:uppercase;color:var(--dim-2);
+  border:1px solid var(--iron-lt);border-radius:4px;padding:.45rem 1rem;background:linear-gradient(180deg,var(--iron-2),var(--iron-3));}
+.tag.gauge{color:#2b1f05;font-weight:700;border-color:var(--brass-deep);
+  background:linear-gradient(180deg,var(--brass-pale),var(--brass) 60%,var(--brass-dk));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.55);}
+.tag.gauge .star{color:var(--copper-dk);letter-spacing:.05em;}
+
+section{padding:4.75rem 0;}
+.section-head{display:flex;align-items:center;justify-content:center;gap:1.15rem;margin-bottom:2.8rem;}
+.section-head .rail{flex:1;max-width:150px;height:5px;border-radius:3px;
+  background:linear-gradient(180deg,var(--copper-deep),var(--copper-lt) 45%,var(--copper-deep));}
+.section-head .htext{text-align:center;}
+.section-head .sub{font-family:var(--serif);font-size:.71rem;letter-spacing:.3em;text-transform:uppercase;font-weight:700;color:var(--copper);}
+.section-head h2{font-family:var(--serif);font-size:2.05rem;font-weight:700;letter-spacing:.02em;margin-top:.4rem;line-height:1.2;}
+
+.about{background:var(--parch-2);
+  background-image:radial-gradient(circle at 18% 12%,rgba(180,98,31,.10),transparent 42%),
+    radial-gradient(circle at 84% 82%,rgba(143,111,24,.12),transparent 46%);}
+.about .section-head h2{color:var(--ink);}
+.about-plate{max-width:760px;margin:0 auto;padding:2.6rem 2.4rem;}
+.about-plate p{color:var(--ink);font-size:1.09rem;margin-bottom:1.15rem;}
+.about-plate p:last-child{margin-bottom:0;}
+.about-plate p:first-child:first-letter{font-family:var(--serif);float:left;font-size:3.5rem;line-height:.82;
+  padding:.14em .16em 0 0;color:var(--copper-dk);}
+
+.services .section-head h2{color:var(--parch);}
+.services .section-head .sub{color:var(--brass-lt);}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(288px,1fr));gap:1.5rem;}
+.mach{display:flex;align-items:center;gap:1.15rem;padding:1.5rem 1.5rem;}
+.mach .txt{min-width:0;}
+.mach .idx{display:block;font-family:var(--serif);font-size:.68rem;letter-spacing:.24em;text-transform:uppercase;color:var(--copper-dk);font-weight:700;margin-bottom:.28rem;}
+.mach h3{font-family:var(--serif);font-size:1.08rem;font-weight:700;color:var(--ink);line-height:1.32;letter-spacing:.01em;}
+
+.contact{background:var(--parch);
+  background-image:repeating-linear-gradient(90deg,rgba(43,33,26,.035) 0 1px,transparent 1px 9px);}
+.contact .section-head h2{color:var(--ink);}
+.contact-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(224px,1fr));gap:1.5rem;max-width:880px;margin:0 auto;}
+.contact-grid .box{padding:1.6rem 1.4rem;text-align:center;background:linear-gradient(180deg,var(--parch),var(--parch-3));}
+.contact-grid .lab{font-family:var(--serif);font-size:.7rem;letter-spacing:.22em;text-transform:uppercase;color:var(--copper-dk);font-weight:700;margin-bottom:.5rem;}
+.contact-grid a{color:var(--ink);font-weight:700;text-decoration:none;border-bottom:2px solid var(--brass);padding-bottom:2px;}
+.contact-grid a:hover{color:var(--copper-dk);border-color:var(--copper);}
+.contact-grid .val{color:var(--muted);font-weight:600;}
+
+.cta{position:relative;overflow:hidden;text-align:center;color:var(--parch);}
+.cta .cogwork{position:absolute;inset:0;pointer-events:none;opacity:.42;}
+.cta .cogwork .gear{position:absolute;}
+.cta .cogwork .a{top:-84px;right:-56px;}
+.cta .cogwork .b{bottom:-46px;left:-40px;}
+.cta .wrap{position:relative;z-index:1;}
+.cta h2{font-family:var(--serif);font-size:2.15rem;font-weight:700;letter-spacing:.02em;color:var(--parch);margin:1.25rem auto .95rem;max-width:22ch;
+  text-shadow:0 2px 0 rgba(0,0,0,.5);}
+.cta p{color:var(--dim-2);max-width:58ch;margin:0 auto 2.1rem;font-size:1.07rem;}
+
+footer{background:var(--iron-deep);color:var(--dim);text-align:center;padding:2.6rem 1rem;font-size:.83rem;line-height:1.7;
+  border-top:1px solid var(--brass-deep);}
+footer a{color:var(--brass-lt);text-underline-offset:2px;}
+footer .cogline{display:flex;align-items:center;justify-content:center;gap:.85rem;margin-bottom:1.1rem;}
+footer .cogline .rail{width:70px;height:4px;border-radius:3px;background:linear-gradient(180deg,var(--copper-deep),var(--copper-lt) 45%,var(--copper-deep));}
+
+@media(max-width:720px){
+  .hero{padding:3.8rem 0 3.3rem;}
+  .hero h1{font-size:2.1rem;}
+  .hero .cogwork{opacity:.32;}
+  section{padding:3.4rem 0;}
+  .btn-rivet{margin-left:0;margin-top:.7rem;}
+  .about-plate{padding:2rem 1.5rem;}
+  .cta h2{font-size:1.65rem;}
+  .section-head .rail{max-width:52px;}
+  .collar{left:26px;}
+  .collar.r{left:auto;right:26px;}
+}
+</style>
+</head>
+<body>
+<div class="banner"><span class="bolt">&#9881;</span> Free website preview built by <a href="https://satechitsolutions.com/#contact" target="_blank" rel="noopener">SaTech IT Solutions</a> for Ironworks Custom Machining — not affiliated with or endorsed by Ironworks Custom Machining.</div>
+
+<div class="pipe-run"><div class="pipe" aria-hidden="true"><span class="collar"></span><span class="collar r"></span></div></div>
+
+<header class="hero iron">
+  <div class="cogwork" aria-hidden="true">
+    <div class="gear xl turning a"></div>
+    <div class="gear lg turning rev copperized b"></div>
+    <div class="gear xl turning rev c"></div>
+    <div class="gear lg turning copperized d"></div>
+  </div>
+  <div class="wrap">
+    <span class="eyebrow">Website Preview</span>
+    <h1>Local, Dependable, and Ready to Help</h1>
+    <p class="lede">Proudly serving the local area with service worth recommending.</p>
+    <a class="btn btn-brass" href="mailto:Tom@SaTechITSolutions.com?subject=Interested%20in%20my%20website%20preview">Start the Engine</a>
+    <a class="btn btn-rivet" href="https://satechitsolutions.com/#contact" target="_blank" rel="noopener">Learn More</a>
+    <div class="trust"><span class="tag gauge"><span class="star">★★★★★</span> 4.8 &middot; 46 Google reviews</span><span class="tag">Locally Owned & Operated</span><span class="tag">Trusted by Neighbors</span><span class="tag">Serving the Community</span></div>
+    <p class="meta">Machine shop<span class="sep">&#9881;</span>410 Foundry Row, Pittsburgh, PA</p>
+  </div>
+</header>
+
+<div class="pipe-run"><div class="pipe" aria-hidden="true"><span class="collar"></span><span class="collar r"></span></div></div>
+
+<section class="about"><div class="wrap">
+  <div class="section-head"><span class="rail"></span><div class="htext"><div class="sub">The Works</div><h2>About Ironworks Custom Machining</h2></div><span class="rail"></span></div>
+  <div class="plate about-plate"><p>Ironworks Custom Machining is a locally owned business serving the local area and the surrounding community — built on doing right by neighbors and earning repeat business the honest way.</p><p>You get responsive service, fair pricing, and people who stand behind their work. That&#x27;s the reputation Ironworks Custom Machining has built, one satisfied customer at a time.</p></div>
+</div></section>
+
+<div class="pipe-run"><div class="pipe" aria-hidden="true"><span class="collar"></span><span class="collar r"></span></div></div>
+
+<section class="services iron"><div class="wrap">
+  <div class="section-head"><span class="rail"></span><div class="htext"><div class="sub">Built to Order</div><h2>Our Services</h2></div><span class="rail"></span></div>
+  <div class="grid"><div class="plate mach"><div class="gear sm"></div><div class="txt"><span class="idx">No. 01</span><h3>Free Consultations</h3></div></div><div class="plate mach"><div class="gear sm"></div><div class="txt"><span class="idx">No. 02</span><h3>Custom Solutions</h3></div></div><div class="plate mach"><div class="gear sm"></div><div class="txt"><span class="idx">No. 03</span><h3>Responsive Local Service</h3></div></div><div class="plate mach"><div class="gear sm"></div><div class="txt"><span class="idx">No. 04</span><h3>Fair, Upfront Pricing</h3></div></div><div class="plate mach"><div class="gear sm"></div><div class="txt"><span class="idx">No. 05</span><h3>Satisfaction Guaranteed</h3></div></div></div>
+</div></section>
+
+<div class="pipe-run"><div class="pipe" aria-hidden="true"><span class="collar"></span><span class="collar r"></span></div></div>
+
+<section class="contact"><div class="wrap">
+  <div class="section-head"><span class="rail"></span><div class="htext"><div class="sub">The Boiler Room</div><h2>Get in Touch</h2></div><span class="rail"></span></div>
+  <div class="contact-grid"><div class="plate box"><div class="lab">Ring the Bell</div><a href="tel:4125550177">(412) 555-0177</a></div><div class="plate box"><div class="lab">The Workshop</div><span class="val">410 Foundry Row, Pittsburgh, PA</span></div><div class="plate box"><div class="lab">Plot the Route</div><a href="https://maps.google.com/?q=Ironworks+Custom+Machining" target="_blank" rel="noopener">Open in Google Maps</a></div></div>
+</div></section>
+
+<div class="pipe-run"><div class="pipe" aria-hidden="true"><span class="collar"></span><span class="collar r"></span></div></div>
+
+<section class="cta iron">
+  <div class="cogwork" aria-hidden="true">
+    <div class="gear xl turning a"></div>
+    <div class="gear lg turning rev copperized b"></div>
+  </div>
+  <div class="wrap">
+    <span class="eyebrow">Like This Preview?</span>
+    <h2>Put This Machine to Work</h2>
+    <p>This mockup was engineered by SaTech IT Solutions to show Ironworks Custom Machining what a website with real craftsmanship behind it could look like. Ready to make it official?</p>
+    <a class="btn btn-brass" href="mailto:Tom@SaTechITSolutions.com?subject=Interested%20in%20my%20website%20preview">Email SaTech IT Solutions</a>
+    <a class="btn btn-rivet" href="https://satechitsolutions.com" target="_blank" rel="noopener">Visit SaTech IT Solutions</a>
+  </div>
+</section>
+
+<footer>
+  <div class="cogline" aria-hidden="true"><span class="rail"></span><div class="gear sm"></div><span class="rail"></span></div>
+  &copy; 2026 Website preview by <a href="https://satechitsolutions.com" target="_blank" rel="noopener">SaTech IT Solutions</a>. Not affiliated with or endorsed by Ironworks Custom Machining.
+</footer>
+</body>
+</html>

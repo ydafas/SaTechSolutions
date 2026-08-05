@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="description" content="Blushing Blooms Bridal Studio — a trusted locally owned business proudly serving the local area.">
+<meta name="robots" content="noindex,nofollow">
+<title>Blushing Blooms Bridal Studio — Website Preview by SaTech IT Solutions</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --blush:#e9bfc6;--blush-mid:#e0a9b4;--blush-deep:#c98a97;
+  --rose-ink:#9c5c6e;--rose-link:#8a4f60;
+  --lav:#cdbcdf;--lav-mid:#bda7d4;--lav-deep:#7f689c;
+  --sage:#b3c1a6;--sage-mid:#9fb191;--sage-deep:#66765a;
+  --ink:#54444c;--muted:#87767f;--faint:#a2939a;
+  --paper:#fdfaf8;--panel:#f8f0f1;--panel-alt:#f5f2ec;--card:#fffdfc;
+  --line:#eddfe2;--line-2:#e0d0d5;
+  --script:'Brush Script MT','Segoe Script','Lucida Handwriting','Apple Chancery',cursive;
+  --serif:'Didot','Bodoni MT','Baskerville','Hoefler Text',Garamond,Georgia,'Times New Roman',serif;
+  --swash:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='250' height='36' viewBox='0 0 250 36'%3E%3Cg fill='none' stroke='%23b0879a' stroke-width='1.3' stroke-linecap='round'%3E%3Cpath d='M16 23 C50 11 84 10 110 20'/%3E%3Cpath d='M110 20 C122 25 134 21 130 15 C126 9 115 13 117 21 C119 29 131 27 138 22'/%3E%3Cpath d='M138 22 C166 12 202 10 234 21'/%3E%3Cpath d='M16 23 c-6 -1 -7 -7 -1 -8'/%3E%3Cpath d='M234 21 c6 1 7 7 1 8'/%3E%3C/g%3E%3C/svg%3E");
+  --wave:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='20' viewBox='0 0 180 20'%3E%3Cpath d='M8 12 Q32 3 56 11 T104 11 T152 12 Q166 14 172 9' fill='none' stroke='%239aab8c' stroke-width='1.3' stroke-linecap='round'/%3E%3C/svg%3E");
+}
+html{scroll-behavior:smooth;}
+/* cold-pressed paper: warm ivory ground + a faint two-scale printed tooth */
+body{
+  font-family:var(--serif);font-weight:400;color:var(--ink);line-height:1.85;letter-spacing:.012em;
+  background-color:var(--paper);
+  background-image:radial-gradient(rgba(150,115,128,.055) 1px,rgba(0,0,0,0) 1px),radial-gradient(rgba(150,115,128,.038) 1px,rgba(0,0,0,0) 1px);
+  background-size:9px 9px,14px 14px;background-position:0 0,5px 7px;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:980px;margin:0 auto;padding:0 30px;position:relative;z-index:1;}
+
+/* ---- WATERCOLOR WASH: irregular organic blob, off-center pigment, feathered blurred edge,
+       multiply-blended so overlapping washes deepen like layered wet paint ---- */
+.wash{position:absolute;pointer-events:none;z-index:0;mix-blend-mode:multiply;filter:blur(30px);}
+.wash.blush{background:radial-gradient(circle at 36% 34%,rgba(224,169,180,.92) 0%,rgba(224,169,180,.60) 36%,rgba(224,169,180,.22) 62%,rgba(224,169,180,0) 80%);border-radius:58% 42% 63% 37%/47% 56% 44% 53%;}
+.wash.lav{background:radial-gradient(circle at 62% 42%,rgba(189,167,212,.86) 0%,rgba(189,167,212,.54) 38%,rgba(189,167,212,.18) 64%,rgba(189,167,212,0) 82%);border-radius:39% 61% 44% 56%/62% 38% 61% 39%;}
+.wash.sage{background:radial-gradient(circle at 44% 58%,rgba(159,177,145,.78) 0%,rgba(159,177,145,.46) 40%,rgba(159,177,145,.15) 66%,rgba(159,177,145,0) 84%);border-radius:64% 36% 51% 49%/38% 57% 43% 62%;}
+.wash.pale{filter:blur(42px);opacity:.72;}
+
+.banner{background:var(--panel);border-bottom:1px solid var(--line);color:var(--muted);font-size:.84rem;text-align:center;padding:.8rem 1.2rem;line-height:1.7;letter-spacing:.02em;}
+.banner a{color:var(--rose-link);font-weight:600;text-decoration:underline;text-underline-offset:3px;}
+
+.eyebrow{display:inline-block;font-size:.68rem;letter-spacing:.42em;text-transform:uppercase;color:var(--sage-deep);}
+
+/* ---- HERO ---- */
+.hero{position:relative;overflow:hidden;text-align:center;padding:6.5rem 0 5rem;}
+.hero .w1{width:520px;height:420px;top:-130px;left:-120px;}
+.hero .w2{width:460px;height:380px;top:-70px;right:-110px;}
+.hero .w3{width:600px;height:300px;bottom:-150px;left:22%;}
+.hero .w4{width:230px;height:200px;top:190px;left:6%;}
+.hero h1{font-family:var(--script);font-size:4.5rem;font-weight:400;color:var(--rose-ink);line-height:1.08;max-width:17ch;margin:1.4rem auto .5rem;}
+.hero .wave-rule{height:20px;width:180px;margin:0 auto 1.5rem;background:var(--wave) center/180px 20px no-repeat;}
+.hero .lead{font-size:1.16rem;font-style:italic;color:var(--muted);max-width:50ch;margin:0 auto 2.5rem;letter-spacing:.015em;}
+.actions{display:flex;flex-wrap:wrap;gap:.8rem;justify-content:center;}
+.hero .meta{margin-top:2.2rem;font-size:.72rem;letter-spacing:.28em;text-transform:uppercase;color:var(--faint);}
+
+/* ---- BUTTONS: softly hand-cut corners, painted gradient fill ---- */
+.btn{display:inline-block;font-family:var(--serif);font-size:.74rem;letter-spacing:.26em;text-transform:uppercase;text-decoration:none;padding:1rem 2.1rem;min-height:44px;line-height:1.75;border-radius:17px 12px 18px 11px/12px 18px 11px 17px;transition:transform .18s,box-shadow .18s,background .22s;}
+.btn-paint{color:#fffdfc;background:linear-gradient(116deg,#a86b7e 0%,#8f6ba3 58%,#6f8163 132%);box-shadow:0 12px 28px rgba(160,120,140,.28);}
+.btn-paint:hover{transform:translateY(-2px);box-shadow:0 16px 34px rgba(160,120,140,.34);}
+.btn-ink{color:var(--rose-link);background:rgba(255,255,255,.66);box-shadow:inset 0 0 0 1px var(--line-2);}
+.btn-ink:hover{background:#fff;transform:translateY(-2px);}
+
+/* ---- TRUST CHIPS ---- */
+.trust{display:flex;flex-wrap:wrap;gap:.65rem;justify-content:center;margin-top:2.3rem;}
+.chip{font-size:.73rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);background:rgba(255,255,255,.7);box-shadow:inset 0 0 0 1px var(--line);border-radius:999px;padding:.42rem 1.1rem;}
+.chip.rate{color:var(--rose-link);box-shadow:inset 0 0 0 1px var(--line-2);letter-spacing:.06em;text-transform:none;font-size:.8rem;}
+.chip.rate .star{color:var(--blush-deep);letter-spacing:.08em;}
+
+/* ---- SECTIONS + PEN-FLOURISH DIVIDERS ---- */
+section{padding:5rem 0;position:relative;overflow:hidden;}
+.divider{height:36px;background:var(--swash) center/250px 36px no-repeat;opacity:.72;}
+.section-head{text-align:center;margin-bottom:2.9rem;}
+.section-head h2{font-family:var(--script);font-size:2.9rem;font-weight:400;color:var(--rose-ink);line-height:1.15;margin-top:.75rem;}
+.section-head .swash{height:36px;margin:.9rem auto 0;background:var(--swash) center/230px 36px no-repeat;opacity:.7;}
+
+/* ---- ABOUT ---- */
+.about .w1{width:430px;height:340px;top:-60px;right:-90px;}
+.about .w2{width:360px;height:300px;bottom:-110px;left:-80px;}
+.about-inner{max-width:680px;margin:0 auto;text-align:center;}
+.about-inner p{font-size:1.1rem;color:var(--muted);margin-bottom:1.35rem;}
+.about-inner p:last-child{margin-bottom:0;}
+.about-inner p:first-child:first-letter{font-family:var(--script);font-size:3.1rem;line-height:.9;color:var(--blush-deep);float:left;margin:.28rem .5rem 0 0;}
+
+/* ---- SERVICES: deckle-edged stationery cards, hand-numbered watercolor swatches ---- */
+.services{background:var(--panel-alt);}
+.services .w1{width:480px;height:360px;top:-140px;left:-130px;}
+.services .w2{width:400px;height:320px;bottom:-140px;right:-100px;}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(228px,1fr));gap:1.6rem;}
+.card{background:var(--card);border:1px solid var(--line);border-radius:3px;padding:2.2rem 1.5rem 2rem;text-align:center;box-shadow:0 10px 30px rgba(160,128,140,.09);}
+.swatch{position:relative;width:70px;height:70px;margin:0 auto 1.15rem;display:flex;align-items:center;justify-content:center;}
+.swatch:before{content:"";position:absolute;inset:0;border-radius:57% 43% 62% 38%/46% 58% 42% 54%;filter:blur(5px);opacity:.92;}
+.card:nth-child(3n+1) .swatch:before{background:radial-gradient(circle at 38% 32%,#eec4cc 0%,#e0a9b4 50%,rgba(224,169,180,.35) 76%,rgba(224,169,180,0) 100%);}
+.card:nth-child(3n+2) .swatch:before{background:radial-gradient(circle at 44% 36%,#dccdec 0%,#bda7d4 50%,rgba(189,167,212,.34) 76%,rgba(189,167,212,0) 100%);}
+.card:nth-child(3n+3) .swatch:before{background:radial-gradient(circle at 34% 42%,#cdd9c1 0%,#9fb191 50%,rgba(159,177,145,.34) 76%,rgba(159,177,145,0) 100%);}
+.swatch .num{position:relative;font-family:var(--script);font-size:1.95rem;color:var(--rose-ink);line-height:1;}
+.card h3{font-size:1.06rem;font-weight:400;color:var(--ink);letter-spacing:.05em;line-height:1.6;}
+
+/* ---- CONTACT: a double-hairline invitation card ---- */
+.contact .w1{width:520px;height:340px;top:-120px;right:-140px;}
+.invite{position:relative;max-width:740px;margin:0 auto;background:var(--card);border:1px solid var(--line-2);padding:3.2rem 2.4rem;text-align:center;box-shadow:0 16px 44px rgba(160,128,140,.11);}
+.invite:before{content:"";position:absolute;inset:9px;border:1px solid var(--line);pointer-events:none;}
+.invite .row{position:relative;display:grid;grid-template-columns:repeat(auto-fit,minmax(196px,1fr));gap:2.1rem;}
+.invite .lab{font-family:var(--script);font-size:1.4rem;color:var(--lav-deep);margin-bottom:.3rem;line-height:1.2;}
+.invite a{color:var(--rose-link);text-decoration:none;border-bottom:1px solid var(--line-2);padding-bottom:2px;}
+.invite a:hover{border-color:var(--rose-link);}
+.invite .val{color:var(--muted);font-size:1rem;}
+
+/* ---- CTA: a washed bridal panel, ink type (the page never goes dark) ---- */
+.cta{background:linear-gradient(152deg,#f6e3e7 0%,#efe6f2 46%,#e9eee2 100%);}
+.cta .w1{width:560px;height:400px;top:-160px;left:-120px;}
+.cta .w2{width:420px;height:340px;bottom:-140px;right:-90px;}
+.cta p{max-width:56ch;margin:0 auto 2.4rem;font-size:1.1rem;font-style:italic;color:var(--muted);}
+.cta .btn-ink{background:rgba(255,255,255,.82);}
+
+/* ---- FOOTER ---- */
+footer{position:relative;overflow:hidden;text-align:center;padding:3.2rem 0;font-size:.82rem;line-height:1.9;color:var(--muted);letter-spacing:.02em;}
+footer .w1{width:620px;height:220px;bottom:-140px;left:50%;margin-left:-310px;}
+footer .mark{font-family:var(--script);font-size:1.5rem;color:var(--rose-ink);display:block;margin-bottom:.5rem;}
+footer a{color:var(--rose-link);text-decoration:underline;text-underline-offset:3px;}
+
+@media(max-width:720px){
+  .hero{padding:4.5rem 0 3.5rem;}
+  .hero h1{font-size:2.9rem;}
+  section{padding:3.6rem 0;}
+  .section-head h2{font-size:2.15rem;}
+  .invite{padding:2.4rem 1.4rem;}
+  .hero .w4{display:none;}
+}
+</style>
+</head>
+<body>
+<div class="banner">A complimentary website preview painted by <a href="https://satechitsolutions.com/#contact" target="_blank" rel="noopener">SaTech IT Solutions</a> for Blushing Blooms Bridal Studio — this is a sample, not affiliated with or endorsed by Blushing Blooms Bridal Studio.</div>
+
+<header class="hero">
+  <span class="wash blush w1" aria-hidden="true"></span>
+  <span class="wash lav w2" aria-hidden="true"></span>
+  <span class="wash sage pale w3" aria-hidden="true"></span>
+  <span class="wash blush pale w4" aria-hidden="true"></span>
+  <div class="wrap">
+    <span class="eyebrow">Website Preview</span>
+    <h1>Local, Dependable, and Ready to Help</h1>
+    <div class="wave-rule" aria-hidden="true"></div>
+    <p class="lead">Proudly serving the local area with service worth recommending.</p>
+    <div class="actions">
+      <a class="btn btn-paint" href="mailto:Tom@SaTechITSolutions.com?subject=Interested%20in%20my%20website%20preview">Say Hello</a>
+      <a class="btn btn-ink" href="https://satechitsolutions.com/#contact" target="_blank" rel="noopener">Learn More</a>
+    </div>
+    <div class="trust"><span class="chip rate"><span class="star">★★★★★</span> 4.9 &middot; 84 Google reviews</span><span class="chip">Locally Owned & Operated</span><span class="chip">Trusted by Neighbors</span><span class="chip">Serving the Community</span></div>
+    <p class="meta">Bridal shop &middot; 12 Orchard Ln, Savannah, GA</p>
+  </div>
+</header>
+
+<div class="divider" aria-hidden="true"></div>
+
+<section class="about">
+  <span class="wash blush pale w1" aria-hidden="true"></span>
+  <span class="wash lav pale w2" aria-hidden="true"></span>
+  <div class="wrap">
+    <div class="section-head"><span class="eyebrow">Our Story</span><h2>Blushing Blooms Bridal Studio</h2><div class="swash" aria-hidden="true"></div></div>
+    <div class="about-inner"><p>Blushing Blooms Bridal Studio is a locally owned business serving the local area and the surrounding community — built on doing right by neighbors and earning repeat business the honest way.</p><p>You get responsive service, fair pricing, and people who stand behind their work. That&#x27;s the reputation Blushing Blooms Bridal Studio has built, one satisfied customer at a time.</p></div>
+  </div>
+</section>
+
+<section class="services">
+  <span class="wash lav pale w1" aria-hidden="true"></span>
+  <span class="wash sage pale w2" aria-hidden="true"></span>
+  <div class="wrap">
+    <div class="section-head"><span class="eyebrow">What We Offer</span><h2>Our Services</h2><div class="swash" aria-hidden="true"></div></div>
+    <div class="grid"><div class="card"><div class="swatch"><span class="num">1</span></div><h3>Free Consultations</h3></div><div class="card"><div class="swatch"><span class="num">2</span></div><h3>Custom Solutions</h3></div><div class="card"><div class="swatch"><span class="num">3</span></div><h3>Responsive Local Service</h3></div><div class="card"><div class="swatch"><span class="num">4</span></div><h3>Fair, Upfront Pricing</h3></div><div class="card"><div class="swatch"><span class="num">5</span></div><h3>Satisfaction Guaranteed</h3></div></div>
+  </div>
+</section>
+
+<div class="divider" aria-hidden="true"></div>
+
+<section class="contact">
+  <span class="wash sage pale w1" aria-hidden="true"></span>
+  <div class="wrap">
+    <div class="section-head"><span class="eyebrow">Get in Touch</span><h2>Come Say Hello</h2><div class="swash" aria-hidden="true"></div></div>
+    <div class="invite"><div class="row"><div><div class="lab">Call on us</div><a href="tel:9125550144">(912) 555-0144</a></div><div><div class="lab">Find us</div><span class="val">12 Orchard Ln, Savannah, GA</span></div><div><div class="lab">Directions</div><a href="https://maps.google.com/?q=Blushing+Blooms+Bridal+Studio" target="_blank" rel="noopener">Open in Google Maps</a></div></div></div>
+  </div>
+</section>
+
+<section class="cta">
+  <span class="wash blush w1" aria-hidden="true"></span>
+  <span class="wash lav w2" aria-hidden="true"></span>
+  <div class="wrap">
+    <div class="section-head"><span class="eyebrow">Like This Preview?</span><h2>Let's Make It Yours</h2><div class="swash" aria-hidden="true"></div></div>
+    <p>This mockup was painted by SaTech IT Solutions to show Blushing Blooms Bridal Studio what a soft, romantic web presence could look like. If it feels right, we would love to make it real.</p>
+    <div class="actions">
+      <a class="btn btn-paint" href="mailto:Tom@SaTechITSolutions.com?subject=Interested%20in%20my%20website%20preview">Email SaTech IT Solutions</a>
+      <a class="btn btn-ink" href="https://satechitsolutions.com" target="_blank" rel="noopener">Visit SaTech IT Solutions</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <span class="wash blush pale w1" aria-hidden="true"></span>
+  <div class="wrap">
+    <span class="mark">SaTech IT Solutions</span>
+    &copy; 2026 Website preview by <a href="https://satechitsolutions.com" target="_blank" rel="noopener">SaTech IT Solutions</a>. Not affiliated with or endorsed by Blushing Blooms Bridal Studio.
+  </div>
+</footer>
+</body>
+</html>

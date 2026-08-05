@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="description" content="Riot Grrrl Record Shop — a trusted locally owned business proudly serving the local area.">
+<meta name="robots" content="noindex,nofollow">
+<title>Riot Grrrl Record Shop &#8212; Website Preview by SaTech IT Solutions</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --toner:#100f0e;--toner-2:#232120;--toner-3:#3a3835;
+  --paper:#e9e6dc;--paper-lt:#f6f4ec;--paper-dk:#d9d5c7;--paper-gray:#cfcabb;
+  --gray:#57544d;--gray-2:#7d7970;
+  --pink:#ff2d78;--pink-deep:#d1005c;--pink-pale:#ffd3e4;
+  --steel:#9298a0;--steel-lt:#c3c8ce;--steel-dk:#6c727a;
+  --tape:rgba(214,208,186,.82);
+
+  --cut-a:Georgia,'Times New Roman',Times,serif;
+  --cut-b:'Courier New',Courier,monospace;
+  --cut-c:'Arial Black','Helvetica Neue',Arial,Helvetica,sans-serif;
+  --cut-d:Impact,'Haettenschweiler','Arial Narrow Bold','Arial Black',sans-serif;
+  --cut-e:'Trebuchet MS',Verdana,Geneva,sans-serif;
+  --cut-f:'Palatino Linotype','Book Antiqua',Palatino,Georgia,serif;
+  --body:'Helvetica Neue',Helvetica,Arial,sans-serif;
+
+  /* hand-torn paper silhouettes — many irregular points, never a straight edge */
+  --torn-1:polygon(0% 2.4%,5% 0.4%,11% 2.2%,17% 0.2%,24% 2.6%,31% 0.6%,38% 2.9%,45% 0.3%,52% 2.4%,59% 0.7%,66% 2.8%,73% 0.4%,80% 2.5%,87% 0.8%,93% 2.3%,100% 0.6%,100% 97.8%,94% 99.6%,87% 97.4%,80% 99.5%,73% 97.2%,66% 99.4%,59% 97.6%,52% 99.3%,45% 97.1%,38% 99.5%,31% 97.3%,24% 99.6%,17% 97.5%,11% 99.2%,5% 97.4%,0% 99.4%);
+  --torn-2:polygon(0% 0.9%,6% 2.7%,13% 0.3%,20% 2.5%,27% 0.5%,34% 2.8%,41% 0.9%,48% 2.3%,55% 0.4%,62% 2.9%,69% 0.7%,76% 2.4%,83% 0.2%,90% 2.6%,96% 0.9%,100% 2.2%,100% 99.3%,93% 97.2%,86% 99.5%,79% 97.6%,72% 99.2%,65% 97.3%,58% 99.6%,51% 97.4%,44% 99.1%,37% 97.7%,30% 99.4%,23% 97.2%,16% 99.5%,9% 97.3%,3% 99.2%,0% 97.5%);
+  --torn-card-a:polygon(0% 4.5%,6% 1%,13% 4%,20% 0.5%,27% 4.6%,34% 1.2%,41% 4.2%,48% 0.8%,55% 4.8%,62% 1.4%,69% 4.1%,76% 0.6%,83% 4.4%,90% 1.1%,96% 4.3%,100% 1.5%,100% 95.5%,94% 99%,87% 95.8%,80% 99.4%,73% 95.4%,66% 98.8%,59% 95.2%,52% 99.2%,45% 95.6%,38% 98.9%,31% 95.3%,24% 99.5%,17% 95.7%,10% 99.1%,4% 95.9%,0% 98.6%);
+  --torn-card-b:polygon(0% 1.2%,7% 4.4%,14% 0.7%,21% 4.8%,28% 1.1%,35% 4.2%,42% 0.6%,49% 4.6%,56% 1.3%,63% 4.1%,70% 0.5%,77% 4.7%,84% 1%,91% 4.3%,97% 0.8%,100% 4.5%,100% 98.8%,93% 95.4%,86% 99.2%,79% 95.7%,72% 99.5%,65% 95.3%,58% 98.9%,51% 95.8%,44% 99.3%,37% 95.2%,30% 98.7%,23% 95.6%,16% 99.4%,9% 95.5%,3% 98.9%,0% 95.4%);
+  --torn-band:polygon(0% 34%,4% 8%,9% 40%,14% 12%,19% 44%,24% 10%,30% 38%,35% 6%,41% 42%,46% 14%,52% 36%,57% 8%,63% 44%,68% 12%,74% 38%,79% 6%,85% 42%,90% 10%,95% 40%,100% 14%,100% 88%,95% 62%,90% 92%,85% 58%,79% 90%,74% 60%,68% 94%,63% 56%,57% 88%,52% 64%,46% 92%,41% 58%,35% 90%,30% 62%,24% 94%,19% 56%,14% 88%,9% 60%,4% 92%,0% 64%);
+  --torn-sec:polygon(0% 1.4%,6% 0.2%,13% 1.6%,20% 0.1%,27% 1.5%,34% 0.3%,41% 1.7%,48% 0.2%,55% 1.4%,62% 0.4%,69% 1.6%,76% 0.1%,83% 1.5%,90% 0.3%,96% 1.6%,100% 0.2%,100% 98.7%,94% 99.9%,87% 98.5%,80% 99.8%,73% 98.4%,66% 99.9%,59% 98.6%,52% 99.7%,45% 98.3%,38% 99.9%,31% 98.5%,24% 99.8%,17% 98.4%,10% 99.9%,4% 98.6%,0% 99.8%);
+  --snip:polygon(1.5% 8%,99% 0%,100% 92%,0.5% 100%);
+}
+html{scroll-behavior:smooth;}
+
+/* ---- photocopier grain: horizontal scan banding + toner speckle + a burned corner blotch ---- */
+body{font-family:var(--body);color:var(--toner);line-height:1.62;-webkit-font-smoothing:antialiased;
+  background-color:var(--paper);
+  background-image:
+    repeating-linear-gradient(0deg,rgba(16,15,14,.055) 0 1px,transparent 1px 4px),
+    radial-gradient(rgba(16,15,14,.07) .6px,transparent .9px),
+    radial-gradient(rgba(255,255,255,.5) .5px,transparent .8px),
+    radial-gradient(circle at 88% 6%,rgba(16,15,14,.10),transparent 34%),
+    radial-gradient(circle at 4% 74%,rgba(16,15,14,.08),transparent 30%);
+  background-size:100% 4px,3px 3px,5px 5px,100% 100%,100% 100%;
+  background-attachment:scroll,scroll,scroll,fixed,fixed;}
+.wrap{max-width:1020px;margin:0 auto;padding:0 26px;}
+a{color:inherit;}
+
+/* ---- masking-tape strip: translucent, fibrous, torn ragged at both ends ---- */
+.tape{position:absolute;display:block;width:126px;height:30px;z-index:3;pointer-events:none;
+  background-color:var(--tape);
+  background-image:repeating-linear-gradient(90deg,rgba(255,255,255,.30) 0 2px,transparent 2px 5px),
+                   linear-gradient(168deg,rgba(255,255,255,.42),rgba(90,86,72,.16));
+  clip-path:polygon(3% 6%,0% 42%,4% 78%,1% 100%,99% 96%,100% 58%,96% 22%,100% 0%);
+  box-shadow:inset 0 0 0 9999px rgba(0,0,0,.02);}
+.tape.t-tl{top:-13px;left:-16px;transform:rotate(-8deg);}
+.tape.t-tr{top:-15px;right:-18px;transform:rotate(7deg);}
+.tape.t-bl{bottom:-14px;left:14%;transform:rotate(4deg);}
+.tape.sm{width:88px;height:23px;}
+
+/* ---- staple: bent silver wire — crown bar with two short legs ---- */
+.staple{position:absolute;display:block;width:26px;height:10px;z-index:3;pointer-events:none;
+  border:3px solid var(--steel);border-bottom:none;border-radius:1px;
+  box-shadow:0 1px 1px rgba(0,0,0,.35),inset 0 1px 0 var(--steel-lt);}
+.staple.s-a{top:16px;left:22px;transform:rotate(-14deg);}
+.staple.s-b{top:14px;right:26px;transform:rotate(21deg);}
+.staple.s-c{bottom:16px;left:38%;transform:rotate(6deg);}
+
+/* ---- disclosure banner: photocopied black strip, typewriter caps ---- */
+.banner{position:relative;background:var(--toner);color:var(--paper-lt);font-family:var(--cut-b);
+  font-size:.8rem;line-height:1.6;letter-spacing:.02em;text-align:center;padding:.85rem 26px 1.1rem;
+  text-transform:uppercase;}
+.banner b{color:var(--pink);font-weight:700;}
+.banner a{color:var(--pink);font-weight:700;text-decoration:underline;text-underline-offset:3px;}
+.rip{height:30px;margin-top:-14px;background:var(--toner);clip-path:var(--torn-band);}
+.rip.pale{background:var(--paper-dk);}
+
+/* ---- torn paper sheet: wrapper carries the soft toner shadow, child carries the tear ---- */
+.sheet{position:relative;filter:drop-shadow(0 7px 11px rgba(16,15,14,.22)) drop-shadow(0 1px 0 rgba(16,15,14,.10));}
+.sheet .paper{background:var(--paper-lt);clip-path:var(--torn-1);padding:3.1rem 2.4rem 3.2rem;
+  background-image:repeating-linear-gradient(0deg,rgba(16,15,14,.035) 0 1px,transparent 1px 4px);}
+.sheet.tilt-l{transform:rotate(-.7deg);}
+.sheet.tilt-r{transform:rotate(.55deg);}
+
+/* ---- scrap label: small hand-cut slip of paper ---- */
+.scrap{display:inline-block;font-family:var(--cut-b);font-size:.72rem;font-weight:700;
+  text-transform:uppercase;letter-spacing:.24em;background:var(--toner);color:var(--pink);
+  padding:.36rem .8rem .4rem;clip-path:var(--snip);transform:rotate(-1.9deg);margin-bottom:1.5rem;}
+.scrap.ink{background:var(--pink);color:var(--toner);}
+.scrap.plain{background:var(--paper-dk);color:var(--toner);}
+
+/* ---- RANSOM NOTE lettering: every word a different clipping ---- */
+.ransom{display:block;line-height:1.32;letter-spacing:0;word-break:break-word;}
+.ransom .cut{display:inline-block;padding:.06em .2em .1em;margin:.1em .1em;vertical-align:baseline;}
+.cut.w1{font-family:var(--cut-d);font-size:1.06em;font-weight:400;letter-spacing:.005em;color:var(--toner);transform:rotate(-2.6deg);}
+.cut.w2{font-family:var(--cut-a);font-size:.9em;font-style:italic;font-weight:700;background:var(--toner);color:var(--paper-lt);clip-path:var(--snip);transform:rotate(1.9deg);}
+.cut.w3{font-family:var(--cut-b);font-size:.82em;font-weight:700;background:var(--pink);color:var(--toner);clip-path:var(--snip);transform:rotate(-1.1deg);letter-spacing:-.01em;}
+.cut.w4{font-family:var(--cut-c);font-size:1.1em;background:var(--paper-dk);color:var(--toner);clip-path:var(--snip);transform:rotate(2.5deg);}
+.cut.w5{font-family:var(--cut-f);font-size:.88em;font-weight:700;color:var(--toner);border-bottom:5px solid var(--pink);transform:rotate(-3.1deg);}
+.cut.w6{font-family:var(--cut-e);font-size:.96em;font-weight:700;background:var(--toner-2);color:var(--pink);clip-path:var(--snip);transform:rotate(1.2deg);}
+
+/* ---- hero ---- */
+.hero{padding:3.4rem 0 3.6rem;}
+.hero h1{font-size:clamp(2.1rem,7.4vw,4.3rem);text-transform:uppercase;margin:0 0 1.5rem -.1em;}
+.hero .lede{font-family:var(--cut-b);font-size:1.03rem;line-height:1.75;color:var(--toner-2);
+  max-width:56ch;padding-left:1.1rem;border-left:4px solid var(--pink);margin-bottom:2.2rem;}
+.kicker{font-family:var(--cut-b);font-size:.75rem;text-transform:uppercase;letter-spacing:.2em;
+  color:var(--gray);margin-bottom:1.5rem;}
+.hero .meta{font-family:var(--cut-b);font-size:.79rem;text-transform:uppercase;letter-spacing:.09em;
+  color:var(--gray);border-top:2px dashed rgba(16,15,14,.35);padding-top:1.05rem;margin-top:2.3rem;max-width:62ch;}
+
+/* ---- buttons: hand-cut slips, jagged scissor edge, no border, no hard offset shadow ---- */
+.acts{display:flex;flex-wrap:wrap;gap:1rem;}
+.btn{display:inline-block;font-family:var(--cut-c);font-size:.92rem;text-transform:uppercase;
+  letter-spacing:.06em;text-decoration:none;padding:1.05rem 1.85rem;min-height:46px;line-height:1.5;
+  clip-path:polygon(2% 5%,99% 0%,100% 95%,1% 100%);transition:background .14s,color .14s,transform .14s;}
+.btn-ink{background:var(--toner);color:var(--pink);transform:rotate(-1.3deg);}
+.btn-ink:hover{background:var(--pink);color:var(--toner);transform:rotate(-1.3deg) translateY(-2px);}
+.btn-pink{background:var(--pink);color:var(--toner);transform:rotate(1.1deg);}
+.btn-pink:hover{background:var(--toner);color:var(--pink);transform:rotate(1.1deg) translateY(-2px);}
+.btn-paper{background:var(--paper-dk);color:var(--toner);transform:rotate(.8deg);}
+.btn-paper:hover{background:var(--paper-gray);transform:rotate(.8deg) translateY(-2px);}
+
+/* ---- trust scraps: torn chips, each stapled down ---- */
+.trust{display:flex;flex-wrap:wrap;gap:1.15rem;margin-top:2.2rem;}
+.chip{position:relative;font-family:var(--cut-b);font-size:.76rem;font-weight:700;text-transform:uppercase;
+  letter-spacing:.06em;background:var(--paper-dk);color:var(--toner);padding:.55rem 1rem .6rem 1.5rem;
+  clip-path:var(--torn-card-a);filter:drop-shadow(0 3px 5px rgba(16,15,14,.20));}
+.chip:before{content:"";position:absolute;left:6px;top:50%;width:15px;height:6px;
+  border:2px solid var(--steel-dk);border-bottom:none;transform:translateY(-60%) rotate(-16deg);}
+.chip:nth-child(odd){transform:rotate(-2.1deg);}
+.chip:nth-child(even){transform:rotate(1.6deg);clip-path:var(--torn-card-b);}
+.chip.rate{background:var(--pink);color:var(--toner);letter-spacing:.02em;}
+
+/* ---- sections ---- */
+section{padding:3.9rem 0;}
+.sec-head{margin-bottom:2.2rem;}
+.sec-head h2{font-size:clamp(1.7rem,5.2vw,2.9rem);text-transform:uppercase;}
+
+/* ---- about: photocopied page, taped and stapled into the zine ---- */
+.about .paper{padding:3.4rem 2.6rem 3.5rem;}
+.about-body{max-width:64ch;}
+.about-body p{font-size:1.06rem;color:var(--toner-2);margin-bottom:1.15rem;}
+.about-body p:first-child:first-letter{font-family:var(--cut-d);font-size:3.1rem;line-height:.82;
+  float:left;padding:.06em .16em 0 0;color:var(--pink);}
+.about-body p:last-child{margin-bottom:0;}
+.xerox-note{font-family:var(--cut-b);font-size:.74rem;text-transform:uppercase;letter-spacing:.16em;
+  color:var(--gray-2);margin-top:2rem;border-top:2px dashed rgba(16,15,14,.3);padding-top:.9rem;}
+
+/* ---- services: clippings pasted at odd angles ---- */
+.clips{display:grid;grid-template-columns:repeat(auto-fit,minmax(258px,1fr));gap:2.4rem 1.9rem;}
+.clip{position:relative;filter:drop-shadow(0 6px 9px rgba(16,15,14,.22));}
+.clip .face{background:var(--paper-lt);clip-path:var(--torn-card-a);padding:2.1rem 1.5rem 2rem;
+  background-image:repeating-linear-gradient(0deg,rgba(16,15,14,.04) 0 1px,transparent 1px 4px);}
+.clip:nth-child(4n+1){transform:rotate(-2.2deg);}
+.clip:nth-child(4n+2){transform:rotate(1.7deg);}
+.clip:nth-child(4n+2) .face{clip-path:var(--torn-card-b);background:var(--paper-dk);}
+.clip:nth-child(4n+3){transform:rotate(-1.1deg);}
+.clip:nth-child(4n+3) .face{clip-path:var(--torn-card-b);}
+.clip:nth-child(4n+4){transform:rotate(2.4deg);}
+.clip .no{display:inline-block;font-family:var(--cut-b);font-size:.8rem;font-weight:700;
+  background:var(--toner);color:var(--pink);padding:.22rem .55rem .26rem;clip-path:var(--snip);
+  margin-bottom:.95rem;letter-spacing:.1em;}
+.clip:nth-child(even) .no{background:var(--pink);color:var(--toner);}
+.clip h3{font-size:1.3rem;text-transform:uppercase;line-height:1.28;}
+.clip h3 .cut{margin:.06em .07em;}
+
+/* ---- contact: typed back-page directory ---- */
+.contact .paper{padding:3rem 2.5rem 3.1rem;}
+.rows{max-width:720px;}
+.row{display:flex;flex-wrap:wrap;align-items:baseline;gap:.4rem 1.1rem;padding:1rem 0;
+  border-bottom:2px dashed rgba(16,15,14,.3);}
+.row:last-child{border-bottom:none;}
+.row .lab{font-family:var(--cut-b);font-size:.73rem;font-weight:700;text-transform:uppercase;
+  letter-spacing:.2em;color:var(--pink-deep);min-width:11ch;}
+.row .val{font-family:var(--cut-e);font-size:1.06rem;font-weight:700;color:var(--toner);}
+.row a{font-family:var(--cut-e);font-size:1.06rem;font-weight:700;color:var(--toner);
+  text-decoration:underline;text-decoration-style:wavy;text-decoration-color:var(--pink);text-underline-offset:4px;}
+.row a:hover{color:var(--pink-deep);}
+
+/* ---- CTA: the zine's back cover, printed dark ---- */
+.cta{position:relative;background:var(--toner);color:var(--paper-lt);clip-path:var(--torn-sec);
+  padding:4.6rem 0 4.8rem;margin-top:1.2rem;
+  background-image:repeating-linear-gradient(0deg,rgba(255,255,255,.045) 0 1px,transparent 1px 4px),
+                   radial-gradient(circle at 78% 18%,rgba(255,45,120,.20),transparent 38%);}
+.cta h2{font-size:clamp(1.9rem,6vw,3.3rem);text-transform:uppercase;margin-bottom:1.2rem;}
+.cta .cut.w1{color:var(--paper-lt);}
+.cta .cut.w2{background:var(--pink);color:var(--toner);}
+.cta .cut.w3{background:var(--paper-lt);color:var(--toner);}
+.cta .cut.w4{background:var(--pink);color:var(--toner);}
+.cta .cut.w5{color:var(--paper-lt);border-bottom-color:var(--pink);}
+.cta .cut.w6{background:var(--paper-lt);color:var(--pink-deep);}
+.cta p{font-family:var(--cut-b);font-size:1rem;line-height:1.8;color:var(--paper-dk);
+  max-width:58ch;margin-bottom:2.3rem;}
+.cta .scrap{background:var(--pink);color:var(--toner);}
+
+footer{background:var(--toner-2);color:var(--paper-dk);font-family:var(--cut-b);font-size:.78rem;
+  line-height:1.85;text-transform:uppercase;letter-spacing:.05em;padding:2.7rem 0;}
+footer a{color:var(--pink);text-decoration:underline;text-underline-offset:3px;}
+footer .fine{color:var(--gray-2);letter-spacing:.13em;margin-top:.5rem;}
+
+@media(max-width:720px){
+  .hero{padding:2.4rem 0 2.6rem;}
+  section{padding:2.7rem 0;}
+  .sheet .paper,.about .paper,.contact .paper{padding:2.4rem 1.4rem 2.5rem;}
+  .sheet.tilt-l,.sheet.tilt-r{transform:none;}
+  .clip{transform:none !important;}
+  .chip{transform:none !important;}
+  .acts{flex-direction:column;align-items:stretch;}
+  .btn{text-align:center;transform:none !important;}
+  .btn:hover{transform:translateY(-2px) !important;}
+  .cta{padding:3.2rem 0 3.4rem;}
+  .tape.t-tr{right:-8px;}
+  .tape.t-tl{left:-8px;}
+  .row .lab{min-width:100%;}
+}
+@media(prefers-reduced-motion:reduce){.btn{transition:none;}}
+</style>
+</head>
+<body>
+<div class="banner">&#9733; This is a free website preview cut and pasted by <a href="https://satechitsolutions.com/#contact" target="_blank" rel="noopener">SaTech IT Solutions</a> &#8212; it is <b>not</b> Riot Grrrl Record Shop's official website and is <b>not affiliated with or endorsed by Riot Grrrl Record Shop</b>. &#9733;</div>
+<div class="rip" aria-hidden="true"></div>
+
+<header class="hero"><div class="wrap">
+  <div class="sheet tilt-l">
+    <span class="tape t-tl" aria-hidden="true"></span>
+    <span class="tape t-tr" aria-hidden="true"></span>
+    <span class="staple s-c" aria-hidden="true"></span>
+    <div class="paper">
+      <span class="scrap">Issue No. 2026 &#8212; Preview</span>
+      <p class="kicker">Record store</p>
+      <h1 class="ransom"><span class="cut w1">Local,</span><span class="cut w2">Dependable,</span><span class="cut w3">and</span><span class="cut w4">Ready</span><span class="cut w5">to</span><span class="cut w6">Help</span></h1>
+      <p class="lede">Proudly serving the local area with service worth recommending.</p>
+      <div class="acts">
+        <a class="btn btn-ink" href="mailto:Tom@SaTechITSolutions.com?subject=Interested%20in%20my%20website%20preview">Email Us</a>
+        <a class="btn btn-paper" href="https://satechitsolutions.com/#contact" target="_blank" rel="noopener">See More Designs</a>
+      </div>
+      <div class="trust"><span class="chip rate">★★★★★ 4.8 &middot; 73 Google reviews</span><span class="chip">Locally Owned & Operated</span><span class="chip">Trusted by Neighbors</span><span class="chip">Serving the Community</span></div>
+      <p class="meta">Riot Grrrl Record Shop &#8212; 99 Basement Ave, Portland, OR</p>
+    </div>
+  </div>
+</div></header>
+
+<div class="rip pale" aria-hidden="true"></div>
+
+<section class="about"><div class="wrap">
+  <div class="sec-head"><span class="scrap ink">Page One</span>
+    <h2 class="ransom"><span class="cut w2">Who</span><span class="cut w3">We</span><span class="cut w4">Are</span></h2></div>
+  <div class="sheet tilt-r">
+    <span class="staple s-a" aria-hidden="true"></span>
+    <span class="staple s-b" aria-hidden="true"></span>
+    <span class="tape t-bl" aria-hidden="true"></span>
+    <div class="paper">
+      <div class="about-body"><p>Riot Grrrl Record Shop is a locally owned business serving the local area and the surrounding community — built on doing right by neighbors and earning repeat business the honest way.</p><p>You get responsive service, fair pricing, and people who stand behind their work. That&#x27;s the reputation Riot Grrrl Record Shop has built, one satisfied customer at a time.</p></div>
+      <p class="xerox-note">Photocopied at 92&#37; &#183; sample layout &amp; copy for demonstration only</p>
+    </div>
+  </div>
+</div></section>
+
+<section class="services"><div class="wrap">
+  <div class="sec-head"><span class="scrap">Page Two</span>
+    <h2 class="ransom"><span class="cut w4">What</span><span class="cut w5">We</span><span class="cut w6">Do</span></h2></div>
+  <div class="clips"><div class="clip"><span class="tape sm t-tl" aria-hidden="true"></span><div class="face"><span class="no">No. 01</span><h3 class="ransom"><span class="cut w2">Free</span><span class="cut w3">Consultations</span></h3></div></div><div class="clip"><span class="tape sm t-tl" aria-hidden="true"></span><div class="face"><span class="no">No. 02</span><h3 class="ransom"><span class="cut w3">Custom</span><span class="cut w4">Solutions</span></h3></div></div><div class="clip"><span class="tape sm t-tl" aria-hidden="true"></span><div class="face"><span class="no">No. 03</span><h3 class="ransom"><span class="cut w4">Responsive</span><span class="cut w5">Local</span><span class="cut w6">Service</span></h3></div></div><div class="clip"><span class="tape sm t-tl" aria-hidden="true"></span><div class="face"><span class="no">No. 04</span><h3 class="ransom"><span class="cut w5">Fair,</span><span class="cut w6">Upfront</span><span class="cut w1">Pricing</span></h3></div></div><div class="clip"><span class="tape sm t-tl" aria-hidden="true"></span><div class="face"><span class="no">No. 05</span><h3 class="ransom"><span class="cut w6">Satisfaction</span><span class="cut w1">Guaranteed</span></h3></div></div></div>
+</div></section>
+
+<div class="rip" aria-hidden="true"></div>
+
+<section class="contact"><div class="wrap">
+  <div class="sec-head"><span class="scrap ink">Page Three</span>
+    <h2 class="ransom"><span class="cut w5">Get</span><span class="cut w6">In</span><span class="cut w1">Touch</span></h2></div>
+  <div class="sheet tilt-l">
+    <span class="tape t-tr" aria-hidden="true"></span>
+    <span class="staple s-a" aria-hidden="true"></span>
+    <div class="paper"><div class="rows"><div class="row"><span class="lab">Ring Us</span><a href="tel:5035550111">(503) 555-0111</a></div><div class="row"><span class="lab">Find Us</span><span class="val">99 Basement Ave, Portland, OR</span></div><div class="row"><span class="lab">Map It</span><a href="https://maps.google.com/?q=Riot+Grrrl+Record+Shop" target="_blank" rel="noopener">Google Maps</a></div><div class="row"><span class="lab">Trade</span><span class="val">Record store</span></div></div></div>
+  </div>
+</div></section>
+
+<section class="cta"><div class="wrap">
+  <span class="scrap">Back Cover</span>
+  <h2 class="ransom"><span class="cut w3">Want</span><span class="cut w4">This</span><span class="cut w5">For</span><span class="cut w6">Real?</span></h2>
+  <p>SaTech IT Solutions cut this preview together by hand to show Riot Grrrl Record Shop what a loud, one-of-a-kind website could look like. Say the word and we will print the real thing.</p>
+  <div class="acts">
+    <a class="btn btn-pink" href="mailto:Tom@SaTechITSolutions.com?subject=Interested%20in%20my%20website%20preview">Email SaTech IT Solutions</a>
+    <a class="btn btn-paper" href="https://satechitsolutions.com/#contact" target="_blank" rel="noopener">Visit SaTech IT Solutions</a>
+  </div>
+</div></section>
+
+<footer><div class="wrap">
+  &copy; 2026 &#8212; Website preview by <a href="https://satechitsolutions.com" target="_blank" rel="noopener">SaTech IT Solutions</a>.<br>
+  Not affiliated with or endorsed by Riot Grrrl Record Shop.
+  <div class="fine">Sample layout and copy for demonstration only</div>
+</div></footer>
+</body>
+</html>

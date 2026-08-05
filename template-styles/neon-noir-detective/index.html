@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="description" content="Blackwell Private Investigations — a trusted locally owned business proudly serving the local area.">
+<meta name="robots" content="noindex,nofollow">
+<title>Blackwell Private Investigations — Website Preview by SaTech IT Solutions</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --void:#040405;--smoke:#0a0a0c;--ash:#121215;--slab:#17171b;
+  --blood:#d61f2b;--blood-lit:#f2404b;--blood-deep:#8e1219;--blood-hair:rgba(214,31,43,.34);
+  --chalk:#f2f2f0;--fog:#b9b9b6;--dust:#7d7d7c;--dim:#4a4a4c;
+  --paper:#e9e6dd;--paper-2:#dedbd0;--paper-ink:#141416;--paper-line:#c4c0b3;
+  --display:'Haettenschweiler','Arial Narrow',Impact,'Franklin Gothic Medium',system-ui,sans-serif;
+  --type:'Courier New',Courier,Consolas,'Liberation Mono',monospace;
+  --sans:system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+}
+html{scroll-behavior:smooth;}
+body{font-family:var(--sans);color:var(--chalk);background:var(--void);line-height:1.7;-webkit-font-smoothing:antialiased;}
+.wrap{max-width:1060px;margin:0 auto;padding:0 32px;position:relative;z-index:2;}
+a{color:inherit;}
+
+/* ---- The venetian-blind light rake: two offset slat layers + a masked pool of light ---- */
+.blinds{position:relative;overflow:hidden;background:var(--void);}
+.blinds:before{
+  content:"";position:absolute;inset:-20% -10%;pointer-events:none;z-index:0;
+  background:
+    repeating-linear-gradient(97deg,
+      rgba(255,255,255,0) 0px, rgba(255,255,255,0) 30px,
+      rgba(255,255,255,.055) 33px, rgba(255,255,255,.115) 44px,
+      rgba(255,255,255,.055) 55px, rgba(255,255,255,0) 59px,
+      rgba(255,255,255,0) 88px),
+    repeating-linear-gradient(97deg,
+      rgba(255,255,255,0) 0px, rgba(255,255,255,0) 160px,
+      rgba(255,255,255,.03) 168px, rgba(255,255,255,.045) 188px,
+      rgba(255,255,255,0) 200px, rgba(255,255,255,0) 320px);
+  -webkit-mask-image:radial-gradient(72% 88% at 78% 8%,#000 0%,rgba(0,0,0,.72) 38%,rgba(0,0,0,.18) 68%,transparent 88%);
+  mask-image:radial-gradient(72% 88% at 78% 8%,#000 0%,rgba(0,0,0,.72) 38%,rgba(0,0,0,.18) 68%,transparent 88%);
+  opacity:.95;
+}
+.blinds:after{
+  content:"";position:absolute;inset:0;pointer-events:none;z-index:0;
+  background:
+    radial-gradient(60% 55% at 80% 2%,rgba(255,255,255,.10) 0%,transparent 62%),
+    radial-gradient(90% 70% at 8% 105%,rgba(214,31,43,.10) 0%,transparent 60%),
+    linear-gradient(180deg,rgba(4,4,5,0) 55%,var(--void) 100%);
+}
+
+/* ---- Disclosure banner: a strip of red evidence tape ---- */
+.banner{position:relative;z-index:3;background:var(--blood-deep);color:#ffeceb;font-family:var(--type);font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;text-align:center;padding:.8rem 1.2rem;line-height:1.65;border-bottom:1px solid #000;}
+.banner a{color:#fff;font-weight:700;text-decoration:underline;text-underline-offset:3px;}
+
+.slug{font-family:var(--type);font-size:.72rem;letter-spacing:.34em;text-transform:uppercase;color:var(--blood);font-weight:700;}
+.slug .no{color:var(--dust);}
+.tick{display:inline-block;width:26px;height:2px;background:var(--blood);vertical-align:middle;margin-right:.75rem;}
+
+/* ---- HERO ---- */
+.hero{padding:7.5rem 0 6rem;border-bottom:1px solid #000;}
+.hero .slug{display:block;margin-bottom:1.9rem;}
+.hero h1{font-family:var(--display);font-size:clamp(3rem,9.5vw,6.4rem);font-weight:400;line-height:.92;letter-spacing:.005em;text-transform:uppercase;max-width:15ch;color:#fff;text-shadow:0 2px 0 #000,0 0 44px rgba(0,0,0,.9);}
+.hero h1 .cut{color:var(--blood-lit);}
+.hero .lede{font-family:var(--type);font-size:1.02rem;color:var(--fog);max-width:52ch;margin:1.7rem 0 2.6rem;line-height:1.85;border-left:2px solid var(--blood-hair);padding-left:1.15rem;}
+.acts{display:flex;flex-wrap:wrap;gap:.85rem;align-items:center;}
+.btn{display:inline-flex;align-items:center;justify-content:center;font-family:var(--type);font-weight:700;font-size:.78rem;letter-spacing:.2em;text-transform:uppercase;text-decoration:none;padding:1rem 2.1rem;min-height:48px;line-height:1.2;border:1px solid transparent;transition:background .16s,color .16s,border-color .16s;}
+.btn-red{background:var(--blood);color:#0b0203;border-color:var(--blood);}
+.btn-red:hover{background:var(--blood-lit);border-color:var(--blood-lit);}
+.btn-ghost{background:transparent;color:var(--chalk);border-color:rgba(255,255,255,.28);}
+.btn-ghost:hover{border-color:#fff;color:#fff;}
+.marks{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:2.6rem;}
+.mark{font-family:var(--type);font-size:.72rem;letter-spacing:.11em;text-transform:uppercase;color:var(--fog);border:1px solid rgba(255,255,255,.16);padding:.42rem 1rem;background:rgba(0,0,0,.42);}
+.mark.rate{border-color:var(--blood);color:#fff;letter-spacing:.04em;}
+.mark.rate .stars{color:var(--blood-lit);}
+.filed{margin-top:2.4rem;font-family:var(--type);font-size:.74rem;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);}
+.filed b{color:var(--dust);font-weight:700;}
+
+/* ---- Sections ---- */
+section{padding:5.75rem 0;border-bottom:1px solid #000;}
+.head{margin-bottom:2.8rem;}
+.head h2{font-family:var(--display);font-size:clamp(2rem,5.5vw,3.1rem);font-weight:400;text-transform:uppercase;letter-spacing:.01em;line-height:1;margin-top:.85rem;color:#fff;}
+
+/* ---- CASE FILE (about): manila dossier sheet with tab, punch holes, typed body ---- */
+.file{background:var(--ash);}
+.dossier{position:relative;background:linear-gradient(180deg,var(--paper) 0%,var(--paper-2) 100%);color:var(--paper-ink);max-width:860px;margin:0 auto;padding:3rem 3rem 2.6rem 4.6rem;box-shadow:0 26px 60px rgba(0,0,0,.7);}
+.dossier:before{content:"";position:absolute;left:0;top:0;bottom:0;width:2.2rem;border-right:1px dashed var(--paper-line);background:repeating-linear-gradient(180deg,transparent 0 46px,rgba(20,20,22,.16) 46px 62px,transparent 62px 108px);}
+.tab{position:absolute;top:-1.7rem;left:2.2rem;background:var(--blood);color:#0b0203;font-family:var(--type);font-weight:700;font-size:.72rem;letter-spacing:.24em;text-transform:uppercase;padding:.5rem 1.4rem;}
+.dossier .fileno{font-family:var(--type);font-size:.74rem;letter-spacing:.2em;text-transform:uppercase;color:#5c5850;border-bottom:1px solid var(--paper-line);padding-bottom:.9rem;margin-bottom:1.9rem;display:flex;flex-wrap:wrap;gap:.4rem 1.6rem;}
+.dossier h2{font-family:var(--display);font-size:clamp(1.9rem,4.6vw,2.7rem);font-weight:400;text-transform:uppercase;line-height:1.02;margin-bottom:1.5rem;color:#101012;}
+.dossier p{font-family:var(--type);font-size:.95rem;line-height:1.95;color:#26262a;margin-bottom:1.35rem;}
+.dossier p:last-of-type{margin-bottom:0;}
+.dossier p:first-of-type:first-letter{font-weight:700;}
+.stamp{position:absolute;right:2.1rem;bottom:1.9rem;transform:rotate(-8deg);border:3px double var(--blood);color:var(--blood);font-family:var(--type);font-weight:700;font-size:.78rem;letter-spacing:.2em;text-transform:uppercase;padding:.55rem 1.1rem;opacity:.78;line-height:1.25;text-align:center;}
+.stamp small{display:block;font-size:.6rem;letter-spacing:.14em;opacity:.85;}
+
+/* ---- EXHIBITS (services) ---- */
+.exhibits{list-style:none;border-top:1px solid rgba(255,255,255,.1);}
+.exhibits li{display:flex;align-items:baseline;gap:1.6rem;padding:1.55rem 1.1rem;border-bottom:1px solid rgba(255,255,255,.1);background:linear-gradient(90deg,rgba(214,31,43,0) 0%,rgba(214,31,43,0) 100%);transition:background .18s;}
+.exhibits li:hover{background:linear-gradient(90deg,rgba(214,31,43,.14) 0%,rgba(214,31,43,0) 62%);}
+.exhibits .ex{flex:none;font-family:var(--type);font-size:.72rem;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--blood);min-width:9ch;}
+.exhibits .what{font-family:var(--display);font-size:clamp(1.25rem,3vw,1.85rem);font-weight:400;text-transform:uppercase;letter-spacing:.01em;line-height:1.12;color:var(--chalk);}
+.exhibits li:hover .what{color:#fff;}
+
+/* ---- CONTACT: typed report form ---- */
+.contact{background:var(--smoke);}
+.form{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:1.5rem;}
+.field{background:var(--slab);border:1px solid rgba(255,255,255,.09);border-left:3px solid var(--blood);padding:1.5rem 1.4rem;}
+.field .lab{font-family:var(--type);font-size:.7rem;letter-spacing:.2em;text-transform:uppercase;color:var(--dust);margin-bottom:.8rem;}
+.field a{font-family:var(--type);font-size:1.02rem;font-weight:700;color:#fff;text-decoration:none;border-bottom:1px dashed var(--blood-hair);padding-bottom:3px;}
+.field a:hover{border-bottom-color:var(--blood);color:var(--blood-lit);}
+.field .val{font-family:var(--type);font-size:1.02rem;color:var(--fog);}
+
+/* ---- CTA ---- */
+.cta{border-bottom:none;padding:6.5rem 0;}
+.cta h2{font-family:var(--display);font-size:clamp(2.2rem,6.5vw,4.2rem);font-weight:400;text-transform:uppercase;line-height:.96;max-width:17ch;margin:1.1rem 0 1.5rem;color:#fff;}
+.cta h2 em{font-style:normal;color:var(--blood-lit);}
+.cta p{font-family:var(--type);font-size:.98rem;color:var(--fog);max-width:54ch;line-height:1.9;margin-bottom:2.5rem;}
+
+footer{padding:3.2rem 0;background:#000;font-family:var(--type);font-size:.74rem;letter-spacing:.05em;color:var(--dim);line-height:1.85;text-transform:uppercase;}
+footer a{color:var(--dust);text-decoration:underline;text-underline-offset:3px;}
+footer a:hover{color:var(--blood-lit);}
+
+@media(max-width:720px){
+  .wrap{padding:0 20px;}
+  .hero{padding:4.5rem 0 3.75rem;}
+  .hero .lede{margin:1.3rem 0 2rem;}
+  section{padding:3.75rem 0;}
+  .acts{flex-direction:column;align-items:stretch;}
+  .btn{width:100%;}
+  .dossier{padding:2.4rem 1.5rem 2.2rem 3.2rem;}
+  .dossier:before{width:1.5rem;}
+  .tab{left:1.2rem;}
+  .stamp{position:static;display:inline-block;margin-top:1.8rem;}
+  .exhibits li{flex-direction:column;gap:.5rem;padding:1.3rem .4rem;}
+  .cta{padding:4.25rem 0;}
+}
+</style>
+</head>
+<body>
+<div class="banner">Sample website preview built by <a href="https://satechitsolutions.com/#contact" target="_blank" rel="noopener">SaTech IT Solutions</a> — not affiliated with or endorsed by Blackwell Private Investigations.</div>
+
+<header class="hero blinds"><div class="wrap">
+  <span class="slug"><span class="tick"></span>Website Preview <span class="no">&mdash; File 001</span></span>
+  <h1>Local, Dependable, and Ready to Help</h1>
+  <p class="lede">Proudly serving the local area with service worth recommending.</p>
+  <div class="acts">
+    <a class="btn btn-red" href="mailto:Tom@SaTechITSolutions.com?subject=Interested%20in%20my%20website%20preview">Open the Case</a>
+    <a class="btn btn-ghost" href="https://satechitsolutions.com/#contact" target="_blank" rel="noopener">See the Evidence</a>
+  </div>
+  <div class="marks"><span class="mark rate"><span class="stars">★★★★★</span> 4.9 &middot; 31 Google reviews</span><span class="mark">Locally Owned & Operated</span><span class="mark">Trusted by Neighbors</span></div>
+  <p class="filed">Filed under <b>Private investigator</b> &middot; 22 Fifth Ave, Chicago, IL</p>
+</div></header>
+
+<section class="file"><div class="wrap">
+  <div class="dossier">
+    <span class="tab">Case File</span>
+    <div class="fileno"><span>Subject: Blackwell Private Investigations</span><span>Classification: Private investigator</span><span>Year: 2026</span></div>
+    <h2>The Background</h2>
+    <p>Blackwell Private Investigations is a locally owned business serving the local area and the surrounding community — built on doing right by neighbors and earning repeat business the honest way.</p><p>You get responsive service, fair pricing, and people who stand behind their work. That&#x27;s the reputation Blackwell Private Investigations has built, one satisfied customer at a time.</p>
+    <div class="stamp">Preview Only<small>Sample &mdash; Not Official</small></div>
+  </div>
+</div></section>
+
+<section class="services"><div class="wrap">
+  <div class="head">
+    <span class="slug"><span class="tick"></span>Services Rendered <span class="no">&mdash; Section 02</span></span>
+    <h2>The Evidence</h2>
+  </div>
+  <ul class="exhibits"><li><span class="ex">Exhibit A</span><span class="what">Free Consultations</span></li><li><span class="ex">Exhibit B</span><span class="what">Custom Solutions</span></li><li><span class="ex">Exhibit C</span><span class="what">Responsive Local Service</span></li><li><span class="ex">Exhibit D</span><span class="what">Fair, Upfront Pricing</span></li><li><span class="ex">Exhibit E</span><span class="what">Satisfaction Guaranteed</span></li></ul>
+</div></section>
+
+<section class="contact"><div class="wrap">
+  <div class="head">
+    <span class="slug"><span class="tick"></span>Contact <span class="no">&mdash; Section 03</span></span>
+    <h2>Make Contact</h2>
+  </div>
+  <div class="form"><div class="field"><div class="lab">Direct Line</div><a href="tel:3125550199">(312) 555-0199</a></div><div class="field"><div class="lab">Last Known Address</div><span class="val">22 Fifth Ave, Chicago, IL</span></div><div class="field"><div class="lab">Location on File</div><a href="https://maps.google.com/?q=Blackwell+Private+Investigations" target="_blank" rel="noopener">View on Google Maps</a></div></div>
+</div></section>
+
+<section class="cta blinds"><div class="wrap">
+  <span class="slug"><span class="tick"></span>Like This Preview? <span class="no">&mdash; Section 04</span></span>
+  <h2>Close the case on <em>a missing website.</em></h2>
+  <p>SaTech IT Solutions built this mockup to show Blackwell Private Investigations what a sharp, cinematic web presence could look like. Say the word and we will make it the real thing.</p>
+  <div class="acts">
+    <a class="btn btn-red" href="mailto:Tom@SaTechITSolutions.com?subject=Interested%20in%20my%20website%20preview">Email SaTech IT Solutions</a>
+    <a class="btn btn-ghost" href="https://satechitsolutions.com" target="_blank" rel="noopener">Visit SaTech IT Solutions</a>
+  </div>
+</div></section>
+
+<footer><div class="wrap">&copy; 2026 Website preview by <a href="https://satechitsolutions.com" target="_blank" rel="noopener">SaTech IT Solutions</a>. Not affiliated with or endorsed by Blackwell Private Investigations.</div></footer>
+</body>
+</html>

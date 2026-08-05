@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="description" content="Sugar &amp; Swirl Candy Co — a trusted locally owned business proudly serving the local area.">
+<meta name="robots" content="noindex,nofollow">
+<title>Sugar &amp; Swirl Candy Co — Website Preview by SaTech IT Solutions</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bubble:#ff4f9a;--bubble-dk:#d81b74;--bubble-lt:#ffd6e8;
+  --mint:#2fd4a7;--mint-dk:#0f9c7a;--mint-lt:#c9f4e7;
+  --lemon:#ffd233;--lemon-dk:#dda000;--lemon-lt:#fff2c2;
+  --sky:#4fc3f7;--sky-dk:#0288c7;--sky-lt:#cdeeff;
+  --ink:#4a1942;--body:#71406a;--muted:#a2799c;
+  --cream:#fffafd;--panel:#ffeff7;--card:#ffffff;--line:#ffd6e8;--line-2:#f6e2ee;
+  /* candy-cane trim: diagonal two-tone stripes, the shop's signature edge */
+  --cane:repeating-linear-gradient(45deg,var(--bubble) 0 13px,#ffffff 13px 26px);
+  --cane-mint:repeating-linear-gradient(45deg,var(--mint) 0 13px,#ffffff 13px 26px);
+  --cane-lemon:repeating-linear-gradient(45deg,var(--lemon) 0 13px,#ffffff 13px 26px);
+  /* polka-dot sprinkle texture, two offset dot layers */
+  --sprinkle:radial-gradient(circle,var(--bubble-lt) 3.6px,transparent 4.2px),radial-gradient(circle,var(--mint-lt) 3.6px,transparent 4.2px);
+}
+html{scroll-behavior:smooth;}
+body{font-family:'Trebuchet MS','Segoe UI',system-ui,-apple-system,Roboto,Helvetica,Arial,sans-serif;color:var(--body);background:var(--cream);line-height:1.7;-webkit-font-smoothing:antialiased;}
+.wrap{max-width:1020px;margin:0 auto;padding:0 26px;}
+
+.banner{background:var(--ink);color:#ffe4f2;font-size:.82rem;text-align:center;padding:.72rem 1rem;line-height:1.55;}
+.banner a{color:var(--lemon);font-weight:700;text-decoration:underline;text-underline-offset:2px;}
+
+/* Candy-cane stripe bars — top trim, between-section rules, footer edge */
+.cane{height:16px;background:var(--cane);}
+.cane.mint{background:var(--cane-mint);}
+.cane.lemon{background:var(--cane-lemon);}
+
+/* Lollipop swirl: two concentric repeating-conic pinwheels + a white stick */
+.swirl{position:relative;border-radius:50%;background:repeating-conic-gradient(from 0deg,var(--bubble) 0deg 30deg,#fff 30deg 60deg);box-shadow:0 10px 20px rgba(216,27,116,.20),inset 0 0 0 4px #fff;}
+.swirl:after{content:"";position:absolute;inset:24%;border-radius:50%;background:repeating-conic-gradient(from 18deg,var(--mint) 0deg 30deg,#fff 30deg 60deg);}
+.sw-mint{background:repeating-conic-gradient(from 0deg,var(--mint) 0deg 30deg,#fff 30deg 60deg);box-shadow:0 10px 20px rgba(15,156,122,.20),inset 0 0 0 4px #fff;}
+.sw-mint:after{background:repeating-conic-gradient(from 18deg,var(--lemon) 0deg 30deg,#fff 30deg 60deg);}
+.sw-lemon{background:repeating-conic-gradient(from 0deg,var(--lemon) 0deg 30deg,#fff 30deg 60deg);box-shadow:0 10px 20px rgba(221,160,0,.22),inset 0 0 0 4px #fff;}
+.sw-lemon:after{background:repeating-conic-gradient(from 18deg,var(--sky) 0deg 30deg,#fff 30deg 60deg);}
+.sw-sky{background:repeating-conic-gradient(from 0deg,var(--sky) 0deg 30deg,#fff 30deg 60deg);box-shadow:0 10px 20px rgba(2,136,199,.20),inset 0 0 0 4px #fff;}
+.sw-sky:after{background:repeating-conic-gradient(from 18deg,var(--bubble) 0deg 30deg,#fff 30deg 60deg);}
+
+.pop{position:absolute;z-index:0;}
+.pop .swirl{animation:twirl 22s linear infinite;}
+.pop .stick{position:absolute;left:50%;top:82%;width:8px;height:78px;margin-left:-4px;border-radius:8px;background:linear-gradient(90deg,#ffffff 0 45%,#f0e2ec 100%);box-shadow:0 6px 14px rgba(74,25,66,.14);}
+@keyframes twirl{to{transform:rotate(360deg);}}
+@media(prefers-reduced-motion:reduce){.pop .swirl{animation:none;}}
+
+/* HERO — sugar-white ground dusted with polka-dot sprinkles, lollipops in the corners */
+.hero{position:relative;overflow:hidden;text-align:center;padding:5.4rem 0 5rem;background-color:var(--cream);background-image:var(--sprinkle);background-size:40px 40px;background-position:0 0,20px 20px;}
+.hero .pop1{top:8%;left:5%;}.hero .pop1 .swirl{width:78px;height:78px;}
+.hero .pop2{top:20%;right:7%;}.hero .pop2 .swirl{width:58px;height:58px;animation-delay:-6s;}
+.hero .pop3{bottom:16%;left:11%;}.hero .pop3 .swirl{width:46px;height:46px;animation-delay:-12s;}
+.hero .pop4{bottom:22%;right:13%;}.hero .pop4 .swirl{width:66px;height:66px;animation-delay:-3s;}
+.hero .wrap{position:relative;z-index:1;}
+.eyebrow{display:inline-flex;align-items:center;gap:.55rem;background:#fff;color:var(--bubble-dk);border:2px solid var(--line);border-radius:999px;font-size:.73rem;letter-spacing:.2em;text-transform:uppercase;font-weight:800;padding:.48rem 1.25rem;margin-bottom:1.5rem;box-shadow:0 8px 18px rgba(216,27,116,.12);}
+.eyebrow .gum{width:11px;height:11px;border-radius:50%;background:var(--mint);box-shadow:inset 0 -2px 0 rgba(0,0,0,.10),0 0 0 3px var(--mint-lt);}
+.hero h1{font-size:3.15rem;font-weight:900;letter-spacing:-.02em;line-height:1.1;max-width:19ch;margin:0 auto 1.05rem;color:var(--ink);}
+.hero p.sub{font-size:1.18rem;color:var(--body);max-width:52ch;margin:0 auto 2.2rem;}
+.hero .meta{margin-top:1.9rem;font-size:.88rem;color:var(--muted);}
+
+/* Gumdrop buttons — pill shaped, glossy inset highlight, soft diffused candy glow */
+.btn{display:inline-block;padding:.95rem 2.2rem;border-radius:999px;font-weight:800;font-size:1rem;text-decoration:none;min-height:44px;line-height:1.55;transition:transform .16s,box-shadow .16s,background .2s;}
+.btn-gum{background:var(--bubble);color:#fff;box-shadow:0 12px 26px rgba(216,27,116,.34),inset 0 2px 0 rgba(255,255,255,.55);}
+.btn-gum:hover{background:var(--bubble-dk);transform:translateY(-3px);box-shadow:0 18px 34px rgba(216,27,116,.40),inset 0 2px 0 rgba(255,255,255,.55);}
+.btn-sugar{background:#fff;color:var(--mint-dk);border:2px solid var(--mint-lt);margin-left:.6rem;box-shadow:0 12px 24px rgba(15,156,122,.16),inset 0 2px 0 rgba(255,255,255,.9);}
+.btn-sugar:hover{transform:translateY(-3px);border-color:var(--mint);box-shadow:0 18px 32px rgba(15,156,122,.22);}
+.trust{display:flex;flex-wrap:wrap;gap:.6rem;justify-content:center;margin-top:2rem;}
+.chip{font-size:.8rem;color:var(--body);background:#fff;border:2px solid var(--line);border-radius:999px;padding:.38rem 1.05rem;font-weight:700;box-shadow:0 6px 14px rgba(216,27,116,.08);}
+.chip.rate{border-color:var(--lemon);background:var(--lemon-lt);color:var(--ink);font-weight:800;}
+
+section{padding:4.6rem 0;}
+.section-head{text-align:center;margin-bottom:2.7rem;}
+.section-head .sub{display:inline-block;font-size:.74rem;letter-spacing:.18em;text-transform:uppercase;color:var(--mint-dk);font-weight:800;}
+.section-head h2{font-size:2.2rem;font-weight:900;letter-spacing:-.015em;margin-top:.5rem;color:var(--ink);}
+/* candy-cane rule — a short striped stick under each heading */
+.stick-rule{width:130px;height:11px;border-radius:999px;background:var(--cane);margin:1rem auto 0;box-shadow:0 5px 12px rgba(216,27,116,.20),inset 0 0 0 2px #fff;}
+.stick-rule.mint{background:var(--cane-mint);box-shadow:0 5px 12px rgba(15,156,122,.20),inset 0 0 0 2px #fff;}
+
+.about{background:var(--panel);}
+.about-inner{max-width:690px;margin:0 auto;text-align:center;}
+.about-inner p{color:var(--body);font-size:1.12rem;margin-bottom:1.15rem;}
+.about-inner p:last-child{margin-bottom:0;}
+
+/* SERVICES — bubbly gumdrop cards: domed top, flat base, glossy sheen */
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(232px,1fr));gap:1.6rem;}
+.card{position:relative;overflow:hidden;background:var(--card);border:2px solid var(--line-2);border-radius:60px 60px 26px 26px;padding:2.1rem 1.6rem 1.9rem;text-align:center;box-shadow:0 14px 32px rgba(216,27,116,.12);transition:transform .18s,box-shadow .18s;}
+.card:before{content:"";position:absolute;top:10px;left:22%;width:42%;height:26px;border-radius:50%;background:rgba(255,255,255,.85);filter:blur(6px);pointer-events:none;}
+.card:hover{transform:translateY(-6px);box-shadow:0 22px 44px rgba(216,27,116,.20);}
+.card .swirl{width:60px;height:60px;margin:0 auto 1.1rem;}
+.card h3{font-size:1.1rem;font-weight:800;color:var(--ink);line-height:1.5;}
+
+/* CONTACT — jar-style rounded boxes on a sprinkled ground */
+.contact{background-color:var(--cream);background-image:var(--sprinkle);background-size:40px 40px;background-position:0 0,20px 20px;}
+.contact-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1.6rem;text-align:center;max-width:830px;margin:0 auto;}
+.contact-grid .jar{background:#fff;border:2px solid var(--line-2);border-radius:34px;padding:1.7rem 1.4rem;box-shadow:0 12px 26px rgba(216,27,116,.10);}
+.contact-grid .lab{font-size:.72rem;letter-spacing:.16em;text-transform:uppercase;color:var(--bubble-dk);font-weight:800;margin-bottom:.5rem;}
+.contact-grid a{color:var(--sky-dk);text-decoration:none;font-weight:800;}
+.contact-grid a:hover{color:var(--bubble-dk);text-decoration:underline;text-underline-offset:3px;}
+.contact-grid .val{color:var(--body);font-weight:700;}
+
+/* CTA — saturated bubblegum counter with white sprinkles */
+.cta{position:relative;overflow:hidden;text-align:center;color:#fff;background-color:var(--bubble);background-image:radial-gradient(circle,rgba(255,255,255,.55) 3.6px,transparent 4.2px),radial-gradient(circle,rgba(255,255,255,.28) 3.6px,transparent 4.2px);background-size:40px 40px;background-position:0 0,20px 20px;}
+.cta .wrap{position:relative;z-index:1;}
+.cta .section-head .sub{color:var(--lemon-lt);}
+.cta h2{color:#fff;}
+.cta .stick-rule{background:repeating-linear-gradient(45deg,var(--lemon) 0 13px,#ffffff 13px 26px);box-shadow:0 5px 12px rgba(74,25,66,.18),inset 0 0 0 2px #fff;}
+.cta p{color:#ffe7f2;max-width:56ch;margin:1.1rem auto 2.1rem;font-size:1.1rem;}
+.cta .btn-gum{background:var(--lemon);color:var(--ink);box-shadow:0 12px 26px rgba(74,25,66,.24),inset 0 2px 0 rgba(255,255,255,.6);}
+.cta .btn-gum:hover{background:var(--lemon-dk);color:#fff;}
+.cta .btn-sugar{background:#fff;color:var(--bubble-dk);border-color:#fff;}
+
+footer{background:var(--ink);color:#f7d9ec;text-align:center;padding:2.6rem 1rem;font-size:.82rem;line-height:1.65;}
+footer a{color:var(--lemon);text-decoration:underline;text-underline-offset:2px;}
+@media(max-width:720px){.hero{padding:3.6rem 0 3.4rem;}.hero h1{font-size:2.15rem;}section{padding:3.4rem 0;}.btn-sugar{margin-left:0;margin-top:.7rem;}.cta h2{font-size:1.8rem;}.hero .pop2,.hero .pop3{display:none;}}
+</style>
+</head>
+<body>
+<div class="banner">Free website preview built by <a href="https://satechitsolutions.com/#contact" target="_blank" rel="noopener">SaTech IT Solutions</a> for Sugar &amp; Swirl Candy Co — not Sugar &amp; Swirl Candy Co's official website, and not affiliated with or endorsed by Sugar &amp; Swirl Candy Co.</div>
+<div class="cane" aria-hidden="true"></div>
+
+<header class="hero">
+  <span class="pop pop1" aria-hidden="true"><span class="swirl"></span><span class="stick"></span></span>
+  <span class="pop pop2" aria-hidden="true"><span class="swirl sw-mint"></span><span class="stick"></span></span>
+  <span class="pop pop3" aria-hidden="true"><span class="swirl sw-lemon"></span><span class="stick"></span></span>
+  <span class="pop pop4" aria-hidden="true"><span class="swirl sw-sky"></span><span class="stick"></span></span>
+  <div class="wrap">
+  <span class="eyebrow"><span class="gum" aria-hidden="true"></span>Website Preview</span>
+  <h1>Local, Dependable, and Ready to Help</h1>
+  <p class="sub">Proudly serving the local area with service worth recommending.</p>
+  <a class="btn btn-gum" href="mailto:Tom@SaTechITSolutions.com?subject=Interested%20in%20my%20website%20preview">Sweet, Let's Talk</a>
+  <a class="btn btn-sugar" href="https://satechitsolutions.com/#contact" target="_blank" rel="noopener">Learn More</a>
+  <div class="trust"><span class="chip rate">★★★★★ 4.9 &middot; 156 Google reviews</span><span class="chip">Locally Owned & Operated</span><span class="chip">Trusted by Neighbors</span><span class="chip">Serving the Community</span></div>
+  <p class="meta">Candy store &middot; 8 Peppermint St, Hershey, PA</p>
+</div></header>
+
+<div class="cane mint" aria-hidden="true"></div>
+
+<section class="about"><div class="wrap">
+  <div class="section-head"><div class="sub">Our Story</div><h2>Welcome to Sugar &amp; Swirl Candy Co</h2><div class="stick-rule"></div></div>
+  <div class="about-inner"><p>Sugar &amp; Swirl Candy Co is a locally owned business serving the local area and the surrounding community — built on doing right by neighbors and earning repeat business the honest way.</p><p>You get responsive service, fair pricing, and people who stand behind their work. That&#x27;s the reputation Sugar &amp; Swirl Candy Co has built, one satisfied customer at a time.</p></div>
+</div></section>
+
+<section class="services"><div class="wrap">
+  <div class="section-head"><div class="sub">What We Offer</div><h2>The Sweet Selection</h2><div class="stick-rule mint"></div></div>
+  <div class="grid"><div class="card"><div class="swirl " aria-hidden="true"></div><h3>Free Consultations</h3></div><div class="card"><div class="swirl sw-mint" aria-hidden="true"></div><h3>Custom Solutions</h3></div><div class="card"><div class="swirl sw-lemon" aria-hidden="true"></div><h3>Responsive Local Service</h3></div><div class="card"><div class="swirl sw-sky" aria-hidden="true"></div><h3>Fair, Upfront Pricing</h3></div><div class="card"><div class="swirl " aria-hidden="true"></div><h3>Satisfaction Guaranteed</h3></div></div>
+</div></section>
+
+<div class="cane lemon" aria-hidden="true"></div>
+
+<section class="contact"><div class="wrap">
+  <div class="section-head"><div class="sub">Find Us</div><h2>Get in Touch</h2><div class="stick-rule"></div></div>
+  <div class="contact-grid"><div class="jar"><div class="lab">Call the Shop</div><a href="tel:7175550122">(717) 555-0122</a></div><div class="jar"><div class="lab">Stop In</div><span class="val">8 Peppermint St, Hershey, PA</span></div><div class="jar"><div class="lab">Directions</div><a href="https://maps.google.com/?q=Sugar+Swirl+Candy+Co" target="_blank" rel="noopener">Open in Google Maps</a></div></div>
+</div></section>
+
+<section class="cta"><div class="wrap">
+  <div class="section-head"><div class="sub">Like This Preview?</div><h2>Let's Make It the Real Thing</h2><div class="stick-rule"></div></div>
+  <p>This sugary mockup was built by SaTech IT Solutions to show Sugar &amp; Swirl Candy Co what a bright, welcoming website could look like. Ready to make it official?</p>
+  <a class="btn btn-gum" href="mailto:Tom@SaTechITSolutions.com?subject=Interested%20in%20my%20website%20preview">Email SaTech IT Solutions</a>
+  <a class="btn btn-sugar" href="https://satechitsolutions.com/#contact" target="_blank" rel="noopener">Visit SaTech IT Solutions</a>
+</div></section>
+
+<div class="cane" aria-hidden="true"></div>
+<footer>&copy; 2026 Website preview by <a href="https://satechitsolutions.com" target="_blank" rel="noopener">SaTech IT Solutions</a>. Not affiliated with or endorsed by Sugar &amp; Swirl Candy Co.</footer>
+</body>
+</html>

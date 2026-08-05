@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="description" content="Basecamp Outfitters — a trusted locally owned business proudly serving the local area.">
+<meta name="robots" content="noindex,nofollow">
+<title>Basecamp Outfitters — Website Preview by SaTech IT Solutions</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --sand:#efe4cc;--sand-2:#e4d6b8;--canvas:#d8c8a3;--canvas-2:#cdbb92;
+  --khaki:#b8a271;--khaki-deep:#8f7c4f;
+  --olive:#5c6b38;--olive-deep:#414c26;--olive-soft:#7d8c56;
+  --rust:#bf5621;--rust-deep:#8f3f18;--rust-lite:#e08a54;
+  --ink:#2e2a1e;--bark:#241f16;--muted:#7b6f57;--muted-2:#9a8d72;
+  --paper:#f8f1df;--line:#c9b892;
+  --slab:Rockwell,'Rockwell Nova','Roboto Slab','Bookman Old Style','Bookman Old Style',Georgia,'Times New Roman',serif;
+  --sans:system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+}
+html{scroll-behavior:smooth;}
+body{font-family:var(--sans);color:var(--ink);line-height:1.7;-webkit-font-smoothing:antialiased;
+  background-color:var(--sand);
+  /* woven canvas-duck texture: crossed warp/weft threads plus a fine grain speckle */
+  background-image:
+    repeating-linear-gradient(0deg,rgba(88,72,44,.055) 0 1px,transparent 1px 4px),
+    repeating-linear-gradient(90deg,rgba(88,72,44,.045) 0 1px,transparent 1px 4px),
+    radial-gradient(rgba(120,99,62,.07) 1px,transparent 1px);
+  background-size:auto,auto,7px 7px;}
+.wrap{max-width:1040px;margin:0 auto;padding:0 26px;position:relative;z-index:2;}
+
+/* ---- disclosure banner: webbing strap across the top ---- */
+.banner{background:var(--bark);color:#e6dcc4;font-size:.83rem;text-align:center;padding:.74rem 1rem;line-height:1.55;letter-spacing:.01em;position:relative;z-index:5;}
+.banner a{color:var(--rust-lite);font-weight:800;text-decoration:underline;text-underline-offset:2px;}
+.webbing{height:14px;background:
+  repeating-linear-gradient(90deg,var(--olive) 0 26px,var(--olive-deep) 26px 30px),
+  var(--olive);
+  border-bottom:2px solid var(--bark);}
+
+/* ---- trail line: dashed footpath divider ---- */
+.trail{height:30px;position:relative;}
+.trail:before{content:"";position:absolute;left:0;right:0;top:14px;height:3px;
+  background:repeating-linear-gradient(90deg,var(--khaki-deep) 0 16px,transparent 16px 30px);opacity:.7;}
+.trail:after{content:"";position:absolute;left:50%;top:8px;width:15px;height:15px;margin-left:-7px;
+  background:var(--rust);transform:rotate(45deg);border:2px solid var(--sand);}
+
+/* ---- compass rose, drawn entirely in CSS ---- */
+.rose{position:relative;width:var(--rose-size,72px);height:var(--rose-size,72px);flex:0 0 auto;}
+.rose:before{content:"";position:absolute;inset:0;border-radius:50%;border:2px dashed var(--khaki-deep);opacity:.85;}
+.rose:after{content:"";position:absolute;inset:14%;background:var(--rust);
+  clip-path:polygon(50% 0%,58% 42%,100% 50%,58% 58%,50% 100%,42% 58%,0% 50%,42% 42%);}
+.rose i{position:absolute;inset:26%;background:var(--olive);opacity:.75;
+  clip-path:polygon(50% 0%,56% 44%,100% 50%,56% 56%,50% 100%,44% 56%,0% 50%,44% 44%);transform:rotate(45deg);}
+
+/* ---- hero: canvas tarp with a big compass watermark ---- */
+.hero{position:relative;overflow:hidden;padding:5.4rem 0 4.9rem;
+  background-color:var(--canvas);
+  background-image:
+    repeating-linear-gradient(0deg,rgba(70,56,32,.06) 0 1px,transparent 1px 4px),
+    repeating-linear-gradient(90deg,rgba(70,56,32,.05) 0 1px,transparent 1px 4px),
+    linear-gradient(165deg,rgba(248,241,223,.55) 0%,rgba(184,162,113,.25) 62%,rgba(92,107,56,.2) 100%);
+  border-bottom:3px solid var(--olive-deep);}
+/* oversized watermark rose bleeding off the right edge */
+.hero:before{content:"";position:absolute;top:-70px;right:-120px;width:470px;height:470px;border-radius:50%;
+  border:3px dashed rgba(65,76,38,.28);}
+.hero:after{content:"";position:absolute;top:34px;right:-16px;width:262px;height:262px;
+  background:rgba(65,76,38,.16);
+  clip-path:polygon(50% 0%,58% 42%,100% 50%,58% 58%,50% 100%,42% 58%,0% 50%,42% 42%);}
+.eyebrow{display:inline-flex;align-items:center;gap:.6rem;background:var(--olive-deep);color:var(--sand);
+  font-size:.69rem;letter-spacing:.28em;text-transform:uppercase;font-weight:800;padding:.5rem 1.15rem;
+  border:2px solid var(--bark);box-shadow:4px 4px 0 rgba(36,31,22,.28);margin-bottom:1.6rem;}
+.eyebrow .pip{width:9px;height:9px;background:var(--rust);transform:rotate(45deg);}
+.hero h1{font-family:var(--slab);font-size:3.35rem;font-weight:700;letter-spacing:-.015em;line-height:1.08;
+  max-width:17ch;margin-bottom:1.15rem;color:var(--ink);text-shadow:2px 2px 0 rgba(248,241,223,.6);}
+.hero p.lede{font-size:1.2rem;color:#584d38;max-width:52ch;margin-bottom:2.15rem;}
+.hero .coords{margin-top:2.15rem;padding-top:1.05rem;border-top:2px dashed rgba(143,124,79,.7);
+  font-size:.77rem;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);max-width:62ch;}
+.hero .coords b{color:var(--olive-deep);font-weight:800;}
+
+/* ---- buttons: stitched canvas tags ---- */
+.btn{display:inline-block;font-family:var(--slab);padding:.95rem 2.05rem;font-weight:700;font-size:1rem;
+  letter-spacing:.03em;text-decoration:none;min-height:44px;line-height:1.5;border:2px solid var(--bark);
+  transition:transform .14s,box-shadow .14s,background .16s;}
+.btn-rust{background:var(--rust);color:#fff6ec;box-shadow:5px 5px 0 rgba(36,31,22,.45);}
+.btn-rust:hover{background:var(--rust-deep);transform:translate(-2px,-2px);box-shadow:7px 7px 0 rgba(36,31,22,.45);}
+.btn-field{background:transparent;color:var(--olive-deep);border-color:var(--olive-deep);margin-left:.7rem;
+  box-shadow:inset 0 0 0 2px rgba(248,241,223,.5);}
+.btn-field:hover{background:var(--olive-deep);color:var(--sand);}
+
+/* ---- trust chips: luggage tags ---- */
+.trust{display:flex;flex-wrap:wrap;gap:.65rem;align-items:center;margin-top:2.05rem;}
+.chip{font-size:.78rem;font-weight:700;letter-spacing:.04em;color:var(--ink);background:var(--paper);
+  border:2px solid var(--khaki-deep);padding:.4rem .95rem .4rem 1.35rem;position:relative;}
+.chip:before{content:"";position:absolute;left:.55rem;top:50%;width:7px;height:7px;margin-top:-3px;
+  border-radius:50%;border:2px solid var(--khaki-deep);}
+.chip.rate{background:var(--rust);color:#fff4e8;border-color:var(--bark);font-weight:800;}
+.chip.rate:before{border-color:rgba(255,244,232,.85);}
+
+/* ---- section rhythm ---- */
+section{padding:4.85rem 0;position:relative;}
+.section-head{margin-bottom:2.75rem;display:flex;align-items:flex-start;gap:1.15rem;}
+.section-head .rose{--rose-size:54px;margin-top:.25rem;}
+.section-head .sub{display:inline-block;font-size:.69rem;letter-spacing:.26em;text-transform:uppercase;
+  color:var(--rust-deep);font-weight:800;}
+.section-head h2{font-family:var(--slab);font-size:2.15rem;font-weight:700;letter-spacing:-.01em;
+  color:var(--ink);margin-top:.35rem;}
+.section-head .dashes{display:block;height:3px;width:120px;margin-top:.8rem;
+  background:repeating-linear-gradient(90deg,var(--olive) 0 12px,transparent 12px 22px);}
+
+/* ---- about: field journal page held by a canvas spine ---- */
+.about{background:var(--sand-2);border-top:2px solid var(--line);border-bottom:2px solid var(--line);}
+.journal{background:var(--paper);border:2px solid var(--khaki-deep);border-left:10px solid var(--olive);
+  padding:2.25rem 2.2rem;max-width:72ch;box-shadow:6px 6px 0 rgba(143,124,79,.28);position:relative;}
+.journal:before{content:"";position:absolute;left:12px;right:12px;top:12px;height:1px;
+  background:repeating-linear-gradient(90deg,var(--line) 0 6px,transparent 6px 12px);}
+.journal p{color:#463d2c;font-size:1.08rem;margin-bottom:1.1rem;}
+.journal p:last-child{margin-bottom:0;}
+.journal p:first-of-type:first-letter{font-family:var(--slab);font-size:2.9rem;line-height:.85;float:left;
+  margin:.28rem .55rem 0 0;color:var(--rust);}
+
+/* ---- services: passport stamps ---- */
+.services{background:var(--canvas-2);}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(238px,1fr));gap:1.6rem;}
+.stamp{background:var(--paper);border:3px dashed var(--khaki-deep);padding:1.7rem 1.35rem 1.5rem;
+  text-align:center;position:relative;box-shadow:4px 5px 0 rgba(65,76,38,.22);}
+.stamp:before{content:"";position:absolute;inset:8px;border:1px solid rgba(143,124,79,.55);pointer-events:none;}
+.stamp:nth-child(odd){transform:rotate(-1.6deg);}
+.stamp:nth-child(even){transform:rotate(1.4deg);}
+.stamp:nth-child(3n){transform:rotate(2.2deg);}
+.postmark{width:62px;height:62px;margin:0 auto .95rem;border-radius:50%;border:3px double var(--rust);
+  color:var(--rust-deep);font-family:var(--slab);font-size:.86rem;font-weight:700;letter-spacing:.02em;
+  display:flex;align-items:center;justify-content:center;transform:rotate(-8deg);background:rgba(191,86,33,.07);}
+.stamp .kind{display:block;font-size:.63rem;letter-spacing:.24em;text-transform:uppercase;
+  color:var(--olive-deep);font-weight:800;margin-bottom:.4rem;}
+.stamp h3{font-family:var(--slab);font-size:1.08rem;font-weight:700;color:var(--ink);line-height:1.45;}
+.stamp .perf{display:block;height:2px;width:44px;margin:.85rem auto 0;
+  background:repeating-linear-gradient(90deg,var(--khaki-deep) 0 5px,transparent 5px 10px);}
+
+/* ---- contact: field notes with dotted leaders ---- */
+.contact{background:var(--sand-2);border-top:2px solid var(--line);}
+.contact-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:1.5rem;}
+.note{background:var(--paper);border:2px solid var(--khaki-deep);border-bottom:7px solid var(--rust);
+  padding:1.4rem 1.35rem;}
+.note .lab{font-size:.66rem;letter-spacing:.24em;text-transform:uppercase;color:var(--olive-deep);
+  font-weight:800;margin-bottom:.55rem;padding-bottom:.5rem;
+  border-bottom:2px dotted var(--line);}
+.note a{color:var(--rust-deep);text-decoration:none;font-weight:800;border-bottom:2px solid var(--line);}
+.note a:hover{border-color:var(--rust);}
+.note .val{color:#544a37;font-weight:600;}
+
+/* ---- CTA: deep olive expedition panel ---- */
+.cta{background:var(--olive-deep);color:var(--sand);border-top:3px solid var(--bark);border-bottom:3px solid var(--bark);
+  background-image:
+    repeating-linear-gradient(0deg,rgba(0,0,0,.07) 0 1px,transparent 1px 4px),
+    repeating-linear-gradient(90deg,rgba(255,255,255,.035) 0 1px,transparent 1px 4px);}
+.cta .rose:before{border-color:rgba(232,220,193,.55);}
+.cta .rose i{background:var(--sand);opacity:.55;}
+.cta .section-head .sub{color:var(--rust-lite);}
+.cta .section-head h2{color:var(--sand);}
+.cta .section-head .dashes{background:repeating-linear-gradient(90deg,var(--rust-lite) 0 12px,transparent 12px 22px);}
+.cta p{color:#ddd3b8;max-width:56ch;margin-bottom:2.05rem;font-size:1.08rem;}
+.cta .btn-field{color:var(--sand);border-color:var(--sand);box-shadow:none;}
+.cta .btn-field:hover{background:var(--sand);color:var(--olive-deep);}
+
+footer{background:var(--bark);color:#b6a988;text-align:center;padding:2.6rem 1rem;font-size:.82rem;line-height:1.75;}
+footer a{color:var(--rust-lite);text-decoration:underline;text-underline-offset:2px;}
+
+@media(max-width:640px){
+  .hero{padding:3.6rem 0 3.4rem;}
+  .hero h1{font-size:2.15rem;}
+  .hero:after{width:190px;height:190px;right:-56px;}
+  section{padding:3.35rem 0;}
+  .btn-field{margin-left:0;margin-top:.75rem;}
+  .journal{padding:1.55rem 1.35rem;}
+  .section-head{gap:.85rem;}
+  .section-head .rose{--rose-size:42px;}
+  .stamp:nth-child(odd),.stamp:nth-child(even),.stamp:nth-child(3n){transform:none;}
+}
+</style>
+</head>
+<body>
+<div class="banner">Free website preview built by <a href="https://satechitsolutions.com/#contact" target="_blank" rel="noopener">SaTech IT Solutions</a> — not affiliated with or endorsed by Basecamp Outfitters.</div>
+<div class="webbing" aria-hidden="true"></div>
+
+<header class="hero">
+  <div class="wrap">
+    <span class="eyebrow"><span class="pip" aria-hidden="true"></span>Website Preview</span>
+    <h1>Local, Dependable, and Ready to Help</h1>
+    <p class="lede">Proudly serving the local area with service worth recommending.</p>
+    <a class="btn btn-rust" href="mailto:Tom@SaTechITSolutions.com?subject=Interested%20in%20my%20website%20preview">Get in Touch</a>
+    <a class="btn btn-field" href="https://satechitsolutions.com/#contact" target="_blank" rel="noopener">Learn More</a>
+    <div class="trust"><span class="chip rate">★★★★★ 4.9 &middot; 102 Google reviews</span><span class="chip">Locally Owned & Operated</span><span class="chip">Trusted by Neighbors</span><span class="chip">Serving the Community</span></div>
+    <p class="coords"><b>Bearing</b> &middot; Outdoor equipment store &middot; 5 Trailhead Rd, Bozeman, MT</p>
+  </div>
+</header>
+
+<div class="trail" aria-hidden="true"></div>
+
+<section class="about">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="rose" aria-hidden="true"><i></i></div>
+      <div><div class="sub">Field Journal</div><h2>Welcome to Basecamp Outfitters</h2><span class="dashes"></span></div>
+    </div>
+    <div class="journal"><p>Basecamp Outfitters is a locally owned business serving the local area and the surrounding community — built on doing right by neighbors and earning repeat business the honest way.</p><p>You get responsive service, fair pricing, and people who stand behind their work. That&#x27;s the reputation Basecamp Outfitters has built, one satisfied customer at a time.</p></div>
+  </div>
+</section>
+
+<section class="services">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="rose" aria-hidden="true"><i></i></div>
+      <div><div class="sub">Stamped &amp; Ready</div><h2>What We Do</h2><span class="dashes"></span></div>
+    </div>
+    <div class="grid"><div class="stamp"><div class="postmark">01</div><span class="kind">Expedition Service</span><h3>Free Consultations</h3><span class="perf"></span></div><div class="stamp"><div class="postmark">02</div><span class="kind">Expedition Service</span><h3>Custom Solutions</h3><span class="perf"></span></div><div class="stamp"><div class="postmark">03</div><span class="kind">Expedition Service</span><h3>Responsive Local Service</h3><span class="perf"></span></div><div class="stamp"><div class="postmark">04</div><span class="kind">Expedition Service</span><h3>Fair, Upfront Pricing</h3><span class="perf"></span></div><div class="stamp"><div class="postmark">05</div><span class="kind">Expedition Service</span><h3>Satisfaction Guaranteed</h3><span class="perf"></span></div></div>
+  </div>
+</section>
+
+<div class="trail" aria-hidden="true"></div>
+
+<section class="contact">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="rose" aria-hidden="true"><i></i></div>
+      <div><div class="sub">Navigate Here</div><h2>Get in Touch</h2><span class="dashes"></span></div>
+    </div>
+    <div class="contact-grid"><div class="note"><div class="lab">Call Base Camp</div><a href="tel:4065550155">(406) 555-0155</a></div><div class="note"><div class="lab">Our Location</div><span class="val">5 Trailhead Rd, Bozeman, MT</span></div><div class="note"><div class="lab">Plot The Route</div><a href="https://maps.google.com/?q=Basecamp+Outfitters" target="_blank" rel="noopener">Open in Google Maps</a></div></div>
+  </div>
+</section>
+
+<section class="cta">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="rose" aria-hidden="true"><i></i></div>
+      <div><div class="sub">Like This Preview?</div><h2>Let's Chart The Real One</h2><span class="dashes"></span></div>
+    </div>
+    <p>This rugged, expedition-styled mockup was built by SaTech IT Solutions to show Basecamp Outfitters one way a real website could look. Ready to make it official?</p>
+    <a class="btn btn-rust" href="mailto:Tom@SaTechITSolutions.com?subject=Interested%20in%20my%20website%20preview">Email SaTech IT Solutions</a>
+    <a class="btn btn-field" href="https://satechitsolutions.com/#contact" target="_blank" rel="noopener">Visit SaTech IT Solutions</a>
+  </div>
+</section>
+
+<footer>&copy; 2026 Website preview by <a href="https://satechitsolutions.com" target="_blank" rel="noopener">SaTech IT Solutions</a>. Not affiliated with or endorsed by Basecamp Outfitters.</footer>
+</body>
+</html>
