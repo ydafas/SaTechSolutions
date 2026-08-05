@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="description" content="DIEHL AUTOMOTIVE — honest auto repair, diagnostics, brakes, and tire service in the Huntsville, AL area.">
+<meta name="robots" content="noindex,nofollow">
+<title>DIEHL AUTOMOTIVE — Website Preview by SaTech IT Solutions</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --track:#0a0a0b;--track-2:#141417;--panel:#1b1b1f;--asphalt:#f4f4f5;
+  --red:#e10600;--red-dark:#b30500;--red-soft:rgba(225,6,0,.12);
+  --ink:#121214;--muted:#6c6c72;--line:#e2e2e6;--bg:#ffffff;
+  --mono:ui-monospace,'SFMono-Regular','Consolas','Liberation Mono',Menlo,monospace;
+}
+html{scroll-behavior:smooth;}
+body{font-family:'Segoe UI',system-ui,-apple-system,Roboto,Helvetica,Arial,sans-serif;color:var(--ink);background:var(--bg);line-height:1.6;-webkit-font-smoothing:antialiased;}
+.wrap{max-width:1080px;margin:0 auto;padding:0 26px;}
+.banner{background:var(--track);color:#d7d7db;font-size:.82rem;text-align:center;padding:.7rem 1rem;line-height:1.5;}
+.banner a{color:var(--red);font-weight:700;text-decoration:underline;}
+.checker{height:14px;background:repeating-conic-gradient(#111 0% 25%,#fff 0% 50%) 0 0/28px 28px;border-top:2px solid var(--red);border-bottom:2px solid var(--red);}
+.hero{position:relative;background:var(--track);color:#fff;padding:5rem 0 4.5rem;overflow:hidden;border-bottom:5px solid var(--red);}
+.hero:before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(115deg,transparent 0 26px,rgba(255,255,255,.025) 26px 27px);pointer-events:none;}
+.hero:after{content:"";position:absolute;inset:0;background:radial-gradient(90% 120% at 85% -10%,var(--red-soft) 0%,transparent 55%);pointer-events:none;}
+.hero .wrap{position:relative;z-index:1;}
+.hero-stripe{position:absolute;top:0;bottom:0;left:34px;width:26px;background:linear-gradient(var(--red),var(--red)) left/9px 100% no-repeat,linear-gradient(var(--red),var(--red)) right/9px 100% no-repeat;opacity:.9;z-index:0;}
+.tag{display:inline-block;background:var(--red);color:#fff;font-size:.7rem;letter-spacing:.2em;text-transform:uppercase;font-weight:800;padding:.42rem 1rem;margin-bottom:1.4rem;transform:skewX(-12deg);}
+.tag span{display:inline-block;transform:skewX(12deg);}
+.hero h1{font-size:3.1rem;font-weight:800;text-transform:uppercase;letter-spacing:-.005em;line-height:1.02;max-width:17ch;margin-bottom:1.1rem;}
+.hero p{font-size:1.2rem;color:#c9c9ce;max-width:52ch;margin-bottom:2.2rem;}
+.hero .meta{margin-top:2rem;font-family:var(--mono);font-size:.78rem;color:#8b8b92;letter-spacing:.08em;text-transform:uppercase;}
+.hero .meta b{color:var(--red);font-weight:700;}
+.btn{position:relative;display:inline-block;padding:1rem 2.1rem;font-weight:800;font-size:.9rem;letter-spacing:.06em;text-transform:uppercase;text-decoration:none;min-height:44px;line-height:1.45;transform:skewX(-12deg);}
+.btn span{display:inline-block;transform:skewX(12deg);}
+.btn-red{background:var(--red);color:#fff;}
+.btn-red:hover{background:var(--red-dark);}
+.btn-line{color:#fff;border:2px solid #3a3a40;margin-left:.7rem;}
+.btn-line:hover{border-color:var(--red);}
+.trust{display:flex;flex-wrap:wrap;gap:.6rem;margin-top:2rem;}
+.chip{font-family:var(--mono);font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:#c9c9ce;border:1px solid #37373d;padding:.42rem .9rem;}
+.chip.rate{border-color:var(--red);color:#fff;background:var(--red-soft);font-weight:700;}
+.chip.rate b{color:var(--red);}
+section{padding:4.6rem 0;}
+.section-head{margin-bottom:2.6rem;position:relative;padding-left:1.2rem;}
+.section-head:before{content:"";position:absolute;left:0;top:.15rem;bottom:.15rem;width:5px;background:var(--red);transform:skewX(-12deg);}
+.section-head .sub{font-family:var(--mono);font-size:.72rem;letter-spacing:.16em;text-transform:uppercase;color:var(--red-dark);font-weight:700;}
+.section-head h2{font-size:2rem;font-weight:800;text-transform:uppercase;letter-spacing:-.005em;margin-top:.3rem;}
+.about{background:var(--asphalt);}
+.about p{color:#41414a;font-size:1.1rem;max-width:66ch;margin-bottom:1.1rem;}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:1.1rem;}
+.card{background:#fff;border:1px solid var(--line);border-left:4px solid var(--track);padding:1.4rem 1.4rem;display:flex;align-items:center;gap:1.1rem;transition:border-color .15s;}
+.card:hover{border-left-color:var(--red);}
+.gauge{flex:none;width:52px;height:52px;background:var(--track);color:#fff;font-family:var(--mono);font-size:1.25rem;font-weight:700;display:flex;align-items:center;justify-content:center;border-bottom:3px solid var(--red);letter-spacing:-.03em;}
+.gauge.redline{color:var(--red);}
+.card h3{font-size:1.05rem;font-weight:700;text-transform:uppercase;letter-spacing:.005em;}
+.contact{background:var(--track);color:#fff;}
+.contact .section-head h2{color:#fff;}
+.contact-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1.6rem;}
+.contact-grid .lab{font-family:var(--mono);font-size:.7rem;letter-spacing:.14em;text-transform:uppercase;color:var(--red);font-weight:700;margin-bottom:.45rem;}
+.contact-grid a{color:#fff;text-decoration:none;font-weight:700;}
+.contact-grid a:hover{color:var(--red);}
+.contact-grid .val{color:#c9c9ce;font-weight:600;}
+.cta{position:relative;background:var(--red);color:#fff;overflow:hidden;}
+.cta:before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(115deg,transparent 0 26px,rgba(0,0,0,.06) 26px 27px);pointer-events:none;}
+.cta .wrap{position:relative;z-index:1;}
+.cta .section-head:before{background:#fff;}
+.cta .section-head .sub{color:#ffd9d7;}
+.cta p{color:#ffe4e3;max-width:56ch;margin-bottom:2rem;font-size:1.08rem;font-weight:500;}
+.cta .btn-red{background:#0a0a0b;color:#fff;}
+.cta .btn-line{color:#fff;border-color:rgba(255,255,255,.55);}
+.cta .btn-line:hover{border-color:#fff;}
+footer{background:#050506;color:#8b8b92;text-align:center;padding:2.4rem 1rem;font-size:.82rem;}
+footer a{color:var(--red);}
+@media(max-width:640px){.hero{padding:3.6rem 0 3.2rem;}.hero h1{font-size:2.15rem;}.hero-stripe{left:16px;width:18px;}section{padding:3.2rem 0;}.btn-line{margin-left:0;margin-top:.7rem;}}
+</style>
+</head>
+<body>
+<div class="banner">Free website preview built by <a href="https://satechitsolutions.com/#contact" target="_blank" rel="noopener">SaTech IT Solutions</a> for DIEHL AUTOMOTIVE — not DIEHL AUTOMOTIVE's official website.</div>
+<div class="checker" aria-hidden="true"></div>
+
+<header class="hero">
+  <div class="hero-stripe" aria-hidden="true"></div>
+  <div class="wrap">
+  <span class="tag"><span>Website Preview</span></span>
+  <h1>Honest Repairs, Explained in Plain English</h1>
+  <p>Full-service auto repair in the Huntsville, AL area — accurate diagnostics and work you can actually trust.</p>
+  <a class="btn btn-red" href="mailto:Tom@SaTechITSolutions.com?subject=Interested%20in%20my%20website%20preview"><span>Book Your Service</span></a>
+  <a class="btn btn-line" href="https://satechitsolutions.com/#contact" target="_blank" rel="noopener"><span>Learn More</span></a>
+  <div class="trust"><span class="chip rate">★★★★★ <b>4.7</b> &middot; 112 Google reviews</span><span class="chip">Locally Owned & Operated</span><span class="chip">Trusted by Neighbors</span><span class="chip">Serving the Community</span></div>
+  <p class="meta"><b>&#9210;</b> Car repair and maintenance service &middot; 3300 6th Ave SW, Huntsville, AL 35805, USA</p>
+</div></header>
+
+<section class="about"><div class="wrap">
+  <div class="section-head"><div class="sub">Under the Hood</div><h2>DIEHL AUTOMOTIVE</h2></div>
+  <p>DIEHL AUTOMOTIVE keeps the Huntsville, AL area drivers on the road with repairs done right the first time. Check-engine light, brakes that squeal, a car that won&#x27;t start — we find the real problem instead of guessing.</p><p>We show you what&#x27;s worn, tell you what&#x27;s urgent versus what can wait, and never pad the bill with work you don&#x27;t need. That&#x27;s why our customers keep coming back and sending their families in.</p>
+</div></section>
+
+<section class="services"><div class="wrap">
+  <div class="section-head"><div class="sub">Bay Menu</div><h2>Services</h2></div>
+  <div class="grid"><div class="card"><span class="gauge">01</span><h3>Diagnostics &amp; Check-Engine Light</h3></div><div class="card"><span class="gauge">02</span><h3>Brake Service</h3></div><div class="card"><span class="gauge">03</span><h3>Oil Changes &amp; Scheduled Maintenance</h3></div><div class="card"><span class="gauge">04</span><h3>Tires &amp; Alignment</h3></div><div class="card"><span class="gauge redline">05</span><h3>Engine &amp; Transmission Repair</h3></div></div>
+</div></section>
+
+<section class="contact"><div class="wrap">
+  <div class="section-head"><div class="sub">Pit Lane</div><h2>Get in Touch</h2></div>
+  <div class="contact-grid"><div><div class="lab">Call the Shop</div><a href="tel:2565339291">(256) 533-9291</a></div><div><div class="lab">Garage</div><span class="val">3300 6th Ave SW, Huntsville, AL 35805, USA</span></div><div><div class="lab">Directions</div><a href="https://maps.google.com/?cid=16947081536796734599&amp;g_mp=Cidnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLlNlYXJjaFRleHQQAhgEIAA" target="_blank" rel="noopener">Google Maps</a></div></div>
+</div></section>
+
+<section class="cta"><div class="wrap">
+  <div class="section-head"><div class="sub">Like This Preview?</div><h2>Take It For a Lap</h2></div>
+  <p>This mockup was built by SaTech IT Solutions to show DIEHL AUTOMOTIVE what a fast, precision-tuned website could look like. Ready to put it on the road?</p>
+  <a class="btn btn-red" href="mailto:Tom@SaTechITSolutions.com?subject=Interested%20in%20my%20website%20preview"><span>Email SaTech IT Solutions</span></a>
+  <a class="btn btn-line" href="https://satechitsolutions.com/#contact" target="_blank" rel="noopener"><span>Visit SaTech IT Solutions</span></a>
+</div></section>
+
+<div class="checker" aria-hidden="true"></div>
+<footer>&copy; 2026 Website preview by <a href="https://satechitsolutions.com" target="_blank" rel="noopener">SaTech IT Solutions</a>. Not affiliated with or endorsed by DIEHL AUTOMOTIVE.</footer>
+</body>
+</html>
