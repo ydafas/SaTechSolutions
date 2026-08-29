@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Microsoft 365, SharePoint &amp; Power Platform Development | SaTech IT Solutions</title>
+  <meta name="description" content="Huntsville Microsoft 365 development: SharePoint Online, Power Apps, Power Automate, SPFx, Copilot agents, and subcontract surge support for local primes and teams.">
+  <script async src="https://www.googletagmanager.com/gtag/js?id=GT-5DF6JG2M"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'GT-5DF6JG2M');
+  </script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box;}
+    :root {
+      --ink:#0b1220;
+      --ink-2:#16213a;
+      --primary-color:#0891b2;
+      --accent-color:#22d3ee;
+      --secondary-color:#10b981;
+      --dark-color:#0f172a;
+      --light-color:#f8fafc;
+      --text-color:#475569;
+      --line:#e2e8f0;
+    }
+    html{scroll-behavior:smooth;}
+    body{font-family:system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:var(--text-color);line-height:1.65;background:#fff;-webkit-font-smoothing:antialiased;}
+    .container{max-width:1200px;margin:0 auto;padding:0 20px;}
+    header{background:rgba(11,18,32,.88);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid rgba(255,255,255,.08);position:fixed;width:100%;top:0;z-index:1000;}
+    nav{display:flex;justify-content:space-between;align-items:center;padding:1rem 0;}
+    .logo{color:#fff;font-size:1.5rem;font-weight:800;letter-spacing:-.01em;display:flex;align-items:center;}
+    .logo i{margin-right:.6rem;color:var(--accent-color);background:rgba(34,211,238,.12);width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.05rem;}
+    .nav-links{display:flex;gap:2.2rem;list-style:none;align-items:center;}
+    .nav-links a{color:#cbd5e1;text-decoration:none;font-weight:600;font-size:.95rem;transition:color .2s;}
+    .nav-links a:hover,.nav-links a.active{color:#fff;}
+    .cta-button{background:var(--accent-color);color:var(--ink);padding:.7rem 1.5rem;border-radius:999px;font-weight:700;font-size:.9rem;transition:all .2s;box-shadow:0 4px 16px rgba(34,211,238,.25);}
+    .cta-button:hover{background:#67e8f9;transform:translateY(-2px);}
+    .mobile-menu{display:none;font-size:1.5rem;color:#fff;cursor:pointer;}
+    section{padding:96px 0;}
+    .eyebrow{display:inline-block;font-size:.72rem;letter-spacing:.16em;text-transform:uppercase;font-weight:800;color:var(--primary-color);margin-bottom:1rem;}
+    .hero{background:radial-gradient(120% 100% at 50% -10%,#1e3a5f 0%,var(--ink) 55%),var(--ink);color:#fff;text-align:center;padding:168px 0 100px;}
+    .hero .eyebrow{background:rgba(34,211,238,.12);color:var(--accent-color);border:1px solid rgba(34,211,238,.3);border-radius:999px;padding:.45rem 1.1rem;margin-bottom:1.6rem;}
+    .hero h1{font-size:3rem;margin-bottom:1.2rem;font-weight:800;letter-spacing:-.02em;line-height:1.12;max-width:20ch;margin-left:auto;margin-right:auto;}
+    .hero p{font-size:1.18rem;opacity:.85;max-width:58ch;margin:0 auto;}
+    .hero-buttons{display:flex;gap:1rem;justify-content:center;margin-top:2rem;}
+    .btn-primary,.btn-secondary{padding:1rem 2.1rem;border-radius:999px;font-size:1rem;font-weight:700;text-decoration:none;transition:all .2s;display:inline-flex;align-items:center;}
+    .btn-primary{background:var(--accent-color);color:var(--ink);box-shadow:0 8px 24px rgba(34,211,238,.28);}
+    .btn-primary:hover{background:#67e8f9;transform:translateY(-2px);}
+    .btn-secondary{background:transparent;color:#fff;border:2px solid rgba(255,255,255,.35);}
+    .btn-secondary:hover{background:rgba(255,255,255,.08);border-color:#fff;}
+    .section-title{text-align:center;margin-bottom:3rem;}
+    .section-title h2{font-size:2.3rem;color:var(--dark-color);margin-bottom:.6rem;font-weight:800;}
+    .services-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1.75rem;}
+    .service-card{background:#fff;padding:2.1rem;border-radius:16px;border:1px solid var(--line);box-shadow:0 1px 3px rgba(15,23,42,.04);}
+    .service-card:hover{transform:translateY(-6px);box-shadow:0 20px 40px rgba(15,23,42,.09);}
+    .service-icon{width:52px;height:52px;border-radius:12px;background:linear-gradient(135deg,var(--primary-color),var(--accent-color));color:#fff;font-size:1.35rem;display:flex;align-items:center;justify-content:center;margin-bottom:1.3rem;}
+    .service-card h3{font-size:1.22rem;color:var(--dark-color);margin-bottom:.6rem;font-weight:700;}
+    .service-features{list-style:none;}
+    .service-features li{display:flex;align-items:center;padding:.35rem 0;font-size:.92rem;}
+    .service-features li i{color:var(--secondary-color);margin-right:.6rem;font-size:.85rem;}
+    .packages{background:var(--light-color);}
+    .package{background:#fff;border:1px solid var(--line);border-radius:16px;padding:2rem;}
+    .package h3{color:var(--dark-color);font-size:1.25rem;margin-bottom:.4rem;}
+    .package .tag{font-size:.8rem;font-weight:700;color:var(--primary-color);margin-bottom:.8rem;display:block;}
+    .why{display:grid;grid-template-columns:1fr 1fr;gap:3rem;align-items:start;}
+    .why h2{font-size:2.1rem;color:var(--dark-color);margin-bottom:1rem;font-weight:800;}
+    .why ul{padding-left:1.1rem;}
+    .why li{margin-bottom:.55rem;}
+    footer{background:var(--ink);color:#fff;padding:3rem 0 2rem;}
+    .footer-content{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:2rem;margin-bottom:2rem;}
+    .footer-section h3{color:#fff;margin-bottom:.7rem;font-size:1.05rem;}
+    .footer-section p,.footer-section a{color:#94a3b8;text-decoration:none;font-size:.9rem;line-height:1.7;}
+    .footer-section a:hover{color:var(--accent-color);}
+    .footer-bottom{text-align:center;font-size:.82rem;color:#64748b;padding-top:2rem;border-top:1px solid rgba(255,255,255,.08);}
+    @media (max-width:768px){
+      .nav-links{position:fixed;top:70px;left:-100%;width:100%;height:calc(100vh - 70px);background:var(--dark-color);flex-direction:column;padding-top:2rem;transition:left .3s;}
+      .nav-links.active{left:0;}
+      .mobile-menu{display:block;}
+      .cta-button{display:none;}
+      .hero{padding:120px 0 60px;}
+      .hero h1{font-size:2rem;}
+      .why{grid-template-columns:1fr;}
+      .hero-buttons{flex-direction:column;align-items:stretch;max-width:300px;margin:2rem auto 0;}
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="container">
+      <div class="logo"><i class="fas fa-server"></i> <span>SaTech IT Solutions</span></div>
+      <ul class="nav-links">
+        <li><a href="index.html#home">Home</a></li>
+        <li><a href="index.html#services">Services</a></li>
+        <li><a href="microsoft365.html" class="active">Microsoft 365</a></li>
+        <li><a href="index.html#about">About</a></li>
+        <li><a href="templates.html">Templates</a></li>
+        <li><a href="index.html#contact">Contact</a></li>
+      </ul>
+      <a href="index.html#contact" class="cta-button">Get Quote</a>
+      <div class="mobile-menu"><i class="fas fa-bars"></i></div>
+    </nav>
+  </header>
+
+  <section class="hero">
+    <div class="container">
+      <span class="eyebrow">Huntsville · Redstone · Remote-capable</span>
+      <h1>Microsoft 365 development for teams that need a builder</h1>
+      <p>SharePoint Online, Power Apps, Power Automate, Power BI, SPFx, and Copilot agents — scoped as subcontract work packages, not a six-month staff-aug search.</p>
+      <div class="hero-buttons">
+        <a href="index.html#contact" class="btn-primary">Start a work package</a>
+        <a href="index.html#services" class="btn-secondary">All services</a>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="container">
+      <div class="section-title">
+        <span class="eyebrow">Capabilities</span>
+        <h2>What we actually build</h2>
+      </div>
+      <div class="services-grid">
+        <div class="service-card">
+          <div class="service-icon"><i class="fas fa-sitemap"></i></div>
+          <h3>SharePoint Online</h3>
+          <p>Modern site standups, classic-to-modern page conversions, information architecture, permissions cleanup, and reusable SPFx web parts.</p>
+          <ul class="service-features">
+            <li><i class="fas fa-check"></i>PnP PowerShell bulk operations</li>
+            <li><i class="fas fa-check"></i>Hub sites, templates, content types</li>
+            <li><i class="fas fa-check"></i>Sensitivity labels / Purview basics</li>
+          </ul>
+        </div>
+        <div class="service-card">
+          <div class="service-icon"><i class="fas fa-bolt"></i></div>
+          <h3>Power Automate</h3>
+          <p>Approval chains, Planner/Teams notifications, email-to-task routing, audit logging, and get-items / pagination fixes that actually survive production.</p>
+          <ul class="service-features">
+            <li><i class="fas fa-check"></i>Cloud flows + error handling</li>
+            <li><i class="fas fa-check"></i>Approvals with attachments/images</li>
+            <li><i class="fas fa-check"></i>Connector and Dataverse work</li>
+          </ul>
+        </div>
+        <div class="service-card">
+          <div class="service-icon"><i class="fas fa-tablet-alt"></i></div>
+          <h3>Power Apps</h3>
+          <p>Canvas and model-driven apps for intake, tracking, and field processes. Home screens, flyout panels, and forms that people will actually use.</p>
+          <ul class="service-features">
+            <li><i class="fas fa-check"></i>Canvas + model-driven</li>
+            <li><i class="fas fa-check"></i>SharePoint and Dataverse backends</li>
+            <li><i class="fas fa-check"></i>Power Pages when public-facing</li>
+          </ul>
+        </div>
+        <div class="service-card">
+          <div class="service-icon"><i class="fas fa-robot"></i></div>
+          <h3>Copilot &amp; agents</h3>
+          <p>Copilot Studio agents grounded in SharePoint libraries, plus practical AI-assisted workflow design instead of demo-only chatbots.</p>
+          <ul class="service-features">
+            <li><i class="fas fa-check"></i>SharePoint-grounded agents</li>
+            <li><i class="fas fa-check"></i>Document Q&amp;A and routing</li>
+            <li><i class="fas fa-check"></i>Prompt + flow handoff patterns</li>
+          </ul>
+        </div>
+        <div class="service-card">
+          <div class="service-icon"><i class="fas fa-chart-line"></i></div>
+          <h3>Power BI from lists</h3>
+          <p>Gantt and status reporting off SharePoint lists and Dataverse so program teams stop rebuilding the same Excel tracker.</p>
+          <ul class="service-features">
+            <li><i class="fas fa-check"></i>List-to-dashboard pipelines</li>
+            <li><i class="fas fa-check"></i>Embedded reports in SharePoint</li>
+            <li><i class="fas fa-check"></i>Refresh and permission hygiene</li>
+          </ul>
+        </div>
+        <div class="service-card">
+          <div class="service-icon"><i class="fas fa-handshake"></i></div>
+          <h3>Prime / subcontract surge</h3>
+          <p>Fixed-scope overflow when a Huntsville team is short a Power Platform or SharePoint developer and cannot wait on a req.</p>
+          <ul class="service-features">
+            <li><i class="fas fa-check"></i>NDA and work-package ready</li>
+            <li><i class="fas fa-check"></i>Local to Huntsville / New Hope</li>
+            <li><i class="fas fa-check"></i>Evenings and weekend delivery</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="packages">
+    <div class="container">
+      <div class="section-title">
+        <span class="eyebrow">Work packages</span>
+        <h2>Easy yes for a PM or small-business liaison</h2>
+      </div>
+      <div class="services-grid">
+        <div class="package">
+          <span class="tag">1–2 weeks</span>
+          <h3>SharePoint cleanup</h3>
+          <p>Inventory the mess, modernize the landing sites, fix permissions, and hand back a working IA plus a short runbook.</p>
+        </div>
+        <div class="package">
+          <span class="tag">1–3 weeks</span>
+          <h3>One-process automation</h3>
+          <p>One approval, intake, or notification process built in Power Automate / Power Apps, tested, and documented for the next admin.</p>
+        </div>
+        <div class="package">
+          <span class="tag">2–4 weeks</span>
+          <h3>App + flow package</h3>
+          <p>A canvas app on SharePoint or Dataverse with the supporting flows, views, and a 30-minute handoff call.</p>
+        </div>
+        <div class="package">
+          <span class="tag">Retainer</span>
+          <h3>Overflow hours</h3>
+          <p>A block of hours for a prime or local team that already has the requirement and just needs a builder this month.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="container why">
+      <div>
+        <span class="eyebrow">Why local</span>
+        <h2>Built in the same ecosystem you already staff</h2>
+        <p>SaTech is based in the Huntsville / New Hope area. The Microsoft 365 work is the same stack local defense and federal teams hire for every week: SharePoint Online, Power Platform, Teams, and Copilot Studio.</p>
+      </div>
+      <div>
+        <ul>
+          <li>Hands-on SharePoint Online site standups and migrations</li>
+          <li>Power Automate production flows (Planner, approvals, audit logging)</li>
+          <li>SPFx web parts and PnP PowerShell bulk deploy</li>
+          <li>Veteran-owned Alabama LLC — useful for small-business subcontract goals</li>
+          <li>Can pair M365 work with rack, cabling, or a clean site cutover when needed</li>
+        </ul>
+        <p style="margin-top:1.2rem;"><a href="index.html#contact" class="btn-primary">Request a scoped quote</a></p>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="container footer-content">
+      <div class="footer-section">
+        <h3>SaTech IT Solutions</h3>
+        <p>Microsoft 365 development, Power Platform automation, and IT infrastructure for Huntsville teams.</p>
+      </div>
+      <div class="footer-section">
+        <h3>Quick Links</h3>
+        <a href="index.html#home">Home</a><br>
+        <a href="index.html#services">Services</a><br>
+        <a href="microsoft365.html">Microsoft 365</a><br>
+        <a href="templates.html">Templates</a><br>
+        <a href="index.html#contact">Contact</a>
+      </div>
+      <div class="footer-section">
+        <h3>Contact Info</h3>
+        <p><i class="fas fa-phone"></i> (256) 202-4765</p>
+        <p><i class="fas fa-envelope"></i> Tom@SaTechITSolutions.com</p>
+      </div>
+    </div>
+    <div class="footer-bottom">&copy; 2026 SaTech IT Solutions. All rights reserved.</div>
+  </footer>
+  <script>
+    document.querySelector('.mobile-menu').onclick = () => {
+      document.querySelector('.nav-links').classList.toggle('active');
+    };
+    document.querySelectorAll('.nav-links a').forEach(link => {
+      link.addEventListener('click', () => {
+        document.querySelector('.nav-links').classList.remove('active');
+      });
+    });
+  </script>
+</body>
+</html>
