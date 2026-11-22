@@ -69,6 +69,22 @@
     .why h2{font-size:2.1rem;color:var(--dark-color);margin-bottom:1rem;font-weight:800;}
     .why ul{padding-left:1.1rem;}
     .why li{margin-bottom:.55rem;}
+    .studio-band{background:radial-gradient(120% 120% at 100% 0%,#1e3a5f 0%,var(--ink) 60%);color:#fff;}
+    .studio-band .wrap{display:grid;grid-template-columns:1.1fr .9fr;gap:3rem;align-items:center;}
+    .studio-band h2{font-size:2.3rem;font-weight:800;letter-spacing:-.02em;line-height:1.12;margin-bottom:1rem;}
+    .studio-band p{color:#cbd5e1;font-size:1.08rem;max-width:56ch;}
+    .studio-band ul{list-style:none;margin:1.4rem 0 2rem;}
+    .studio-band li{display:flex;gap:.7rem;padding:.35rem 0;color:#e2e8f0;}
+    .studio-band li i{color:var(--accent-color);margin-top:.3rem;}
+    .studio-band .eyebrow{color:var(--accent-color);}
+    .studio-shot{background:#0f172a;border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:14px;box-shadow:0 30px 80px rgba(0,0,0,.45);}
+    .studio-shot .bar{display:flex;gap:6px;margin-bottom:10px;}
+    .studio-shot .bar i{width:10px;height:10px;border-radius:50%;background:#334155;display:block;}
+    .studio-shot .app{background:#f1f5f9;border-radius:8px;overflow:hidden;}
+    .studio-shot .hd{height:34px;background:linear-gradient(100deg,#0b1220,#0891b2);color:#fff;font-weight:700;font-size:.8rem;display:flex;align-items:center;padding:0 12px;}
+    .studio-shot .row{display:flex;align-items:center;justify-content:space-between;background:#fff;margin:8px 10px;border-radius:8px;padding:10px 12px;font-size:.78rem;color:#0f172a;box-shadow:0 1px 3px rgba(15,23,42,.08);}
+    .studio-shot .pill{font-size:.65rem;font-weight:700;color:#fff;border-radius:99px;padding:2px 9px;}
+    .studio-shot pre{margin-top:10px;background:#020617;color:#7dd3fc;font:11px/1.5 ui-monospace,Consolas,monospace;border-radius:8px;padding:10px 12px;overflow:hidden;white-space:pre;}
     footer{background:var(--ink);color:#fff;padding:3rem 0 2rem;}
     .footer-content{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:2rem;margin-bottom:2rem;}
     .footer-section h3{color:#fff;margin-bottom:.7rem;font-size:1.05rem;}
@@ -83,6 +99,8 @@
       .hero{padding:120px 0 60px;}
       .hero h1{font-size:2rem;}
       .why{grid-template-columns:1fr;}
+      .studio-band .wrap{grid-template-columns:1fr;}
+      .studio-band h2{font-size:1.8rem;}
       .hero-buttons{flex-direction:column;align-items:stretch;max-width:300px;margin:2rem auto 0;}
     }
   </style>
@@ -95,6 +113,7 @@
         <li><a href="index.html#home">Home</a></li>
         <li><a href="index.html#services">Services</a></li>
         <li><a href="microsoft365.html" class="active">Microsoft 365</a></li>
+        <li><a href="powerapp-studio/">App Studio</a></li>
         <li><a href="index.html#about">About</a></li>
         <li><a href="templates.html">Templates</a></li>
         <li><a href="index.html#contact">Contact</a></li>
@@ -151,6 +170,7 @@
             <li><i class="fas fa-check"></i>Canvas + model-driven</li>
             <li><i class="fas fa-check"></i>SharePoint and Dataverse backends</li>
             <li><i class="fas fa-check"></i>Power Pages when public-facing</li>
+            <li><i class="fas fa-arrow-right"></i><a href="powerapp-studio/" style="color:var(--primary-color);font-weight:700;text-decoration:none">Try the free Power App Studio</a></li>
           </ul>
         </div>
         <div class="service-card">
@@ -183,6 +203,43 @@
             <li><i class="fas fa-check"></i>Evenings and weekend delivery</li>
           </ul>
         </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="studio-band" id="app-studio">
+    <div class="container wrap">
+      <div>
+        <span class="eyebrow">Free tool</span>
+        <h2>Power App Studio: design a whole canvas app in your browser</h2>
+        <p>Describe the app, shape the SharePoint lists, drag controls onto real screens, set the theme, and test it in Play mode with sample data. Then copy paste-ready YAML into Power Apps Studio in any tenant, including GCC High.</p>
+        <ul>
+          <li><i class="fas fa-check"></i>Requirements wizard generates browse, details, edit and approval screens, already wired</li>
+          <li><i class="fas fa-check"></i>Drag-and-drop designer with galleries, forms, people pickers, actions and a theme editor</li>
+          <li><i class="fas fa-check"></i>Lint built from real paste failures, plus a PnP script that creates the lists</li>
+          <li><i class="fas fa-check"></i>Runs entirely in your browser. Nothing is uploaded.</li>
+        </ul>
+        <div class="hero-buttons" style="justify-content:flex-start;margin-top:0">
+          <a href="powerapp-studio/" class="btn-primary">Open Power App Studio</a>
+          <a href="index.html#contact" class="btn-secondary">Have us build it</a>
+        </div>
+      </div>
+      <div class="studio-shot" aria-hidden="true">
+        <div class="bar"><i></i><i></i><i></i></div>
+        <div class="app">
+          <div class="hd">Request Tracker</div>
+          <div class="row"><span><b>Laptop refresh</b></span><span class="pill" style="background:#f59e0b">Submitted</span></div>
+          <div class="row"><span><b>Badge access</b></span><span class="pill" style="background:#10b981">Approved</span></div>
+          <div class="row" style="margin-bottom:10px"><span><b>Training seat</b></span><span class="pill" style="background:#dc2626">Rejected</span></div>
+        </div>
+<pre>Screens:
+  scrBrowseRequests:
+    Properties:
+      Fill: =appTheme.Bg
+    Children:
+    - galListBrowseRequests:
+        Control: Gallery@2.15.0
+        Variant: Vertical</pre>
       </div>
     </div>
   </section>
@@ -249,6 +306,7 @@
         <a href="index.html#home">Home</a><br>
         <a href="index.html#services">Services</a><br>
         <a href="microsoft365.html">Microsoft 365</a><br>
+        <a href="powerapp-studio/">Power App Studio</a><br>
         <a href="templates.html">Templates</a><br>
         <a href="index.html#contact">Contact</a>
       </div>

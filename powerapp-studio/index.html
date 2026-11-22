@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Power App Studio | SaTech IT Solutions</title>
+  <meta name="description" content="Design a complete Power Apps canvas app in your browser: data model, drag-and-drop screens, theme, play-mode testing. Copy paste-ready YAML into Power Apps Studio in any environment, including GCC High.">
+  <script async src="https://www.googletagmanager.com/gtag/js?id=GT-5DF6JG2M"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'GT-5DF6JG2M');
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="studio.css">
+</head>
+<body>
+  <div id="app">
+    <header class="top">
+      <a class="brand" href="../index.html" title="SaTech IT Solutions home">
+        <i class="brand-mark"><svg viewBox="0 0 24 24"><path d="M4 7h16v4H4zM4 13h16v4H4z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M7 9h.01M7 15h.01" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg></i>
+        <span class="brand-name">SaTech</span><span class="brand-app">Power App Studio</span>
+      </a>
+      <label class="appname"><span class="sr">App name</span><input id="appName" spellcheck="false" autocomplete="off"></label>
+      <div class="top-actions">
+        <button class="ic" id="btnUndo" title="Undo (Ctrl+Z)" aria-label="Undo"></button>
+        <button class="ic" id="btnRedo" title="Redo (Ctrl+Y)" aria-label="Redo"></button>
+        <span class="sep"></span>
+        <button class="tb" id="btnWizard" title="Generate an app from your requirements">New app</button>
+        <div class="dd" id="fileMenu">
+          <button class="tb" id="btnFile" aria-haspopup="true">Project</button>
+          <div class="dd-menu" role="menu">
+            <button data-cmd="save">Save project file</button>
+            <button data-cmd="copyProject">Copy project JSON</button>
+            <button data-cmd="open">Open project file…</button>
+            <button data-cmd="paste">Paste project JSON…</button>
+            <hr>
+            <button data-cmd="import">Import screen YAML…</button>
+            <hr>
+            <button data-cmd="help">How it works</button>
+            <button data-cmd="reset" class="danger">Start over</button>
+          </div>
+        </div>
+        <button class="tb play" id="btnPlay" title="Test the app (F5)"><svg viewBox="0 0 24 24"><path d="M8 5l11 7-11 7z"/></svg>Play</button>
+        <button class="tb primary" id="btnCode" title="Get paste-ready YAML">Get YAML <b class="lint-badge" id="lintBadge" hidden></b></button>
+      </div>
+    </header>
+
+    <div class="body">
+      <nav class="rail" aria-label="Panels">
+        <button data-tab="insert" class="on"><i></i><span>Insert</span></button>
+        <button data-tab="screens"><i></i><span>Screens</span></button>
+        <button data-tab="layers"><i></i><span>Layers</span></button>
+        <button data-tab="data"><i></i><span>Data</span></button>
+        <button data-tab="theme"><i></i><span>Theme</span></button>
+        <button data-tab="app"><i></i><span>App</span></button>
+      </nav>
+      <aside class="panel" id="panel"></aside>
+      <main class="stage">
+        <div class="stage-bar">
+          <div class="tabs" id="screenTabs"></div>
+          <div class="zoom">
+            <button class="ic sm" data-zoom="-" aria-label="Zoom out">−</button>
+            <button class="zoom-val" id="zoomVal" title="Fit to window">100%</button>
+            <button class="ic sm" data-zoom="+" aria-label="Zoom in">+</button>
+          </div>
+        </div>
+        <div class="viewport" id="viewport">
+          <div class="board" id="board">
+            <div class="scaler" id="scaler">
+              <div class="screen" id="screen"></div>
+              <div class="overlay" id="overlay"></div>
+            </div>
+          </div>
+        </div>
+        <div class="hintbar" id="hintbar">Drag controls from Insert onto the screen. Drop inside a gallery's first row to add it to every row. Arrow keys nudge, Shift for 10px, Alt to skip snapping.</div>
+      </main>
+      <aside class="inspector" id="inspector"></aside>
+    </div>
+  </div>
+  <div id="modalRoot"></div>
+  <div id="toastRoot" aria-live="polite"></div>
+  <input type="file" id="fileOpen" accept=".json,application/json" hidden>
+  <input type="file" id="fileImg" accept="image/*" hidden>
+  <input type="file" id="fileYaml" accept=".yaml,.yml,.txt" hidden>
+  <div class="small-screen" id="smallScreen">
+    <div>
+      <h2>Power App Studio needs a wider screen</h2>
+      <p>The drag-and-drop designer works best on a laptop or desktop, at least 1000 pixels wide. Your project is saved in this browser, so you can pick it up there.</p>
+      <button class="tb primary" id="btnSmallContinue">Continue anyway</button>
+      <a class="tb" href="../microsoft365.html">Back to SaTech</a>
+    </div>
+  </div>
+  <script src="vendor/js-yaml.min.js"></script>
+  <script src="vendor/jszip.min.js"></script>
+  <script type="module" src="js/ui.js"></script>
+</body>
+</html>
