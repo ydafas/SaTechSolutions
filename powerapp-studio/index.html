@@ -67,7 +67,7 @@
             <button class="ic sm" data-zoom="+" aria-label="Zoom in">+</button>
           </div>
         </div>
-        <div class="viewport" id="viewport">
+        <div class="viewport" id="viewport" tabindex="0" role="application" aria-label="Canvas. Press Enter to select the first control, Tab for the next, arrow keys to move it, Delete to remove it, Escape to deselect.">
           <div class="board" id="board">
             <div class="scaler" id="scaler">
               <div class="screen" id="screen"></div>
@@ -75,7 +75,7 @@
             </div>
           </div>
         </div>
-        <div class="hintbar" id="hintbar">Drag controls from Insert onto the screen. Drop inside a gallery's first row to add it to every row. Arrow keys nudge, Shift for 10px, Alt to skip snapping.</div>
+        <div class="hintbar" id="hintbar">Drag controls from Insert onto the screen. Drop inside a gallery's first row to add it to every row. Arrow keys nudge (Shift = 10px), Alt skips snapping, Tab on the canvas walks through controls.</div>
       </main>
       <aside class="inspector" id="inspector"></aside>
     </div>

@@ -2,7 +2,7 @@
 // Known classic controls become editable designer controls; every property we cannot map is
 // kept verbatim as a Power Fx override, and unknown controls are kept whole, so the
 // round trip loses nothing.
-import { newControl, newScreen, allNames, uid } from './core.js';
+import { newControl, newScreen, allNames } from './core.js';
 
 const TYPE_MAP = {
   Label: 'label', Button: 'button', TextInput: 'textinput', DropDown: 'dropdown', DatePicker: 'datepicker',
@@ -50,7 +50,7 @@ export function renameFx(f, map) {
   return out;
 }
 
-function mapControl(project, name, def, used) {
+function mapControl(project, name, def) {
   const props = def.Properties || {};
   const t = TYPE_MAP[baseType(def.Control)];
   const geo = { x: parseNum(props.X) ?? 40, y: parseNum(props.Y) ?? 40, w: parseNum(props.Width) ?? 160, h: parseNum(props.Height) ?? 40 };
@@ -101,21 +101,21 @@ function mapControl(project, name, def, used) {
     if (hit) ctl.data.previewList = hit.name;
     h('TemplateSize', parseNum, (v) => (P.templateSize = v)); handled.add('TemplatePadding');
     if (props.TemplateFill) { handled.add('TemplateFill'); fx.TemplateFill = String(props.TemplateFill).replace(/^=/, ''); }
-    ctl.children = (def.Children || []).map((ch) => { const [[cn, cd]] = Object.entries(ch); return mapControl(project, cn, cd, used); });
+    ctl.children = (def.Children || []).map((ch) => { const [[cn, cd]] = Object.entries(ch); return mapControl(project, cn, cd); });
   }
   const evName = t === 'timer' ? null : 'OnSelect';
   if (evName && props.OnSelect) { handled.add('OnSelect'); ctl.actions.OnSelect = [{ type: 'custom', fx: String(props.OnSelect).replace(/^=/, '') }]; }
   if (props.OnChange && (t === 'textinput' || t === 'dropdown')) { handled.add('OnChange'); ctl.actions.OnChange = [{ type: 'custom', fx: String(props.OnChange).replace(/^=/, '') }]; }
   for (const [k, v] of Object.entries(props)) if (!handled.has(k) && !(k in fx)) fx[k] = String(v).replace(/^=/, '');
-  if (t === 'button' && ctl.actions.OnSelect && !fx.Text && P.text === undefined) P.text = '';
   ctl.fx = fx;
   return ctl;
 }
 
 /** Parse YAML text. Returns {screens:[...], controls:[...], renamed:{}} or throws. */
 export function importYaml(project, text, { asScreen = true } = {}) {
-  if (!window.jsyaml) throw new Error('YAML parser did not load.');
-  const doc = window.jsyaml.load(String(text).replace(/\r\n/g, '\n').replace(/\t/g, '  '), { schema: window.jsyaml.FAILSAFE_SCHEMA });
+  const yaml = globalThis.jsyaml;
+  if (!yaml) throw new Error('YAML parser did not load.');
+  const doc = yaml.load(String(text).replace(/\r\n/g, '\n').replace(/\t/g, '  '), { schema: yaml.FAILSAFE_SCHEMA });
   let screensDef = null, children = null;
   if (doc && doc.Screens) screensDef = doc.Screens;
   else if (Array.isArray(doc)) children = doc;
@@ -131,7 +131,7 @@ export function importYaml(project, text, { asScreen = true } = {}) {
   for (const n of incoming) if (existing.has(n)) { let i = 2; while (existing.has(n + '_' + i) || incoming.includes(n + '_' + i)) i++; map[n] = n + '_' + i; existing.add(map[n]); }
   const fixDef = (d) => { if (!d || typeof d !== 'object') return d; const out = { ...d }; if (d.Properties) out.Properties = Object.fromEntries(Object.entries(d.Properties).map(([k, v]) => [k, renameFx(String(v), map)])); if (d.Children) out.Children = d.Children.map((ch) => { const [[n, cd]] = Object.entries(ch); return { [map[n] || n]: fixDef(cd) }; }); return out; };
   const result = { screens: [], controls: [], renamed: map };
-  const build = (list) => (list || []).map((it) => { const [[n, d]] = Object.entries(it); return mapControl(project, n, d, existing); });
+  const build = (list) => (list || []).map((it) => { const [[n, d]] = Object.entries(it); return mapControl(project, n, d); });
   if (screensDef) {
     for (const [sn, sdRaw] of Object.entries(screensDef)) {
       const sd = fixDef(sdRaw);
@@ -147,6 +147,5 @@ export function importYaml(project, text, { asScreen = true } = {}) {
     result.controls = build(fixed);
     if (asScreen) { const scr = newScreen(project, 'scrImported'); scr.controls = result.controls; result.screens.push(scr); }
   }
-  void uid;
   return result;
 }

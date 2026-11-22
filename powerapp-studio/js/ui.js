@@ -1,6 +1,6 @@
 // ui.js — Power App Studio: the designer shell.
 import * as core from './core.js';
-import { CATALOG, CATS, COLTYPES, THEME_COLORS, THEME_PRESETS, FONTS, FORM_FACTORS, clone, uid, walk, findCtl, newControl, newScreen, newList, newColumn, allNames, uniqueName, IDENT, RESERVED, sampleRows, varSel, companions, INPUT_TYPES, colOf, cssColor, isHex } from './core.js';
+import { CATALOG, CATS, COLTYPES, THEME_COLORS, THEME_PRESETS, FONTS, FORM_FACTORS, clone, uid, walk, findCtl, newControl, newScreen, newList, newColumn, allNames, IDENT, RESERVED, sampleRows, varSel, companions, INPUT_TYPES, colOf, cssColor, isHex, s as fxString, renameCopy, normalizeProject } from './core.js';
 import { screenYaml, themeFormulas, onStartFx, startScreenName, checklist, provisioningScript, lint, ACTION_TYPES, controlYaml, usedLists } from './emit.js';
 import { renderControl, renderScreen, createRuntime, svgIcon, FONT_CSS } from './render.js';
 import { SCENARIOS, generateApp, SCREEN_TEMPLATES, genBlank, genHome, genBrowse, genDetail, genEdit, genApprovals, BLOCKS, insertBlock, galleryRows } from './templates.js';
@@ -58,13 +58,11 @@ function setProject(p, keepUndo = false) {
   if (!keepUndo) { S.undo = []; S.redo = []; }
   S.last = JSON.stringify(P); persist(); renderAll(); zoomFit();
 }
+/** Bring any saved or shared project up to the current model. Safe to run on untrusted files. */
 function migrate(p) {
-  p.app = { name: 'My App', formFactor: 'tablet', startScreen: '', onStart: '', formulas: '', ...(p.app || {}) };
-  p.theme = { ...core.defaultTheme(), ...(p.theme || {}) };
-  p.theme.colors = { ...core.defaultTheme().colors, ...(p.theme.colors || {}) };
-  p.lists = p.lists || []; p.screens = p.screens || [];
+  normalizeProject(p);
   if (!p.screens.length) p.screens.push(newScreen(p, 'scrHome'));
-  for (const s of p.screens) for (const [c] of walk(s.controls)) { c.props = c.props || {}; c.fx = c.fx || {}; c.actions = c.actions || {}; }
+  p.version = 1;
 }
 let commitTimer = null;
 function commit() {
@@ -104,10 +102,17 @@ function renderTabs() {
 }
 
 // ------------------------------------------------------------------ canvas
-let SAMPLE = {};
+let SAMPLE = {}, sampleKey = '';
+/** Sample rows only change when the data model changes, so typing in the inspector stays cheap. */
+function refreshSample() {
+  const key = JSON.stringify(P.lists);
+  if (key === sampleKey) return;
+  sampleKey = key; SAMPLE = {};
+  for (const l of P.lists) SAMPLE[l.name] = sampleRows(l, P.lists, 6);
+}
 function renderCanvas() {
   const scr = screen(); if (!scr) return;
-  SAMPLE = {}; for (const l of P.lists) SAMPLE[l.name] = sampleRows(l, P.lists, 6);
+  refreshSample();
   const host = $('#screen');
   host.classList.add('design');
   renderScreen(host, scr, designEnv());
@@ -189,7 +194,6 @@ function onScreenDown(e) {
   const pt = screenPoint(e);
   if (handle) { startResize(e, handle.dataset.h, pt); return; }
   const el = e.target.closest('.pa-ctl');
-  const scr = screen();
   if (!el || !findCtl(P, el.dataset.id)) {
     if (!e.shiftKey) S.sel = [];
     drag = { mode: 'marquee', start: pt, base: [...S.sel] };
@@ -203,7 +207,6 @@ function onScreenDown(e) {
   const items = selCtls();
   drag = { mode: 'move', start: pt, items: items.map((f) => ({ f, x: f.ctl.x, y: f.ctl.y })), moved: false };
   e.preventDefault();
-  void scr;
 }
 function startResize(e, h, pt) {
   const f = one(); if (!f) return;
@@ -337,15 +340,10 @@ function deleteSel() {
   for (const f of items) { const arr = f.parent ? f.parent.children : f.screen.controls; const i = arr.indexOf(f.ctl); if (i >= 0) arr.splice(i, 1); }
   S.sel = []; renderCanvas(); renderInspector(); renderPanelIf('layers'); commit();
 }
-function renameTree(ctl) {
-  const prefix = (ctl.name.match(/^[a-z]+/) || [CATALOG[ctl.type].prefix])[0];
-  ctl.id = uid(); ctl.name = uniqueName(P, prefix);
-  (ctl.children || []).forEach(renameTree);
-}
 function pasteCtls(list, offset = 16) {
-  const scr = screen(), ids = [];
+  const scr = screen(), ids = [], used = allNames(P);
   for (const raw of list) {
-    const c = clone(raw); renameTree(c); c.x += offset; c.y += offset;
+    const c = renameCopy(P, clone(raw), used); c.x += offset; c.y += offset;
     if (raw.__parent) { const g = findCtl(P, raw.__parent)?.ctl; delete c.__parent; if (g?.children && screen().controls.includes(g)) { g.children.push(c); ids.push(c.id); continue; } }
     delete c.__parent; scr.controls.push(c); ids.push(c.id);
   }
@@ -545,12 +543,20 @@ function fieldOpts(listName, types) {
 }
 const INPUT_COLTYPES = { textinput: ['Text', 'Note', 'Number', 'Currency'], dropdown: ['Choice', 'Lookup'], datepicker: ['DateTime'], checkbox: ['YesNo'], toggle: ['YesNo'], person: ['Person'] };
 
+/** Re-render the inspector, keeping focus (and the caret) on the same field if it still exists. */
 function renderInspector() {
   const el = $('#inspector');
+  const a = document.activeElement;
+  const keep = a && el.contains(a) ? { sel: ['data-p', 'data-o', 'data-ev', 'data-i', 'data-bindkind', 'data-vis'].filter((k) => a.hasAttribute(k)).map((k) => `[${k}="${CSS.escape(a.getAttribute(k))}"]`).join(''), s: a.selectionStart, e: a.selectionEnd, top: el.scrollTop } : null;
   const items = selCtls();
-  if (items.length > 1) { el.innerHTML = inspMulti(items); return; }
-  if (items.length === 1) { el.innerHTML = inspControl(items[0]); return; }
-  el.innerHTML = inspScreen(screen());
+  if (items.length > 1) el.innerHTML = inspMulti(items);
+  else if (items.length === 1) el.innerHTML = inspControl(items[0]);
+  else el.innerHTML = inspScreen(screen());
+  if (keep) {
+    el.scrollTop = keep.top;
+    const n = keep.sel && el.querySelector(keep.sel);
+    if (n) { n.focus({ preventScroll: true }); try { if (keep.s != null) n.setSelectionRange(keep.s, keep.e); } catch { /* not a text field */ } }
+  }
 }
 function inspMulti(items) {
   return `<div class="insp-head"><i>${ui('layers')}</i><div class="t"><b>Selection</b><span style="font-weight:700">${items.length} controls</span></div></div>
@@ -819,7 +825,7 @@ function onBindKind(t) {
   const c = f.ctl, k = t.value, l = P.lists[0]?.name || '';
   delete c.fx.Text;
   if (k === 'text') delete c.bind;
-  else if (k === 'fx') { delete c.bind; c.fx.Text = JSON.stringify(c.props.text || ''); }
+  else if (k === 'fx') { delete c.bind; c.fx.Text = fxString(c.props.text || ''); }
   else if (k === 'user') c.bind = { kind: 'user', field: 'FullName', prefix: '' };
   else if (k === 'count') c.bind = { kind: 'count', list: f.parent?.data?.list || l, field: '', value: '' };
   else { const gl = f.parent?.data?.list || (c.type === 'gallery' ? c.data.list : ''); const list = k === 'item' ? gl || l : c.bind?.list || l; c.bind = { src: k, list, field: P.lists.find((x) => x.name === list)?.columns[0]?.name || '', prefix: '' }; }
@@ -885,9 +891,22 @@ function openColorPop(btn, path) {
 
 // ------------------------------------------------------------------ modals
 function modal(html, cls = '') {
+  const opener = document.activeElement;
   const bg = document.createElement('div'); bg.className = 'modal-bg';
   bg.innerHTML = `<div class="modal ${cls}" role="dialog" aria-modal="true">${html}</div>`;
   $('#modalRoot').appendChild(bg);
+  const title = bg.querySelector('.modal-h h2');
+  if (title) { title.id = 'mdl' + uid(); bg.firstElementChild.setAttribute('aria-labelledby', title.id); }
+  // focus the first field (or button) inside, and give focus back to the opener on close
+  setTimeout(() => (bg.querySelector('.modal-b input, .modal-b textarea, .modal-b select, .modal-b button, .modal-f .pri') || bg.querySelector('button'))?.focus(), 0);
+  new MutationObserver((_, ob) => { if (!bg.isConnected) { ob.disconnect(); if (opener?.isConnected) opener.focus(); } }).observe($('#modalRoot'), { childList: true });
+  bg.addEventListener('keydown', (e) => {
+    if (e.key !== 'Tab') return;
+    const f = [...bg.querySelectorAll('button, input, select, textarea, [tabindex="0"]')].filter((x) => !x.disabled && x.offsetParent);
+    if (!f.length) return;
+    if (e.shiftKey && document.activeElement === f[0]) { e.preventDefault(); f[f.length - 1].focus(); }
+    else if (!e.shiftKey && document.activeElement === f[f.length - 1]) { e.preventDefault(); f[0].focus(); }
+  });
   const close = () => bg.remove();
   bg.addEventListener('pointerdown', (e) => { if (e.target === bg) bg.dataset.down = '1'; });
   bg.addEventListener('click', (e) => { if (e.target === bg && bg.dataset.down) close(); bg.dataset.down = ''; });
@@ -1024,8 +1043,8 @@ function codeDialog(tab) {
       return;
     }
     if (k === 'lint') {
-      main.innerHTML = `<div class="bar"><h3>Lint report</h3></div>${F2.length ? F2.map((x, i) => `<div class="finding" data-fi="${i}"><span class="lv ${x.level}">${x.level.toUpperCase()}</span><div><b>${esc(x.where)}</b>${esc(x.msg)}</div></div>`).join('') : '<p>No problems found. Every rule the generator knows about passes.</p>'}
-        <p class="note">Lint checks the paste rules learned from real tenants: unique names app-wide, no Navigate in OnStart/OnVisible, ThisItem only in galleries, valid bindings and targets, required columns covered by Save.</p>`;
+      main.innerHTML = `<div class="bar"><h3>Lint report</h3></div>${F2.length ? F2.map((x, i) => `<div class="finding" data-fi="${i}"><span class="lv ${x.level}">${x.level.toUpperCase()}</span><div><b>${esc(x.where)} · ${esc(x.code)}</b>${esc(x.msg)}</div></div>`).join('') : '<p>No problems found. Every rule the generator knows about passes.</p>'}
+        <p class="note">Lint checks the paste rules learned from real tenants: unique names app-wide, no Navigate in OnStart/OnVisible, ThisItem only in galleries, valid bindings and targets, required columns covered by Save, clickable controls not covered. To silence one rule on one control, add a comment such as <code>// lint-ok PS040</code> to any of its formulas.</p>`;
       main.querySelectorAll('[data-fi]').forEach((d) => d.onclick = () => { const x = F2[+d.dataset.fi]; const nm = x.where.split(' › ')[1]; for (const s of P.screens) for (const [c] of walk(s.controls)) if (c.name === nm) { S.screenId = s.id; S.sel = [c.id]; m.close(); renderAll(); return; } });
       return;
     }
@@ -1049,7 +1068,7 @@ function codeDialog(tab) {
     root.file('App.StartScreen.txt', '=' + startScreenName(P));
     P.screens.forEach((s, i) => root.file(`screens/${String(i + 1).padStart(2, '0')}-${s.name}.pa.yaml`, screenYaml(P, s)));
     root.file('Provision-Lists.ps1', provisioningScript(P));
-    root.file('lint.txt', lint(P).map((x) => `${x.level.toUpperCase()}\t${x.where}\t${x.msg}`).join('\n') || 'No findings.');
+    root.file('lint.txt', lint(P).map((x) => `${x.level.toUpperCase()}\t${x.code}\t${x.where}\t${x.msg}`).join('\n') || 'No findings.');
     root.file(core.slug(P.app.name) + '.pastudio.json', JSON.stringify(P, null, 2));
     download(core.slug(P.app.name) + '-powerapp.zip', await z.generateAsync({ type: 'blob' }));
   };
@@ -1157,6 +1176,17 @@ function onKey(e) {
   if (mod && e.key.toLowerCase() === 'v' && S.clip?.length) { e.preventDefault(); pasteCtls(S.clip); return; }
   if (mod && e.key.toLowerCase() === 'd') { e.preventDefault(); copySel(); pasteCtls(S.clip); return; }
   if (mod && e.key.toLowerCase() === 'a') { e.preventDefault(); S.sel = screen().controls.map((c) => c.id); drawOverlay(); renderInspector(); return; }
+  // keyboard selection while the canvas has focus: Tab / Shift+Tab walk the controls, Enter picks the first
+  if (t.id === 'viewport' && (e.key === 'Tab' || e.key === 'Enter') && !(e.key === 'Tab' && !S.sel.length)) {
+    const flat = [...walk(screen().controls)].map(([c]) => c.id);
+    if (!flat.length) return;
+    e.preventDefault();
+    const i = flat.indexOf(S.sel[S.sel.length - 1]);
+    S.sel = [flat[e.key === 'Enter' && i < 0 ? 0 : (i + (e.shiftKey ? -1 : 1) + flat.length) % flat.length]];
+    drawOverlay(); renderInspector(); renderPanelIf('layers');
+    const f = one(); if (f) $('#viewport').setAttribute('aria-label', `Canvas. Selected ${CATALOG[f.ctl.type].label} ${f.ctl.name}. Tab for next control, arrows to move, Delete to remove, Escape to deselect.`);
+    return;
+  }
   if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); deleteSel(); return; }
   const step = e.shiftKey ? 10 : 1;
   if (S.sel.length && e.key.startsWith('Arrow')) { e.preventDefault(); nudge(e.key === 'ArrowLeft' ? -step : e.key === 'ArrowRight' ? step : 0, e.key === 'ArrowUp' ? -step : e.key === 'ArrowDown' ? step : 0); }
@@ -1175,8 +1205,9 @@ function runCmd(cmd, el) {
     case 'scrUp': if (i > 0) { P.screens.splice(i - 1, 0, P.screens.splice(i, 1)[0]); renderPanel(); renderTabs(); commit(); } return;
     case 'scrDup': {
       const src = P.screens[i], c = clone(src); c.id = uid(); c.name = core.uniqueScreenName(P, src.name + 'Copy');
-      const fix = (arr) => arr.forEach((x) => { renameTree(x); });
-      fix(c.controls); P.screens.splice(i + 1, 0, c); S.screenId = c.id; renderAll(); commit(); return;
+      const used = allNames(P); used.add(c.name);
+      c.controls.forEach((x) => renameCopy(P, x, used));
+      P.screens.splice(i + 1, 0, c); S.screenId = c.id; renderAll(); commit(); return;
     }
     case 'scrDel': {
       if (P.screens.length < 2) { toast('An app needs at least one screen', true); return; }
@@ -1234,7 +1265,7 @@ function init() {
     const b = e.target.closest('button, .scrrow, .layer'); if (!b) return;
     if (b.dataset.ins) return insertControl(b.dataset.ins);
     if (b.dataset.block) return doBlock(b.dataset.block);
-    if (b.dataset.preset != null) { const keep = P.theme.header; P.theme = clone(THEME_PRESETS[+b.dataset.preset]); void keep; renderPanel(); renderCanvas(); commit(); return; }
+    if (b.dataset.preset != null) { P.theme = clone(THEME_PRESETS[+b.dataset.preset]); renderPanel(); renderCanvas(); commit(); return; }
     if (b.dataset.lcmd) { S.sel = [b.dataset.id]; zMove(b.dataset.lcmd); e.stopPropagation(); return; }
     if (b.dataset.cmd) { e.stopPropagation(); return runCmd(b.dataset.cmd, b); }
     if (b.classList.contains('scrrow')) { S.screenId = b.dataset.scr; S.sel = []; renderAll(); return; }

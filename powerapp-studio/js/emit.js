@@ -8,8 +8,9 @@
 //  * later in the list = in front; transparent tap buttons go after what they cover
 //  * names unique across the whole app; Patch always rebases with LookUp(List, ID = ...)
 //  * 3-argument IfError(Patch, Notify(error), success...) shape
-import { CATALOG, FORM_FACTORS, q, s, slug, varSel, hexToRgba, isHex, walk, colOf, hasActions, IDENT, RESERVED, allNames, SP_RESERVED_COLS, companions } from './core.js';
+import { CATALOG, FORM_FACTORS, INPUT_TYPES, q, s, varSel, hexToRgba, isHex, walk, colOf, hasActions, IDENT, RESERVED, allNames, SP_RESERVED_COLS } from './core.js';
 import { iconSvg } from './icons.js';
+import { notifyFx, navigateFx, rebaseFx, upsertBaseFx, ifErrorFx, spUserFx, meUserFx, recordFx, equalsFx } from './fx.js';
 
 // ---------------------------------------------------------------- color helpers
 export function colorFx(v) {
@@ -60,11 +61,10 @@ function valueFx(col, v) {
     case 'YesNo': return /^(true|yes|1)$/i.test(String(v)) ? 'true' : 'false';
     case 'Number': case 'Currency': return String(Number(v) || 0);
     case 'DateTime': return /^today$/i.test(v) || !v ? 'Today()' : `DateValue(${s(v)})`;
-    case 'Person': return meClaims();
+    case 'Person': return meUserFx();
     default: return s(v);
   }
 }
-const meClaims = () => `{'@odata.type': "#Microsoft.Azure.Connectors.SharePoint.SPListExpandedUser", Claims: "i:0#.f|membership|" & Lower(User().Email), DisplayName: User().FullName, Email: User().Email, Department: "", JobTitle: "", Picture: ""}`;
 
 function bindTextFx(project, ctl) {
   const b = ctl.bind;
@@ -73,7 +73,7 @@ function bindTextFx(project, ctl) {
     const L = q(b.list);
     if (!b.field) return `Text(CountRows(${L}))`;
     const col = colOf(project, b.list, b.field);
-    const cond = col?.type === 'Choice' ? `${q(b.field)}.Value = ${s(b.value)}` : col?.type === 'YesNo' ? `${q(b.field)} = ${valueFx(col, b.value)}` : `${q(b.field)} = ${s(b.value)}`;
+    const cond = equalsFx(q(b.field), ['Choice', 'YesNo'].includes(col?.type) ? col.type : 'Text', b.value);
     return `Text(CountRows(Filter(${L}, ${cond})))`;
   }
   const r = b.kind === 'user' ? (b.field === 'Email' ? 'User().Email' : 'User().FullName')
@@ -100,10 +100,9 @@ function patchValueFx(project, ctl) {
     case 'datepicker': return `${n}.SelectedDate`;
     case 'checkbox': case 'toggle': return `${n}.Value`;
     case 'person': {
-      const p = pickVar(ctl);
-      return `If(IsBlank(${p}), ${f.ref}, {'@odata.type': "#Microsoft.Azure.Connectors.SharePoint.SPListExpandedUser", Claims: "i:0#.f|membership|" & Lower(Coalesce(${p}.Mail, ${p}.UserPrincipalName)), DisplayName: ${p}.DisplayName, Email: Coalesce(${p}.Mail, ${p}.UserPrincipalName), Department: "", JobTitle: "", Picture: ""})`;
-    }
-  }
+      const p = pickVar(ctl), email = `Coalesce(${p}.Mail, ${p}.UserPrincipalName)`;
+      return `If(IsBlank(${p}), ${f.ref}, ${spUserFx(email, `${p}.DisplayName`)})`;
+    }  }
   return null;
 }
 function blankCheckFx(project, ctl) {
@@ -118,9 +117,10 @@ function blankCheckFx(project, ctl) {
   }
   return null;
 }
-function screenInputs(screen, list) {
+/** Top-level input controls on a screen (gallery rows are not form inputs), optionally only those bound to `list`. */
+export function screenInputs(screen, list = '*') {
   const out = [];
-  for (const [c, parent] of walk(screen.controls)) if (!parent && c.field?.list === list && ['textinput', 'dropdown', 'datepicker', 'checkbox', 'toggle', 'person'].includes(c.type)) out.push(c);
+  for (const [c, parent] of walk(screen.controls)) if (!parent && INPUT_TYPES.has(c.type) && (list === '*' || c.field?.list === list)) out.push(c);
   return out;
 }
 
@@ -134,7 +134,7 @@ export const ACTION_TYPES = {
 const scrName = (project, id) => project.screens.find((x) => x.id === id || x.name === id)?.name;
 
 export function actionFx(project, screen, a, ctx = {}) {
-  const nav = (id, tr) => { const n = scrName(project, id); return n ? `Navigate(${n}, ScreenTransition.${tr || 'Fade'})` : ''; };
+  const nav = (id, tr) => { const n = scrName(project, id); return n ? navigateFx(n, tr) : ''; };
   const then = (a2) => a2.then === 'navigate' ? nav(a2.screen) : a2.then === 'back' ? 'Back()' : '';
   const L = a.list ? q(a.list) : '';
   const V = a.list ? varSel(a.list) : '';
@@ -146,34 +146,34 @@ export function actionFx(project, screen, a, ctx = {}) {
     case 'save': {
       const inputs = screenInputs(screen, a.list);
       const fields = inputs.map((c) => [c.field.column, patchValueFx(project, c)]).filter((x) => x[1]);
-      const rec = fields.length ? '{\n' + fields.map(([k, v]) => `        ${q(k)}: ${v}`).join(',\n') + '\n    }' : '{}';
-      const done = [`Notify(${s(a.message || 'Saved')}, NotificationType.Success)`];
+      const rec = recordFx(fields.map(([k, v]) => [q(k), v]));
+      const done = [notifyFx(a.message || 'Saved', 'Success')];
       if (a.then === 'stay') {
-        done.unshift(`If(IsBlank(${V}.ID), Set(${V}, Defaults(${L})), Set(${V}, LookUp(${L}, ID = ${V}.ID)))`);
+        done.unshift(`If(IsBlank(${V}.ID), Set(${V}, Defaults(${L})), Set(${V}, ${rebaseFx(L, V)}))`);
         inputs.forEach((c) => done.push(`Reset(${c.name})`));
         inputs.filter((c) => c.type === 'person').forEach((c) => done.push(`Set(${pickVar(c)}, Blank())`));
       } else if (then(a)) done.push(then(a));
-      return `IfError(\n    Patch(${L}, Coalesce(LookUp(${L}, ID = ${V}.ID), Defaults(${L})), ${rec}),\n    Notify("Save failed. " & FirstError.Message, NotificationType.Error),\n    ${done.join(';\n    ')}\n)`;
+      return ifErrorFx(`Patch(${L}, ${upsertBaseFx(L, V)}, ${rec})`, 'Save', done);
     }
     case 'delete': {
-      const done = [`Notify(${s(a.message || 'Deleted')}, NotificationType.Success)`, `Set(${V}, Defaults(${L}))`];
+      const done = [notifyFx(a.message || 'Deleted', 'Success'), `Set(${V}, Defaults(${L}))`];
       if (then(a)) done.push(then(a));
-      return `IfError(\n    Remove(${L}, LookUp(${L}, ID = ${V}.ID)),\n    Notify("Delete failed. " & FirstError.Message, NotificationType.Error),\n    ${done.join(';\n    ')}\n)`;
+      return ifErrorFx(`Remove(${L}, ${rebaseFx(L, V)})`, 'Delete', done);
     }
     case 'setField': {
       const col = colOf(project, a.list, a.field);
       if (!col) return '';
-      const done = [`Set(${V}, LookUp(${L}, ID = ${V}.ID))`, `Notify(${s(a.message || 'Updated')}, NotificationType.Success)`];
+      const done = [`Set(${V}, ${rebaseFx(L, V)})`, notifyFx(a.message || 'Updated', 'Success')];
       if (then(a)) done.push(then(a));
-      return `IfError(\n    Patch(${L}, LookUp(${L}, ID = ${V}.ID), {${q(a.field)}: ${valueFx(col, a.value)}}),\n    Notify("Update failed. " & FirstError.Message, NotificationType.Error),\n    ${done.join(';\n    ')}\n)`;
+      return ifErrorFx(`Patch(${L}, ${rebaseFx(L, V)}, {${q(a.field)}: ${valueFx(col, a.value)}})`, 'Update', done);
     }
     case 'setVar': return a.name ? `Set(${a.name}, ${a.value || 'true'})` : '';
     case 'toggleVar': return a.name ? `Set(${a.name}, !${a.name})` : '';
-    case 'notify': return `Notify(${s(a.text || 'Done')}, NotificationType.${a.kind || 'Information'})`;
+    case 'notify': return notifyFx(a.text || 'Done', a.kind || 'Information');
     case 'launch': return a.url ? `Launch(${s(a.url)})` : '';
     case 'refresh': return a.list ? `Refresh(${L})` : '';
     case 'reset': {
-      const ins = []; for (const [c, parent] of walk(screen.controls)) if (!parent && ['textinput', 'dropdown', 'datepicker', 'checkbox', 'toggle', 'person'].includes(c.type)) ins.push(c);
+      const ins = screenInputs(screen);
       return ins.map((c) => `Reset(${c.name})`).concat(ins.filter((c) => c.type === 'person').map((c) => `Set(${pickVar(c)}, Blank())`)).join(';\n');
     }
     case 'custom': return (a.fx || '').replace(/^=/, '');
@@ -185,6 +185,11 @@ export function actionsFx(project, screen, list) {
 }
 
 // ---------------------------------------------------------------- visibility
+/** The Visible formula a control actually gets: its Power Fx override wins over the structured rule. */
+export function effectiveVisibleFx(ctl) {
+  const o = ctl.fx?.Visible;
+  return o != null && String(o).trim() !== '' ? String(o).replace(/^=/, '') : visibleFx(ctl.visibleWhen);
+}
 export function visibleFx(v) {
   if (!v?.var) return null;
   const lit = /^-?\d+(\.\d+)?$/.test(v.value ?? '') ? v.value : /^(true|false)$/.test(v.value) ? v.value : s(v.value ?? '');
@@ -206,11 +211,7 @@ export function itemsFx(project, ctl) {
     if (d.filterField === 'CreatedByMe') conds.push(`'Created By'.Email = User().Email`);
     else {
       const col = colOf(project, d.list, d.filterField);
-      if (col?.type === 'Choice') conds.push(`${q(d.filterField)}.Value = ${s(d.filterValue)}`);
-      else if (col?.type === 'Person') conds.push(`${q(d.filterField)}.Email = User().Email`);
-      else if (col?.type === 'YesNo') conds.push(`${q(d.filterField)} = ${valueFx(col, d.filterValue)}`);
-      else if (col?.type === 'Number' || col?.type === 'Currency') conds.push(`${q(d.filterField)} = ${Number(d.filterValue) || 0}`);
-      else if (col) conds.push(`${q(d.filterField)} = ${s(d.filterValue)}`);
+      if (col) conds.push(equalsFx(q(d.filterField), col.type, d.filterValue));
     }
   }
   if (d.extraFilter) conds.push(`(${d.extraFilter})`);
@@ -243,7 +244,7 @@ function iconFx(ctl) {
 }
 
 /** Ordered [prop, formula] pairs for one designer control (not companions). */
-function controlProps(project, screen, ctl, ctx) {
+function controlProps(project, screen, ctl) {
   const p = ctl.props || {}, P = [];
   const add = (k, v) => { if (v != null && v !== '') P.push([k, String(v)]); };
   const geo = () => { add('X', N(ctl.x)); add('Y', N(ctl.y)); add('Width', N(ctl.w)); add('Height', N(ctl.h)); };
@@ -378,26 +379,36 @@ const tapButton = (name, ctl, onSelect, hover = 'appTheme.HoverTint') => ({
     ['RadiusTopLeft', '0'], ['RadiusTopRight', '0'], ['RadiusBottomLeft', '0'], ['RadiusBottomRight', '0'],
     ['HoverFill', hover], ['PressedFill', 'appTheme.PressTint'], ['HoverColor', 'Self.Color'], ['PressedColor', 'Self.Color'],
     ['FocusedBorderThickness', '0'],
-    ...(visibleFx(ctl.visibleWhen) ? [['Visible', visibleFx(ctl.visibleWhen)]] : []),
+    ...(effectiveVisibleFx(ctl) ? [['Visible', effectiveVisibleFx(ctl)]] : []),
     ['OnSelect', onSelect],
   ],
 });
 
+/** Controls that take their own clicks or typing (they must sit in front of a gallery's row tap). */
+export const isInteractive = (c) => INPUT_TYPES.has(c.type) || (c.type === 'button' && hasActions(c)) || (c.type !== 'button' && c.type !== 'gallery' && hasActions(c));
 /** Build emitted nodes for a list of designer controls. Returns {nodes, tail}. */
-function buildNodes(project, screen, controls, inGallery, gal) {
+function buildNodes(project, screen, controls, inGallery) {
   const nodes = [], tail = [];
   for (const ctl of controls) {
     const def = CATALOG[ctl.type];
     if (!def) continue;
-    const node = { name: ctl.name, control: ctl.type === 'raw' ? ctl.paControl : def.pa, variant: ctl.type === 'gallery' ? 'Vertical' : ctl.type === 'raw' ? ctl.variant : undefined, props: controlProps(project, screen, ctl, { inGallery }) };
+    const node = { name: ctl.name, control: ctl.type === 'raw' ? ctl.paControl : def.pa, variant: ctl.type === 'gallery' ? 'Vertical' : ctl.type === 'raw' ? ctl.variant : undefined, props: controlProps(project, screen, ctl) };
     nodes.push(node);
     if (ctl.type === 'gallery') {
-      const inner = buildNodes(project, screen, ctl.children || [], true, ctl);
-      node.children = inner.nodes;
-      if (hasActions(ctl)) node.children.push(tapButton(ctl.name + 'RowTap', { x: 0, y: 0, w: 0, h: 0 }, actionsFx(project, screen, ctl.actions.OnSelect)));
-      const rt = node.children[node.children.length - 1];
-      if (rt?.name === ctl.name + 'RowTap') { rt.props.find((x) => x[0] === 'Width')[1] = 'Parent.TemplateWidth'; rt.props.find((x) => x[0] === 'Height')[1] = 'Parent.TemplateHeight'; }
-      tail.push(...inner.tail);
+      // Row tap goes in front of passive row content but behind anything that is clickable on its own,
+      // so a delete icon or an input in a row still gets its click (later = in front, in Power Apps).
+      const kids = ctl.children || [];
+      const passive = kids.filter((c) => !isInteractive(c)), active = kids.filter(isInteractive);
+      const pb = buildNodes(project, screen, passive, true), ab = buildNodes(project, screen, active, true);
+      node.children = pb.nodes;
+      tail.push(...pb.tail, ...ab.tail);
+      if (hasActions(ctl)) {
+        const rt = tapButton(ctl.name + 'RowTap', { x: 0, y: 0, w: 0, h: 0 }, actionsFx(project, screen, ctl.actions.OnSelect));
+        rt.props = rt.props.filter(([k]) => k !== 'Visible');
+        rt.props.find((x) => x[0] === 'Width')[1] = 'Parent.TemplateWidth'; rt.props.find((x) => x[0] === 'Height')[1] = 'Parent.TemplateHeight';
+        node.children.push(rt);
+      }
+      node.children.push(...ab.nodes);
     } else if (ctl.type === 'raw' && ctl.rawChildren) {
       node.children = ctl.rawChildren;
     } else if (['icon', 'card', 'image', 'label', 'rect', 'html'].includes(ctl.type) && hasActions(ctl)) {
@@ -412,7 +423,7 @@ function buildNodes(project, screen, controls, inGallery, gal) {
           ['X', N(ctl.x)], ['Y', N(ctl.y + ctl.h)], ['Width', N(ctl.w)], ['Height', '180'],
           ['TemplateSize', '36'], ['TemplatePadding', '0'], ['TemplateFill', 'appTheme.Surface'],
           ['BorderColor', 'appTheme.Border'], ['BorderThickness', '1'],
-          ['Visible', `Len(${ctl.name}.Text) > 1 && IsBlank(${pv})${hideWhenSame}` + (visibleFx(ctl.visibleWhen) ? ` && ${visibleFx(ctl.visibleWhen)}` : '')],
+          ['Visible', `Len(${ctl.name}.Text) > 1 && IsBlank(${pv})${hideWhenSame}` + (effectiveVisibleFx(ctl) ? ` && (${effectiveVisibleFx(ctl)})` : '')],
         ],
         children: [
           { name: ctl.name + 'ResultName', control: 'Label', props: [
@@ -433,7 +444,7 @@ function buildNodes(project, screen, controls, inGallery, gal) {
 const needsBlock = (v) => /\n|: | #|[{}\t]|:$|\s$/.test(v);
 const ALWAYS_BLOCK = new Set(['HtmlText', 'Image', 'OnSelect', 'Items']);
 function yProp(pad, key, fx) {
-  const v = '=' + fx;
+  const v = '=' + String(fx).replace(/\r\n?/g, '\n');
   if (!needsBlock(v) && !(ALWAYS_BLOCK.has(key) && v.length > 60)) return `${pad}${key}: ${v}`;
   return `${pad}${key}: |-\n` + v.split('\n').map((l) => (l ? pad + '  ' + l : '')).join('\n');
 }
@@ -458,7 +469,7 @@ function yNodes(nodes, pad) {
 function screenOnVisible(project, screen) {
   const parts = [];
   if (screen.onVisible) parts.push(screen.onVisible.replace(/^=/, ''));
-  const inputs = []; for (const [c, parent] of walk(screen.controls)) if (!parent && c.field?.list && ['textinput', 'dropdown', 'datepicker', 'checkbox', 'toggle', 'person'].includes(c.type)) inputs.push(c);
+  const inputs = screenInputs(screen).filter((c) => c.field?.list);
   inputs.filter((c) => c.type === 'person').forEach((c) => parts.push(`Set(${pickVar(c)}, Blank())`));
   inputs.forEach((c) => parts.push(`Reset(${c.name})`));
   return parts.join(';\n');
@@ -638,72 +649,128 @@ export function provisioningScript(project) {
 }
 
 // ---------------------------------------------------------------- lint
+// Each rule has a stable code. Silence one rule for one control by putting "lint-ok PS0xx" in any of its
+// formulas or custom actions (e.g. a Power Fx comment: // lint-ok PS040).
+export const LINT_RULES = {
+  PS001: 'Duplicate name anywhere in the app (PA2110 on paste)', PS002: 'Invalid screen name', PS003: 'Invalid control name',
+  PS004: 'ThisItem outside a gallery', PS005: 'IfError(Patch(...), true) fallback type', PS006: 'Set(collection, Blank()) strips the type',
+  PS007: '"in" against a single text value is a substring test', PS008: 'Input bound to a column that does not exist',
+  PS009: 'Label shows a column that does not exist', PS010: 'Gallery row value used outside a gallery', PS011: 'Gallery has no data source',
+  PS012: 'Gallery list missing from the data model', PS013: 'Gallery template is empty', PS014: 'Gallery search box missing',
+  PS015: 'People picker inside a gallery', PS016: 'Large embedded image', PS017: 'Control outside the screen',
+  PS018: 'Control extends past the gallery row', PS019: 'Go to screen has no target', PS020: 'Action target screen missing',
+  PS021: 'Action needs a list', PS022: 'Open this row outside a gallery', PS023: 'Save with no bound inputs',
+  PS024: 'Required column has no input on the Save screen', PS025: 'Invalid variable name', PS026: 'Navigate() in OnVisible',
+  PS027: 'ThisItem in OnVisible', PS028: 'Navigate() in App.OnStart', PS029: 'Duplicate list name', PS030: 'Duplicate column name',
+  PS031: 'Column name SharePoint already uses', PS032: 'Spaces or symbols in a column name', PS033: 'Choice column without choices',
+  PS034: 'Lookup column without a target list', PS035: 'CountRows is not delegable', PS036: 'CSS rules or braces in HTML text',
+  PS037: 'Input on a Save screen is not bound to a column', PS038: 'Row control shows a column of a different list',
+  PS039: 'Open this row uses a different list than the gallery', PS040: 'Clickable control covered by a later control',
+  PS041: 'Visible depends on a variable nothing sets', PS042: 'Screen OnVisible uses Navigate via custom action',
+};
+const overlap = (a, b) => Math.max(0, Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x)) * Math.max(0, Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y));
+const PASSIVE_COVER = new Set(['label', 'card', 'rect', 'html', 'image', 'icon', 'badge']);
+
 export function lint(project) {
   const F = [];
-  const add = (level, where, msg) => F.push({ level, where, msg });
   const ff = FORM_FACTORS[project.app.formFactor || 'tablet'];
-  // names
+  const fxText = (c) => Object.values(c.fx || {}).join('\n') + '\n' + Object.values(c.actions || {}).flat().filter((a) => a.type === 'custom').map((a) => a.fx || '').join('\n');
+  const mk = (suppressText = '') => (level, code, where, msg) => { if (!suppressText.includes('lint-ok ' + code)) F.push({ level, code, where, msg }); };
+  const addG = mk();
+  const appNames = allNames(project);
+  // variables something sets (actions, custom Power Fx, OnStart, OnVisible)
+  const setters = new Set(), allFx = [project.app.onStart || ''];
+  for (const scr of project.screens) {
+    allFx.push(scr.onVisible || '');
+    for (const [c] of walk(scr.controls)) {
+      allFx.push(fxText(c));
+      Object.values(c.actions || {}).flat().forEach((a) => { if ((a.type === 'setVar' || a.type === 'toggleVar') && a.name) setters.add(a.name); });
+    }
+  }
+  for (const m of allFx.join('\n').matchAll(/\b(?:Set\(\s*([A-Za-z_]\w*)|UpdateContext\(\s*\{([^}]*)\})/g)) {
+    if (m[1]) setters.add(m[1]);
+    if (m[2]) for (const k of m[2].matchAll(/([A-Za-z_]\w*)\s*:/g)) setters.add(k[1]);
+  }
+
   const seen = new Map();
   for (const scr of project.screens) {
-    const reg = (n, where) => { if (seen.has(n)) add('error', where, `Name "${n}" is used twice (also in ${seen.get(n)}). Names must be unique across the whole app (PA2110).`); else seen.set(n, where); };
-    if (!IDENT.test(scr.name) || RESERVED.has(scr.name)) add('error', scr.name, `Screen name "${scr.name}" is not a valid Power Apps name.`);
+    const reg = (n, where) => { if (seen.has(n)) addG('error', 'PS001', where, `Name "${n}" is used twice (also in ${seen.get(n)}). Names must be unique across the whole app (PA2110).`); else seen.set(n, where); };
+    if (!IDENT.test(scr.name) || RESERVED.has(scr.name)) addG('error', 'PS002', scr.name, `Screen name "${scr.name}" is not a valid Power Apps name.`);
     reg(scr.name, `screen ${scr.name}`);
     for (const n of emittedNames(project, scr)) reg(n, scr.name);
+    const hasSave = [...walk(scr.controls)].some(([c]) => Object.values(c.actions || {}).flat().some((a) => a.type === 'save'));
+    const searchBoxes = new Set([...walk(scr.controls)].map(([c]) => c.data?.searchCtl).filter(Boolean));
     for (const [c, parent] of walk(scr.controls)) {
-      const where = `${scr.name} › ${c.name}`;
-      if (!IDENT.test(c.name) || RESERVED.has(c.name)) add('error', where, `"${c.name}" is not a valid control name (letters, digits, underscore; not a reserved word).`);
-      const fxAll = Object.values(c.fx || {}).join('\n') + '\n' + Object.values(c.actions || {}).flat().filter((a) => a.type === 'custom').map((a) => a.fx).join('\n');
-      if (!parent && c.type !== 'gallery' && /\bThisItem\b/.test(fxAll)) add('error', where, 'Uses ThisItem outside a gallery. Move it into a gallery template or reference a variable.');
-      if (/IfError\(\s*Patch\([\s\S]*\),\s*true\s*\)/.test(fxAll)) add('error', where, 'IfError(Patch(...), true): the fallback must be a record. Use Blank() or the 3-argument shape.');
-      if (/Set\(\s*col\w*\s*,\s*Blank\(\)\s*\)/.test(fxAll)) add('error', where, 'Set(collection, Blank()) strips the type. Use Clear(col).');
-      if (/\bin\s+\w+\.Selected\.\w+/.test(fxAll)) add('warn', where, '"x in Combo.Selected.Field" is a substring test on text. Use = for an exact match.');
-      if (c.field?.list && !colOf(project, c.field.list, c.field.column)) add('error', where, `Bound to ${c.field.list}.${c.field.column}, which is not in the data model.`);
-      if (c.bind?.list && c.bind.kind !== 'user' && c.bind.field && !colOf(project, c.bind.list, c.bind.field)) add('error', where, `Shows ${c.bind.list}.${c.bind.field}, which is not in the data model.`);
-      if (c.bind?.src === 'item' && !parent) add('error', where, 'Shows a gallery row value but is not inside a gallery.');
+      const where = `${scr.name} › ${c.name}`, fxAll = fxText(c), add = mk(fxAll);
+      if (!IDENT.test(c.name) || RESERVED.has(c.name)) add('error', 'PS003', where, `"${c.name}" is not a valid control name (letters, digits, underscore; not a reserved word).`);
+      if (!parent && c.type !== 'gallery' && /\bThisItem\b/.test(fxAll)) add('error', 'PS004', where, 'Uses ThisItem outside a gallery. Move it into a gallery template or reference a variable.');
+      if (/IfError\(\s*Patch\([\s\S]*\),\s*true\s*\)/.test(fxAll)) add('error', 'PS005', where, 'IfError(Patch(...), true): the fallback must be a record. Use Blank() or the 3-argument shape.');
+      if (/Set\(\s*col\w*\s*,\s*Blank\(\)\s*\)/.test(fxAll)) add('error', 'PS006', where, 'Set(collection, Blank()) strips the type. Use Clear(col).');
+      if (/\bin\s+\w+\.Selected\.\w+/.test(fxAll)) add('warn', 'PS007', where, '"x in Combo.Selected.Field" is a substring test on text. Use = for an exact match.');
+      if (c.field?.list && !colOf(project, c.field.list, c.field.column)) add('error', 'PS008', where, `Bound to ${c.field.list}.${c.field.column}, which is not in the data model.`);
+      if (c.bind?.list && c.bind.kind !== 'user' && c.bind.field && !colOf(project, c.bind.list, c.bind.field)) add('error', 'PS009', where, `Shows ${c.bind.list}.${c.bind.field}, which is not in the data model.`);
+      if (c.bind?.src === 'item' && !parent) add('error', 'PS010', where, 'Shows a gallery row value but is not inside a gallery.');
+      if (c.bind?.src === 'item' && parent?.data?.list && c.bind.list && c.bind.list !== parent.data.list) add('warn', 'PS038', where, `Shows ${c.bind.list}.${c.bind.field} but the gallery lists ${parent.data.list}; ThisItem will not have that column.`);
       if (c.type === 'gallery') {
-        if (!c.data?.list && !c.fx?.Items) add('warn', where, 'Gallery has no data source. Pick a list on the Data tab.');
-        else if (c.data?.list && !project.lists.some((l) => l.name === c.data.list)) add('error', where, `Gallery list "${c.data.list}" is not in the data model.`);
-        if (!(c.children || []).length) add('warn', where, 'Gallery template is empty. Drop controls into the first row.');
-        if (c.data?.searchCtl && !seen.has(c.data.searchCtl) && !allNames(project).has(c.data.searchCtl)) add('error', where, `Search box "${c.data.searchCtl}" does not exist.`);
+        if (!c.data?.list && !c.fx?.Items) add('warn', 'PS011', where, 'Gallery has no data source. Pick a list on the Data tab.');
+        else if (c.data?.list && !project.lists.some((l) => l.name === c.data.list)) add('error', 'PS012', where, `Gallery list "${c.data.list}" is not in the data model.`);
+        if (!(c.children || []).length) add('warn', 'PS013', where, 'Gallery template is empty. Drop controls into the first row.');
+        if (c.data?.searchCtl && !appNames.has(c.data.searchCtl)) add('error', 'PS014', where, `Search box "${c.data.searchCtl}" does not exist.`);
       }
-      if (c.type === 'person' && parent) add('error', where, 'People pickers cannot sit inside a gallery.');
-      if (c.type === 'image' && (c.props.src || '').length > 300000) add('warn', where, 'Embedded image is large (>300 KB); the paste may be slow. Consider adding it as app media instead.');
-      if (!parent && (c.x < 0 || c.y < 0 || c.x + c.w > ff.w + 1 || c.y + c.h > ff.h + 1)) add('warn', where, 'Sits partly outside the screen.');
-      if (parent && (c.y + c.h > (parent.props.templateSize || 0) + 1 || c.x + c.w > parent.w + 1)) add('warn', where, 'Extends past the gallery row; it will be clipped.');
+      if (c.type === 'person' && parent) add('error', 'PS015', where, 'People pickers cannot sit inside a gallery.');
+      if (c.type === 'image' && (c.props.src || '').length > 300000) add('warn', 'PS016', where, 'Embedded image is large (>300 KB); the paste may be slow. Consider adding it as app media instead.');
+      if (!parent && (c.x < 0 || c.y < 0 || c.x + c.w > ff.w + 1 || c.y + c.h > ff.h + 1)) add('warn', 'PS017', where, 'Sits partly outside the screen.');
+      if (parent && (c.y + c.h > (parent.props.templateSize || 0) + 1 || c.x + c.w > parent.w + 1)) add('warn', 'PS018', where, 'Extends past the gallery row; it will be clipped.');
+      if (c.type === 'html' && (/[{}]/.test(c.props.html || '') || /<style/i.test(c.props.html || ''))) add('warn', 'PS036', where, 'HTML text ignores <style> blocks and CSS rules. Use inline style="..." attributes instead.');
+      if (hasSave && !parent && INPUT_TYPES.has(c.type) && !c.field?.list && !searchBoxes.has(c.name)) add('warn', 'PS037', where, 'This screen saves to a list, but this input is not bound to a column, so its value is not saved. Bind it under "Saves to", or ignore if it is only a filter.');
+      const vv = c.visibleWhen?.var;
+      if (vv && !c.fx?.Visible && !setters.has(vv)) add('warn', 'PS041', where, `Visible depends on ${vv}, but no action or formula ever sets it. Add a "Set variable" or "Toggle variable" action somewhere.`);
       for (const [ev, acts] of Object.entries(c.actions || {})) for (const a of acts || []) {
-        if (['navigate'].includes(a.type) && !scrName(project, a.screen)) add('error', where, `${ev}: "Go to screen" has no valid target.`);
-        if (['newItem', 'openItem'].includes(a.type) && a.screen && !scrName(project, a.screen)) add('error', where, `${ev}: target screen is missing.`);
-        if (['save', 'delete', 'setField', 'newItem', 'openItem', 'refresh'].includes(a.type) && (!a.list || !project.lists.some((l) => l.name === a.list))) add('error', where, `${ev}: "${ACTION_TYPES[a.type]}" needs a list from the data model.`);
-        if (a.type === 'openItem' && !parent && c.type !== 'gallery') add('error', where, `${ev}: "Open this row" only works on a gallery or inside one.`);
-        if (a.type === 'save' && !screenInputs(scr, a.list).length) add('warn', where, `${ev}: Save has no inputs bound to ${a.list} on this screen.`);
+        if (a.type === 'navigate' && !scrName(project, a.screen)) add('error', 'PS019', where, `${ev}: "Go to screen" has no valid target.`);
+        if (['newItem', 'openItem'].includes(a.type) && a.screen && !scrName(project, a.screen)) add('error', 'PS020', where, `${ev}: target screen is missing.`);
+        if (['save', 'delete', 'setField', 'newItem', 'openItem', 'refresh'].includes(a.type) && (!a.list || !project.lists.some((l) => l.name === a.list))) add('error', 'PS021', where, `${ev}: "${ACTION_TYPES[a.type]}" needs a list from the data model.`);
+        if (a.type === 'openItem' && !parent && c.type !== 'gallery') add('error', 'PS022', where, `${ev}: "Open this row" only works on a gallery or inside one.`);
+        const gl = c.type === 'gallery' ? c.data?.list : parent?.data?.list;
+        if (a.type === 'openItem' && gl && a.list && a.list !== gl) add('warn', 'PS039', where, `${ev}: "Open this row" sets the selected ${a.list} item, but the gallery lists ${gl}.`);
+        if (a.type === 'save' && !screenInputs(scr, a.list || '').length) add('warn', 'PS023', where, `${ev}: Save has no inputs bound to ${a.list} on this screen.`);
         if (a.type === 'save' && a.list) {
           const bound = new Set(screenInputs(scr, a.list).map((x) => x.field.column));
           const l = project.lists.find((x) => x.name === a.list);
-          l?.columns.filter((col) => col.required && !bound.has(col.name)).forEach((col) => add('warn', where, `Required column ${a.list}.${col.name} has no input on this screen; SharePoint will reject the save.`));
+          l?.columns.filter((col) => col.required && !bound.has(col.name)).forEach((col) => add('warn', 'PS024', where, `Required column ${a.list}.${col.name} has no input on this screen; SharePoint will reject the save.`));
         }
-        if ((a.type === 'setVar' || a.type === 'toggleVar') && a.name && !IDENT.test(a.name)) add('error', where, `Variable name "${a.name}" is not valid.`);
-        if (a.type === 'custom' && /\bNavigate\(/.test(a.fx || '') && ev === 'OnVisible') add('error', where, 'Navigate() is not allowed in OnVisible.');
+        if ((a.type === 'setVar' || a.type === 'toggleVar') && a.name && !IDENT.test(a.name)) add('error', 'PS025', where, `Variable name "${a.name}" is not valid.`);
+        if (a.type === 'custom' && /\bNavigate\(/.test(a.fx || '') && ev === 'OnVisible') add('error', 'PS042', where, 'Navigate() is not allowed in OnVisible.');
       }
     }
-    if (/\bNavigate\(/.test(scr.onVisible || '')) add('error', scr.name, 'Navigate() is not allowed in a screen\'s OnVisible (even inside If). Hide the button that leads here instead.');
-    if (/\bThisItem\b/.test(scr.onVisible || '')) add('error', scr.name, 'ThisItem in OnVisible.');
+    // clickable controls covered by later siblings (later = in front and takes the click)
+    const checkCover = (list) => list.forEach((c, i) => {
+      const clickable = (c.type === 'button' && hasActions(c)) || (['label', 'card', 'rect', 'html', 'image', 'icon'].includes(c.type) && hasActions(c));
+      if (!clickable) return;
+      const cover = list.slice(i + 1).find((o) => PASSIVE_COVER.has(o.type) && !hasActions(o) && overlap(c, o) > 0.25 * c.w * c.h);
+      if (cover) mk(fxText(c))('warn', 'PS040', `${scr.name} › ${c.name}`, `${cover.name} sits in front of this clickable control and will take most clicks. Move ${c.name} to the front (Layers) or ${cover.name} behind it.`);
+    });
+    checkCover(scr.controls);
+    // gallery rows need no check: the emitter already puts clickable row controls in front of passive ones
+    if (/\bNavigate\(/.test(scr.onVisible || '')) addG('error', 'PS026', scr.name, 'Navigate() is not allowed in a screen\'s OnVisible (even inside If). Hide the button that leads here instead.');
+    if (/\bThisItem\b/.test(scr.onVisible || '')) addG('error', 'PS027', scr.name, 'ThisItem in OnVisible.');
   }
-  if (/\bNavigate\(/.test(project.app.onStart || '')) add('error', 'App.OnStart', 'Navigate() is not allowed in App.OnStart. Set the start screen instead.');
+  if (/\bNavigate\(/.test(project.app.onStart || '')) addG('error', 'PS028', 'App.OnStart', 'Navigate() is not allowed in App.OnStart. Set the start screen instead.');
   // data model
   const lnames = new Set();
   for (const l of project.lists) {
-    if (lnames.has(l.name)) add('error', `list ${l.name}`, 'Two lists share this name.');
+    if (lnames.has(l.name)) addG('error', 'PS029', `list ${l.name}`, 'Two lists share this name.');
     lnames.add(l.name);
     const cn = new Set();
     for (const c of l.columns) {
-      if (cn.has(c.name)) add('error', `${l.name}.${c.name}`, 'Duplicate column name.');
+      const w = `${l.name}.${c.name}`;
+      if (cn.has(c.name)) addG('error', 'PS030', w, 'Duplicate column name.');
       cn.add(c.name);
-      if (!c.builtin && SP_RESERVED_COLS.has(c.name)) add('warn', `${l.name}.${c.name}`, `SharePoint already uses "${c.name}". Prefix it (e.g. Req${c.name}) to avoid a clash.`);
-      if (!c.builtin && !IDENT.test(c.name)) add('warn', `${l.name}.${c.name}`, 'Spaces or symbols in column names make internal names differ from display names. Prefer one word.');
-      if (c.type === 'Choice' && !c.choices.length) add('error', `${l.name}.${c.name}`, 'Choice column has no choices.');
-      if (c.type === 'Lookup' && !project.lists.some((x) => x.name === c.lookupList)) add('error', `${l.name}.${c.name}`, 'Lookup column needs a target list from the data model.');
+      if (!c.builtin && SP_RESERVED_COLS.has(c.name)) addG('warn', 'PS031', w, `SharePoint already uses "${c.name}". Prefix it (e.g. Req${c.name}) to avoid a clash.`);
+      if (!c.builtin && !IDENT.test(c.name)) addG('warn', 'PS032', w, 'Spaces or symbols in column names make internal names differ from display names. Prefer one word.');
+      if (c.type === 'Choice' && !c.choices.length) addG('error', 'PS033', w, 'Choice column has no choices.');
+      if (c.type === 'Lookup' && !project.lists.some((x) => x.name === c.lookupList)) addG('error', 'PS034', w, 'Lookup column needs a target list from the data model.');
     }
   }
-  for (const scr of project.screens) for (const [c] of walk(scr.controls)) if (c.bind?.kind === 'count') { add('info', `${scr.name} › ${c.name}`, 'CountRows over a SharePoint list is not delegable: counts stop at the data row limit (500 by default, 2000 max).'); break; }
+  for (const scr of project.screens) for (const [c] of walk(scr.controls)) if (c.bind?.kind === 'count') { addG('info', 'PS035', `${scr.name} › ${c.name}`, 'CountRows over a SharePoint list is not delegable: counts stop at the data row limit (500 by default, 2000 max).'); break; }
   return F;
 }

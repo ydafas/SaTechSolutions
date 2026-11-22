@@ -14,12 +14,21 @@ const esc = (t) => String(t ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<
 export const svgIcon = (name, color, stroke = 2) =>
   `<svg viewBox="0 0 24 24" width="100%" height="100%" aria-hidden="true"><path d="${ICONS[name] || ICONS.info}" fill="none" stroke="${color}" stroke-width="${stroke}" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 
+/**
+ * HtmlViewer preview: keep markup and inline styles, drop anything that can run code or load another page.
+ * (Imported projects and pasted YAML come from other people, so this is a security boundary.)
+ */
 export function sanitizeHtml(html) {
   const doc = new DOMParser().parseFromString(`<div>${html}</div>`, 'text/html');
-  doc.querySelectorAll('script,iframe,object,embed,link,meta,style').forEach((n) => n.remove());
-  doc.querySelectorAll('*').forEach((n) => [...n.attributes].forEach((a) => { if (/^on/i.test(a.name) || /javascript:/i.test(a.value)) n.removeAttribute(a.name); }));
+  doc.querySelectorAll('script,iframe,frame,frameset,object,embed,link,meta,style,base,form,input,button,textarea,select,template,noscript').forEach((n) => n.remove());
+  doc.querySelectorAll('*').forEach((n) => [...n.attributes].forEach((a) => {
+    const v = a.value.replace(/[\s\u0000-\u001f]+/g, '').toLowerCase();
+    if (/^on/i.test(a.name) || a.name === 'srcdoc' || /^(javascript|vbscript|data:text\/html)/.test(v) || (a.name === 'style' && /expression\(|url\(\s*['"]?\s*javascript/i.test(a.value))) n.removeAttribute(a.name);
+  }));
+  doc.querySelectorAll('a[href]').forEach((a) => { a.setAttribute('target', '_blank'); a.setAttribute('rel', 'noopener noreferrer'); });
   return doc.body.firstChild.innerHTML;
 }
+const num = (v, d = 0) => (Number.isFinite(Number(v)) ? Number(v) : d);
 
 // ============================================================ mini Power Fx evaluator
 // Enough of the language to preview titles, Visible rules and simple behaviour formulas.
@@ -237,6 +246,8 @@ export function createRuntime(project, hooks) {
     hooks.rerender();
   };
   rt.current = scr;
+  rt.hooks = hooks;
+  if (start) onVisible(start);
   return rt;
 }
 
@@ -388,10 +399,10 @@ export function renderControl(ctl, env) {
   const el = document.createElement('div');
   el.className = 'pa-ctl pa-' + ctl.type;
   el.dataset.id = ctl.id;
-  el.style.cssText = `left:${ctl.x}px;top:${ctl.y}px;width:${ctl.w}px;height:${ctl.h}px;`;
+  el.style.cssText = `left:${num(ctl.x)}px;top:${num(ctl.y)}px;width:${num(ctl.w)}px;height:${num(ctl.h)}px;`;
   const p = ctl.props || {};
   const font = FONT_CSS[theme.font] || FONT_CSS['Segoe UI'];
-  const rad = (r) => (r === 'theme' || r == null ? theme.radius : Number(r)) + 'px';
+  const rad = (r) => num(r === 'theme' || r == null ? theme.radius : r) + 'px';
   if (!isVisible(ctl, env)) { el.style.display = 'none'; return el; }
   if (mode === 'design' && (ctl.visibleWhen?.var || ctl.fx?.Visible)) el.classList.add('pa-cond');
   const play = mode === 'play';
@@ -423,18 +434,18 @@ export function renderControl(ctl, env) {
       break;
     }
     case 'icon':
-      el.innerHTML = svgIcon(p.icon, C(p.color), p.stroke || 2);
+      el.innerHTML = svgIcon(p.icon, C(p.color), num(p.stroke, 2) || 2);
       if (hasActions(ctl)) runSel();
       break;
     case 'card': {
       const shadow = !!p.shadow;
-      const bg = p.fill2 ? `linear-gradient(${p.gradAngle ?? 135}deg,${C(p.fill)},${C(p.fill2)})` : C(p.fill);
-      el.innerHTML = `<div class="pa-card-in" style="inset:${shadow ? 6 : 0}px;background:${bg};border-radius:${rad(p.radius)};${Number(p.borderThickness) > 0 ? `border:${p.borderThickness}px solid ${C(p.borderColor)};` : ''}${shadow ? 'box-shadow:0 2px 6px rgba(15,23,42,.14);' : ''}"></div>`;
+      const bg = p.fill2 ? `linear-gradient(${num(p.gradAngle, 135)}deg,${C(p.fill)},${C(p.fill2)})` : C(p.fill);
+      el.innerHTML = `<div class="pa-card-in" style="inset:${shadow ? 6 : 0}px;background:${bg};border-radius:${rad(p.radius)};${num(p.borderThickness) > 0 ? `border:${num(p.borderThickness)}px solid ${C(p.borderColor)};` : ''}${shadow ? 'box-shadow:0 2px 6px rgba(15,23,42,.14);' : ''}"></div>`;
       if (hasActions(ctl)) runSel();
       break;
     }
     case 'rect':
-      el.style.cssText += `background:${C(p.fill)};${Number(p.borderThickness) > 0 ? `box-shadow:inset 0 0 0 ${p.borderThickness}px ${C(p.borderColor)};` : ''}`;
+      el.style.cssText += `background:${C(p.fill)};${num(p.borderThickness) > 0 ? `box-shadow:inset 0 0 0 ${num(p.borderThickness)}px ${C(p.borderColor)};` : ''}`;
       if (hasActions(ctl)) runSel();
       break;
     case 'image': {
