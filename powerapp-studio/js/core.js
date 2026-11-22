@@ -186,6 +186,7 @@ export function newProject() {
     theme: defaultTheme(),
     lists: [],
     screens: [],
+    flows: [],
   };
   const scr = newScreen(p, 'scrHome');
   p.screens.push(scr);
@@ -260,7 +261,19 @@ const SAFE_ID = /^[A-Za-z0-9_-]{1,40}$/;
 export function normalizeProject(p) {
   p.app = { name: 'My App', formFactor: 'tablet', startScreen: '', onStart: '', formulas: '', ...(p.app || {}) };
   if (!FORM_FACTORS[p.app.formFactor]) p.app.formFactor = 'tablet';
-  for (const k of ['name', 'startScreen', 'onStart', 'formulas']) p.app[k] = String(p.app[k] ?? '');
+  for (const k of ['name', 'startScreen', 'onStart', 'formulas', 'siteUrl', 'appLink']) p.app[k] = String(p.app[k] ?? '');
+  if (p.app.deepLink && typeof p.app.deepLink === 'object') p.app.deepLink = { screen: String(p.app.deepLink.screen || ''), list: String(p.app.deepLink.list || '') }; else delete p.app.deepLink;
+  if (p.app.flowSample && typeof p.app.flowSample !== 'object') delete p.app.flowSample;
+  p.flows = Array.isArray(p.flows) ? p.flows : [];
+  const KINDS = ['created', 'statusChanged', 'reminder', 'button'];
+  for (const f of p.flows) {
+    if (!SAFE_ID.test(f.id || '')) f.id = uid();
+    if (!KINDS.includes(f.kind)) f.kind = 'created';
+    for (const k of ['name', 'list', 'subject', 'body', 'statusField', 'reminderValue', 'timeZone']) f[k] = String(f[k] ?? '');
+    f.recipients = Array.isArray(f.recipients) ? f.recipients.filter((r) => r && typeof r === 'object').map((r) => ({ kind: String(r.kind || 'address'), value: String(r.value ?? '') })) : [];
+    f.statusValues = Array.isArray(f.statusValues) ? f.statusValues.map(String) : [];
+    f.days = clamp(Number(f.days) || 0, 0, 365); f.hour = clamp(Number(f.hour) || 0, 0, 23); f.enabled = f.enabled !== false;
+  }
   const base = defaultTheme();
   p.theme = { ...base, ...(p.theme || {}) };
   p.theme.colors = { ...base.colors, ...(p.theme.colors || {}) };
@@ -282,6 +295,7 @@ export function normalizeProject(p) {
     s.onVisible = String(s.onVisible || '');
   }
   if (screenMap[p.app.startScreen]) p.app.startScreen = screenMap[p.app.startScreen];
+  if (p.app.deepLink && screenMap[p.app.deepLink.screen]) p.app.deepLink.screen = screenMap[p.app.deepLink.screen];
   const fixCtl = (c) => {
     if (!SAFE_ID.test(c.id || '')) c.id = uid();
     if (!CATALOG[c.type]) c.type = 'raw';

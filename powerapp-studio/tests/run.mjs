@@ -15,6 +15,7 @@ const E = await import('../js/emit.js');
 const FX = await import('../js/fx.js');
 const { importYaml } = await import('../js/import.js');
 const { createRuntime } = await import('../js/render.js');
+const FL = await import('../js/flows.js');
 
 // ---------------------------------------------------------------- tiny runner
 let pass = 0, fail = 0;
@@ -245,6 +246,129 @@ test('provisioning script creates lookup targets first', () => {
   const ps = E.provisioningScript(p);
   assert(ps.indexOf("Ensure-List 'Events'") < ps.indexOf("Ensure-List 'Registrations'"), 'Events before Registrations');
   assert(ps.includes('Add-PnPFieldFromXml'), 'uses field XML');
+});
+
+// ---------------------------------------------------------------- flows
+function withFlows() {
+  const p = build('requests');
+  p.app.siteUrl = 'https://contoso.sharepoint.com/sites/Team/';
+  p.app.appLink = 'https://apps.powerapps.com/play/e/env/a/app?tenantId=t';
+  p.app.deepLink = { screen: p.screens.find((s) => s.name === 'scrDetailRequests').id, list: 'Requests' };
+  p.flows = ['created', 'statusChanged', 'reminder', 'button'].map((k) => FL.newFlow(p, k, 'Requests'));
+  return p;
+}
+/** Every @{...} interpolation and @expression must have balanced parentheses and quotes. */
+function checkExpressions(node, path = '') {
+  if (typeof node === 'string') {
+    for (const m of node.matchAll(/@\{([^}]*(?:\{[^}]*\}[^}]*)*)\}/g)) {
+      const e = m[1];
+      let depth = 0, q = false;
+      for (const ch of e) { if (ch === "'") q = !q; else if (!q && ch === '(') depth++; else if (!q && ch === ')') depth--; }
+      assert(depth === 0 && !q, `unbalanced expression at ${path}: ${e}`);
+    }
+    return;
+  }
+  if (node && typeof node === 'object') for (const [k, v] of Object.entries(node)) checkExpressions(v, path + '/' + k);
+}
+
+test('flow packages have the legacy import layout', () => {
+  const p = withFlows();
+  for (const f of p.flows) {
+    const files = FL.flowPackageFiles(p, f);
+    const man = JSON.parse(files['manifest.json']);
+    const fm = JSON.parse(files['Microsoft.Flow/flows/manifest.json']);
+    const key = fm.flowAssets.assetPaths[0];
+    assert(man.resources[key]?.type === 'Microsoft.Flow/flows', `${f.kind}: flow resource keyed by asset path`);
+    eq(man.resources[key].hierarchy, 'Root', `${f.kind}: root resource`);
+    const def = JSON.parse(files[`Microsoft.Flow/flows/${key}/definition.json`]);
+    const apis = JSON.parse(files[`Microsoft.Flow/flows/${key}/apisMap.json`]);
+    const conns = JSON.parse(files[`Microsoft.Flow/flows/${key}/connectionsMap.json`]);
+    for (const c of ['shared_sharepointonline', 'shared_office365']) {
+      assert(man.resources[apis[c]]?.type === 'Microsoft.PowerApps/apis', `${f.kind}: api resource for ${c}`);
+      assert(man.resources[conns[c]]?.type === 'Microsoft.PowerApps/apis/connections', `${f.kind}: connection resource for ${c}`);
+      assert(man.resources[conns[c]].dependsOn.includes(apis[c]), `${f.kind}: connection depends on its api`);
+      assert(man.resources[key].dependsOn.includes(conns[c]), `${f.kind}: flow depends on connection`);
+      assert(def.properties.connectionReferences[c], `${f.kind}: connection reference ${c}`);
+    }
+    eq(def.properties.displayName, f.name, 'display name');
+    assert(Object.keys(def.properties.definition.triggers).length === 1, 'one trigger');
+    checkExpressions(def.properties.definition);
+  }
+});
+
+test('flow expressions use internal names and the right sources', () => {
+  const p = withFlows();
+  p.lists[0].columns.push(core.newColumn('Needed Date', 'DateTime'));
+  const [created, changed, reminder, button] = p.flows;
+  created.body = '{NeededDate} {Approver.Email} {Status} {Link} {Nope}';
+  const def = JSON.stringify(FL.flowDefinition(p, created));
+  assert(def.includes("body/NeededDate"), 'internal name without spaces');
+  assert(def.includes("body/Approver/Email"), 'person email');
+  assert(def.includes("body/Status/Value"), 'choice value');
+  assert(def.includes('&ID='), 'deep link');
+  assert(def.includes('{Nope}'), 'unknown token left as text');
+  assert(E.lint(p).some((x) => x.code === 'PS048'), 'unknown token flagged');
+  const rd = JSON.stringify(FL.flowDefinition(p, reminder));
+  assert(rd.includes("items('Apply_to_each')"), 'reminder reads loop item');
+  assert(rd.includes("Status eq 'Submitted'"), 'reminder OData filter');
+  const bd = JSON.stringify(FL.flowDefinition(p, button));
+  assert(bd.includes("outputs('Get_item')") && bd.includes('PowerAppV2') && bd.includes('Respond_to_a_PowerApp_or_flow'), 'button flow shape');
+  const cd = FL.flowDefinition(p, changed);
+  assert(JSON.stringify(cd.actions.Condition.expression).includes("ColumnHasChanged']?['Status']"), 'status change check');
+});
+
+test('literal @ stays literal, @{ is escaped', () => {
+  const p = withFlows(), f = p.flows[0];
+  f.recipients = [{ kind: 'address', value: 'team@agency.mil' }];
+  f.subject = '@home @{not a token}';
+  eq(FL.recipientsExpr(p, f), 'team@agency.mil', 'email address untouched');
+  eq(FL.interpolate(p, f, f.subject), '@@home @@{not a token}', 'leading @ and @{ escaped');
+});
+
+test('run-a-flow action, deep link start screen and OnStart', () => {
+  const p = withFlows(), btn = p.flows[3];
+  const det = p.screens.find((s) => s.name === 'scrDetailRequests');
+  det.controls.push(core.newControl(p, 'button', { x: 40, y: 600, actions: { OnSelect: [{ type: 'runFlow', flow: btn.id, message: 'Sent' }] } }));
+  const y = E.screenYaml(p, det);
+  assert(y.includes(`${FL.flowFxName(btn.name)}.Run(varSelRequests.ID)`), 'runs the flow with the selected ID');
+  assert(y.includes('Param("ID")'), 'deep-link OnVisible');
+  eq(E.startScreenFx(p), 'If(IsBlank(Param("ID")), scrHome, scrDetailRequests)', 'start screen formula');
+  assert(E.onStartFx(p).includes('LookUp(Requests, ID = Value(Param("ID")))'), 'OnStart does not clobber the deep-linked item');
+  eq(errors(p).length, 0, 'no lint errors: ' + errors(p).map((x) => x.code + ' ' + x.msg).join('; '));
+  checkScreenYaml(y, new Set());
+  det.controls.at(-1).actions.OnSelect[0].flow = 'missing';
+  assert(codes(p).has('PS049'), 'missing flow flagged');
+});
+
+test('flow lint: site URL, recipients, watch column', () => {
+  const p = withFlows();
+  p.app.siteUrl = ''; p.flows[0].recipients = []; p.flows[1].statusField = 'Title';
+  const c = codes(p);
+  assert(c.has('PS045') && c.has('PS044') && c.has('PS046'), 'flags ' + [...c].join(','));
+});
+
+test('Play: saving and approving report the flows that would run', () => {
+  const p = withFlows(), msgs = [];
+  const rt = createRuntime(p, { toast: (t) => msgs.push(t), rerender: () => {} });
+  const edit = p.screens.find((s) => s.name === 'scrEditRequests');
+  rt.vars.varSelRequests = {};
+  const title = [...core.walk(edit.controls)].map(([c]) => c).find((c) => c.field?.column === 'Title');
+  rt.inputs[title.name] = 'Flow item';
+  const save = [...core.walk(edit.controls)].map(([c]) => c).find((c) => c.actions?.OnSelect?.some((a) => a.type === 'save'));
+  rt.run(edit, save.actions.OnSelect);
+  assert(msgs.some((m) => m.includes(p.flows[0].name)), 'created flow reported: ' + msgs.join(' | '));
+  const appr = p.screens.find((s) => s.name === 'scrApprovalsRequests');
+  rt.vars.varSelRequests = rt.db.Requests[0];
+  const approve = [...core.walk(appr.controls)].map(([c]) => c).find((c) => c.name.startsWith('btnApprove'));
+  rt.run(appr, approve.actions.OnSelect);
+  assert(msgs.some((m) => m.includes(p.flows[1].name)), 'status flow reported: ' + msgs.join(' | '));
+});
+
+test('old project files without flows still load', () => {
+  const p = build('tasks'); delete p.flows; delete p.app.siteUrl;
+  core.normalizeProject(p);
+  assert(Array.isArray(p.flows) && p.app.siteUrl === '', 'defaults added');
+  eq(errors(p).length, 0, 'still lint-clean');
 });
 
 console.log(`\n\n${pass} passed, ${fail} failed`);
