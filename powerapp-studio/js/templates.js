@@ -108,34 +108,32 @@ export function genBlank(project, name) {
 export function genEdit(project, list, opts = {}) {
   const scr = newScreen(project, opts.name || 'scrEdit' + slug(list.name));
   project.screens.push(scr);
-  const { W, phone, add } = ctx(project, scr), T = tag(scr), V = varSel(list.name);
+  const { W, H, phone, add } = ctx(project, scr), T = tag(scr), V = varSel(list.name);
   headerBlock(project, scr, { title: 'Edit ' + singular(list.name).toLowerCase(), titleFx: `If(IsBlank(${V}.ID), "New ${singular(list.name).toLowerCase()}", "Edit ${singular(list.name).toLowerCase()}")`, back: true });
+  // short fields first, multi-line notes last at full width
   const cols = [...list.columns.filter((c) => c.type !== 'Note'), ...list.columns.filter((c) => c.type === 'Note')];
-  const pad = phone ? 24 : 48, colsN = phone ? 1 : 2, gap = 32;
+  const nNotes = cols.filter((c) => c.type === 'Note').length, nShort = cols.length - nNotes;
+  const cardY = 96, FIELD = 84, NOTE = 140;
+  const tallness = (n) => cardY + 24 + Math.ceil(nShort / n) * FIELD + nNotes * NOTE + 28 + 40 + 24;
+  // tablet: two columns, or three when two would run off the bottom of the screen
+  const colsN = phone ? 1 : tallness(2) > H - 8 ? 3 : 2;
+  const pad = phone ? 24 : 48, gap = 32;
   const cw = Math.floor((W - pad * 2 - gap * (colsN - 1)) / colsN);
-  const cardY = 96, cardBottomPad = 96;
   const card = add('card', { name: 'cardForm' + T, x: pad - 20, y: cardY, w: W - (pad - 20) * 2, h: 200, props: { fill: '@Surface', borderColor: '@Border', borderThickness: 1, radius: 'theme', shadow: true } });
-  let y = cardY + 24, colI = 0, rowBottom = y;
-  const ys = [y, y];
+  const ys = Array(colsN).fill(cardY + 24);
+  let colI = 0, rowBottom = cardY + 24;
   for (const col of cols) {
-    const isNote = col.type === 'Note';
-    if (isNote && colsN === 2) { colI = 0; y = Math.max(...ys); }
-    const x = pad + colI * (cw + gap);
-    const width = isNote && colsN === 2 ? W - pad * 2 : cw;
-    const r = inputFor(project, scr, list, col, x, colsN === 2 && !isNote ? ys[colI] : y, width);
-    if (isNote && colsN === 2) { ys[0] = ys[1] = r.bottom + 18; y = ys[0]; }
-    else if (colsN === 2) { ys[colI] = r.bottom + 18; colI = (colI + 1) % 2; }
-    else y = r.bottom + 18;
+    const wide = col.type === 'Note' && colsN > 1;
+    if (wide) { colI = 0; ys.fill(Math.max(...ys)); }
+    const r = inputFor(project, scr, list, col, pad + colI * (cw + gap), ys[colI], wide ? W - pad * 2 : cw);
+    if (wide) ys.fill(r.bottom + 18);
+    else { ys[colI] = r.bottom + 18; colI = (colI + 1) % colsN; }
     rowBottom = Math.max(rowBottom, r.bottom);
   }
   const by = rowBottom + 28;
   card.h = by + 40 + 24 - cardY;
   add('button', { name: 'btnSave' + T, x: W - pad - 160, y: by, w: 160, h: 40, props: { text: 'Save' }, actions: { OnSelect: [{ type: 'save', list: list.name, then: 'back' }] } });
   add('button', { name: 'btnCancel' + T, x: W - pad - 160 - 16 - 140, y: by, w: 140, h: 40, props: { text: 'Cancel', fill: 'transparent', color: '@Primary', borderColor: '@Primary', borderThickness: 1 }, actions: { OnSelect: [{ type: 'back' }] } });
-  if (card.y + card.h > FORM_FACTORS[project.app.formFactor || 'tablet'].h - 8) {
-    // tall forms: shrink inputs' vertical rhythm is not possible; let the designer show it and lint warn
-  }
-  void cardBottomPad;
   return scr;
 }
 

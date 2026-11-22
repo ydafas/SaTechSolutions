@@ -1,6 +1,22 @@
 // core.js — project model, control catalog, themes, column types, sample data.
 // Everything here is plain data + small helpers; no DOM.
 
+/**
+ * @typedef {'@Primary'|'@OnPrimary'|string} ColorValue  '@Token' (theme), '#RRGGBB[AA]' or 'transparent'
+ * @typedef {{type: string, screen?: string, list?: string, field?: string, value?: string, then?: string,
+ *   name?: string, fx?: string, text?: string, kind?: string, url?: string, message?: string, transition?: string}} Action
+ * @typedef {{id: string, type: string, name: string, x: number, y: number, w: number, h: number,
+ *   props: Object<string, any>, fx: Object<string, string>, actions: Object<string, Action[]>,
+ *   field?: {list: string, column: string}, bind?: Object, visibleWhen?: {var: string, op: string, value?: string},
+ *   data?: Object, children?: Control[], paControl?: string, variant?: string, rawProps?: Object, rawChildren?: any[]}} Control
+ * @typedef {{id: string, name: string, fill: ColorValue, fillFx?: string, onVisible: string, controls: Control[]}} Screen
+ * @typedef {{id: string, name: string, type: string, required: boolean, choices: string[], lookupList: string, builtin?: boolean}} Column
+ * @typedef {{id: string, name: string, columns: Column[]}} List
+ * @typedef {{version: number, app: {name: string, formFactor: string, startScreen: string, onStart: string, formulas: string},
+ *   theme: {name: string, colors: Object<string, string>, font: string, radius: number, header: string, dark: boolean},
+ *   lists: List[], screens: Screen[]}} Project
+ */
+
 export const uid = () => Math.random().toString(36).slice(2, 10);
 export const clone = (o) => JSON.parse(JSON.stringify(o));
 export const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -95,10 +111,12 @@ export const isHex = (v) => /^#([0-9a-f]{3}|[0-9a-f]{6}|[0-9a-f]{8})$/i.test(Str
 /** Resolve a color value ('@Token' | '#hex' | 'transparent') to CSS for the designer. */
 export const cssColor = (v, theme) => {
   if (!v || v === 'transparent') return 'transparent';
-  if (v[0] === '@') return theme.colors[v.slice(1)] || '#ff00ff';
+  if (v[0] === '@') { const c = theme.colors[v.slice(1)]; return isHex(c) ? c : '#ff00ff'; }
   if (isHex(v)) { const [r, g, b, a] = hexToRgba(v); return `rgba(${r},${g},${b},${a})`; }
-  return v;
+  return 'transparent'; // anything else could break out of a style attribute
 };
+/** A value safe to store as a color: theme token, hex or 'transparent'. */
+export const isColorValue = (v) => v === '' || v === 'transparent' || isHex(v) || /^@[A-Za-z]+$/.test(String(v || ''));
 
 // ---------- control catalog ----------
 // pa: Power Apps control type written to YAML. Designer-only types expand to several controls on emit.
@@ -208,11 +226,78 @@ export function allNames(project, exceptId = null) {
   }
   return names;
 }
-export function uniqueName(project, base) {
-  const names = allNames(project);
+export function uniqueName(project, base, used = null) {
+  const names = used || allNames(project);
   let i = 1;
   while (names.has(base + i)) i++;
+  if (used) used.add(base + i);
   return base + i;
+}
+/**
+ * Give a copied control (and its gallery children) fresh ids and names that are unique across the app
+ * AND across the other copies being made in the same operation. Pass one shared `used` Set per operation.
+ */
+export function renameCopy(project, ctl, used) {
+  // keep the descriptive part of the name: cardHeaderHome -> cardHeaderHome2, lbl3 -> lbl4
+  const base = String(ctl.name).replace(/\d+$/, '') || CATALOG[ctl.type]?.prefix || 'ctl';
+  let i = 2;
+  while (used.has(base + i) || companions({ ...ctl, name: base + i }).some((n) => used.has(n))) i++;
+  ctl.id = uid();
+  ctl.name = base + i;
+  used.add(ctl.name);
+  companions(ctl).forEach((n) => used.add(n));
+  (ctl.children || []).forEach((ch) => renameCopy(project, ch, used));
+  return ctl;
+}
+
+// ---------------------------------------------------------------- loading untrusted project files
+const SAFE_ID = /^[A-Za-z0-9_-]{1,40}$/;
+/**
+ * Make a project loaded from storage or a shared file safe and well-formed: ids that are safe in HTML
+ * attributes (references remapped), colors that cannot break out of style attributes, numbers that are numbers.
+ * Returns the same object, mutated.
+ */
+export function normalizeProject(p) {
+  p.app = { name: 'My App', formFactor: 'tablet', startScreen: '', onStart: '', formulas: '', ...(p.app || {}) };
+  if (!FORM_FACTORS[p.app.formFactor]) p.app.formFactor = 'tablet';
+  for (const k of ['name', 'startScreen', 'onStart', 'formulas']) p.app[k] = String(p.app[k] ?? '');
+  const base = defaultTheme();
+  p.theme = { ...base, ...(p.theme || {}) };
+  p.theme.colors = { ...base.colors, ...(p.theme.colors || {}) };
+  for (const k of Object.keys(p.theme.colors)) if (!isHex(p.theme.colors[k])) p.theme.colors[k] = base.colors[k] || '#000000';
+  if (!FONTS.includes(p.theme.font)) p.theme.font = 'Segoe UI';
+  p.theme.radius = clamp(Number(p.theme.radius) || 0, 0, 48);
+  p.lists = Array.isArray(p.lists) ? p.lists : [];
+  for (const l of p.lists) {
+    if (!SAFE_ID.test(l.id || '')) l.id = uid();
+    l.name = String(l.name || 'List'); l.columns = Array.isArray(l.columns) ? l.columns : [];
+    for (const c of l.columns) { if (!SAFE_ID.test(c.id || '')) c.id = uid(); c.name = String(c.name || 'Column'); if (!COLTYPES[c.type]) c.type = 'Text'; c.choices = Array.isArray(c.choices) ? c.choices.map(String) : []; c.lookupList = String(c.lookupList || ''); c.required = !!c.required; }
+  }
+  p.screens = Array.isArray(p.screens) ? p.screens : [];
+  const screenMap = {};
+  for (const s of p.screens) {
+    if (!SAFE_ID.test(s.id || '')) { const n = uid(); screenMap[s.id] = n; s.id = n; }
+    s.name = String(s.name || 'scrScreen'); s.controls = Array.isArray(s.controls) ? s.controls : [];
+    if (s.fill && !isColorValue(s.fill)) s.fill = '@Bg';
+    s.onVisible = String(s.onVisible || '');
+  }
+  if (screenMap[p.app.startScreen]) p.app.startScreen = screenMap[p.app.startScreen];
+  const fixCtl = (c) => {
+    if (!SAFE_ID.test(c.id || '')) c.id = uid();
+    if (!CATALOG[c.type]) c.type = 'raw';
+    c.name = String(c.name || 'ctl');
+    for (const k of ['x', 'y', 'w', 'h']) c[k] = Math.round(Number(c[k]) || 0);
+    c.props = c.props && typeof c.props === 'object' ? c.props : {};
+    for (const [k, v] of Object.entries(c.props)) if (/^(fill|fill2|color|borderColor|templateFill|selectedFill)$/.test(k) && !isColorValue(v)) c.props[k] = 'transparent';
+    for (const k of ['size', 'borderThickness', 'gradAngle', 'templateSize', 'duration', 'stroke']) if (k in c.props) c.props[k] = Number(c.props[k]) || 0;
+    c.fx = c.fx && typeof c.fx === 'object' ? c.fx : {};
+    c.actions = c.actions && typeof c.actions === 'object' ? c.actions : {};
+    for (const acts of Object.values(c.actions)) for (const a of acts || []) if (screenMap[a.screen]) a.screen = screenMap[a.screen];
+    if (c.type === 'gallery') { c.children = Array.isArray(c.children) ? c.children : []; c.data = c.data || {}; }
+    (c.children || []).forEach(fixCtl);
+  };
+  p.screens.forEach((s) => s.controls.forEach(fixCtl));
+  return p;
 }
 export function uniqueScreenName(project, base) {
   const names = allNames(project);
