@@ -3,6 +3,7 @@
 // search, forms that save, approve/reject, variables, Visible conditions, notifications.
 import { cssColor, displayValue, colOf, varSel, walk, sampleRows, PEOPLE, FORM_FACTORS, hasActions } from './core.js';
 import { ICONS } from './icons.js';
+import { flowsFor, recipientsText } from './flows.js';
 
 const PT = 96 / 72; // Power Apps font Size is in points
 export const FONT_CSS = {
@@ -293,14 +294,22 @@ function runAction(project, rt, screen, a, row) {
       }
       if (missing.length) { rt.api.toast('Save failed. Required: ' + missing.join(', '), 'error'); return false; }
       const cur = rt.vars[V];
-      if (cur?.ID) { const r = rows.find((x) => x.ID === cur.ID); Object.assign(r, rec, { Modified: new Date().toISOString().slice(0, 10) }); rt.vars[V] = r; }
+      const fired = [];
+      if (cur?.ID) {
+        const r = rows.find((x) => x.ID === cur.ID);
+        const diff = {}; for (const [k, v] of Object.entries(rec)) if (JSON.stringify(r[k]) !== JSON.stringify(v)) diff[k] = v;
+        Object.assign(r, rec, { Modified: new Date().toISOString().slice(0, 10) }); rt.vars[V] = r;
+        fired.push(...flowsFor(project, a.list, 'changed', diff));
+      }
       else {
         const r = { ID: Math.max(0, ...rows.map((x) => x.ID)) + 1, Created: new Date().toISOString().slice(0, 10), Modified: new Date().toISOString().slice(0, 10), ...rec };
         const st = project.lists.find((l) => l.name === a.list)?.columns.find((c) => c.type === 'Choice' && !(c.name in rec));
         if (st) r[st.name] = st.choices[0];
         rows.unshift(r); rt.vars[V] = a.then === 'stay' ? {} : r;
+        fired.push(...flowsFor(project, a.list, 'created'));
       }
       rt.api.toast(a.message || 'Saved', 'success');
+      fired.forEach((f) => rt.api.toast(`⚡ Flow "${f.name}" would email ${recipientsText(f)}`, 'flow'));
       if (a.then === 'stay') for (const [c] of walk(screen.controls)) delete rt.inputs[c.name];
       after(); break;
     }
@@ -316,7 +325,9 @@ function runAction(project, rt, screen, a, row) {
       const r = (rt.db[a.list] || []).find((x) => x.ID === cur.ID);
       const col = colOf(project, a.list, a.field);
       if (r && col) r[a.field] = col.type === 'Person' ? { DisplayName: 'Alex Rivera', Mail: 'alex.rivera@contoso.com' } : col.type === 'YesNo' ? /^(true|yes|1)$/i.test(a.value) : col.type === 'DateTime' ? new Date().toISOString().slice(0, 10) : a.value;
-      rt.vars[V] = r || {}; rt.api.toast(a.message || 'Updated', 'success'); after(); break;
+      rt.vars[V] = r || {}; rt.api.toast(a.message || 'Updated', 'success');
+      if (r && col) flowsFor(project, a.list, 'changed', { [a.field]: r[a.field] }).forEach((f) => rt.api.toast(`⚡ Flow "${f.name}" would email ${recipientsText(f)}`, 'flow'));
+      after(); break;
     }
     case 'setVar': rt.vars[a.name] = tryFx(a.value || 'true', { project, rt, row }, a.value); break;
     case 'toggleVar': rt.vars[a.name] = !rt.vars[a.name]; break;
@@ -324,6 +335,16 @@ function runAction(project, rt, screen, a, row) {
     case 'launch': rt.api.launch(a.url); break;
     case 'refresh': break;
     case 'reset': for (const [c] of walk(screen.controls)) delete rt.inputs[c.name]; break;
+    case 'runFlow': {
+      const f = (project.flows || []).find((x) => x.id === a.flow && x.kind === 'button');
+      if (!f) { rt.api.toast('Flow failed. No flow picked.', 'error'); return false; }
+      const V2 = varSel(f.list);
+      if (!rt.vars[V2]?.ID) { rt.api.toast('Flow failed. Nothing selected.', 'error'); return false; }
+      rt.api.toast(`⚡ Flow "${f.name}" ran: email to ${recipientsText(f)}`, 'flow');
+      rt.api.toast(a.message || 'Done', 'success');
+      if (a.then === 'back') rt.api.back(); else if (a.then === 'navigate') toScreen(a.screen);
+      break;
+    }
     case 'custom': try { evalFx(a.fx || '', { project, rt, row }); } catch { rt.api.toast('Custom formula runs in the real app only'); } break;
   }
   return true;

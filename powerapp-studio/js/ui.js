@@ -1,7 +1,9 @@
 // ui.js — Power App Studio: the designer shell.
 import * as core from './core.js';
 import { CATALOG, CATS, COLTYPES, THEME_COLORS, THEME_PRESETS, FONTS, FORM_FACTORS, clone, uid, walk, findCtl, newControl, newScreen, newList, newColumn, allNames, IDENT, RESERVED, sampleRows, varSel, companions, INPUT_TYPES, colOf, cssColor, isHex, s as fxString, renameCopy, normalizeProject } from './core.js';
-import { screenYaml, themeFormulas, onStartFx, startScreenName, checklist, provisioningScript, lint, ACTION_TYPES, controlYaml, usedLists } from './emit.js';
+import { screenYaml, themeFormulas, onStartFx, startScreenName, startScreenFx, checklist, provisioningScript, lint, ACTION_TYPES, controlYaml, usedLists } from './emit.js';
+import { flowDefinition, flowFileName, flowFxName, FLOW_KINDS } from './flows.js';
+import { initFlowsUI, panelFlows, addFlowDialog, flowDialog, downloadFlow, duplicateFlow, deleteFlow, loadFlowSample, flowZipBlob } from './flowsui.js';
 import { renderControl, renderScreen, createRuntime, svgIcon, FONT_CSS } from './render.js';
 import { SCENARIOS, generateApp, SCREEN_TEMPLATES, genBlank, genHome, genBrowse, genDetail, genEdit, genApprovals, BLOCKS, insertBlock, galleryRows } from './templates.js';
 import { importYaml } from './import.js';
@@ -12,7 +14,7 @@ const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const esc = (t) => String(t ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const UI_PATHS = {
-  undo: 'M9 7L4 12l5 5M4 12h11a5 5 0 0 1 0 10h-3', redo: 'M15 7l5 5-5 5M20 12H9a5 5 0 0 0 0 10h3',
+  bolt: 'M13 2L4 14h7l-1 8 9-12h-7l1-8z', undo: 'M9 7L4 12l5 5M4 12h11a5 5 0 0 1 0 10h-3', redo: 'M15 7l5 5-5 5M20 12H9a5 5 0 0 0 0 10h3',
   layers: 'M12 3l9 5-9 5-9-5 9-5zM3 13l9 5 9-5M3 17.5l9 5 9-5', data: 'M4 6c0-1.7 3.6-3 8-3s8 1.3 8 3-3.6 3-8 3-8-1.3-8-3zM4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3',
   palette: 'M12 3a9 9 0 1 0 0 18c1.2 0 1.8-.8 1.8-1.7 0-1.3-1.2-1.6-1.2-2.7 0-.9.7-1.6 1.6-1.6H17a4 4 0 0 0 4-4C21 6.6 17 3 12 3zM7.5 11h.01M10 7h.01M15 7h.01',
   copy: 'M8 8h12v12H8zM4 16V4h12', up: 'M12 19V5M6 11l6-6 6 6', down: 'M12 5v14M6 13l6 6 6-6', front: 'M4 14h6v6H4zM9 4h11v11H9z',
@@ -92,7 +94,7 @@ function lintSoon() {
   }, 300);
 }
 function renderRail() {
-  const icons = { insert: 'plus', screens: 'screen', layers: 'layers', data: 'data', theme: 'palette', app: 'settings' };
+  const icons = { insert: 'plus', screens: 'screen', layers: 'layers', data: 'data', flows: 'bolt', theme: 'palette', app: 'settings' };
   $$('.rail button').forEach((b) => { b.classList.toggle('on', b.dataset.tab === S.tab); b.querySelector('i').innerHTML = ui(icons[b.dataset.tab]); });
 }
 function renderTabs() {
@@ -380,7 +382,7 @@ function alignSel(how) {
 function renderPanelIf(tab) { if (S.tab === tab) renderPanel(); }
 function renderPanel() {
   const el = $('#panel');
-  const f = { insert: panelInsert, screens: panelScreens, layers: panelLayers, data: panelData, theme: panelTheme, app: panelApp }[S.tab];
+  const f = { insert: panelInsert, screens: panelScreens, layers: panelLayers, data: panelData, flows: panelFlows, theme: panelTheme, app: panelApp }[S.tab];
   el.innerHTML = f();
   if (S.tab === 'data') bindDataEditor(el, P.lists, () => { renderCanvas(); renderInspector(); commitSoon(); });
 }
@@ -515,6 +517,13 @@ function panelApp() {
     <label class="f"><span>App name</span><input data-app="name" value="${esc(P.app.name)}"></label>
     <label class="f"><span>Format</span><select data-app="formFactor">${Object.entries(FORM_FACTORS).map(([k, v]) => `<option value="${k}" ${k === P.app.formFactor ? 'selected' : ''}>${v.label}</option>`).join('')}</select></label>
     <label class="f"><span>Start screen</span><select data-app="startScreen">${P.screens.map((s) => `<option value="${s.id}" ${s.id === start ? 'selected' : ''}>${esc(s.name)}</option>`).join('')}</select></label>
+    <div class="sub">Email links</div>
+    <label class="f"><span>App web link <small>(Apps → Details → Web link)</small></span><input data-app="appLink" value="${esc(P.app.appLink)}" placeholder="https://apps.powerapps.com/play/e/…?tenantId=…"></label>
+    <div class="grid2"><label class="f"><span>Open links on</span><select data-app="deepLinkScreen">${sel([['', '(start screen)'], ...P.screens.map((s) => [s.id, s.name])], P.app.deepLink?.screen)}</select></label>
+    <label class="f"><span>Item from list</span><select data-app="deepLinkList">${sel([['', '(list)'], ...P.lists.map((l) => l.name)], P.app.deepLink?.list)}</select></label></div>
+    <p class="note">A link ending in <code>&amp;ID=12</code> opens this screen with item 12 selected. Flow emails use it for {Link}.</p>
+    <label class="f"><span>SharePoint site URL <small>(for flows)</small></span><input data-app="siteUrl" value="${esc(P.app.siteUrl)}" placeholder="https://contoso.sharepoint.com/sites/Team"></label>
+    <div class="sub">Advanced</div>
     <label class="f"><span>Extra App.OnStart (Power Fx)</span><textarea data-app="onStart" rows="4" placeholder="Set(varIsAdmin, false)">${esc(P.app.onStart)}</textarea></label>
     <label class="f"><span>Extra App.Formulas (named formulas)</span><textarea data-app="formulas" rows="4" placeholder="AppVersion = &quot;1.0&quot;;">${esc(P.app.formulas)}</textarea></label>
     <div class="sub">Build</div>
@@ -720,6 +729,12 @@ function inspActions(f) {
       case 'notify': body = `<div class="grid2">${F('Message', I2('text', a.text))}${F('Kind', S2('kind', ['Information', 'Success', 'Warning', 'Error'], a.kind || 'Information'))}</div>`; break;
       case 'launch': body = F('URL', I2('url', a.url, 'https://')); break;
       case 'refresh': body = F('List', S2('list', lists, a.list)); break;
+      case 'runFlow': {
+        const bf = (P.flows || []).filter((x) => x.kind === 'button');
+        body = bf.length ? `<div class="grid2">${F('Flow', S2('flow', [['', '(flow)'], ...bf.map((x) => [x.id, x.name])], a.flow))}${F('Then', S2('then', [['', 'Stay'], ['back', 'Go back'], ['navigate', 'Go to screen']], a.then || '', true))}</div>${a.then === 'navigate' ? F('Screen', S2('screen', screensOpt, a.screen)) : ''}${F('Message when done', I2('message', a.message, 'Done'))}<p class="note">Sends the selected item's ID and waits for the flow to answer.</p>`
+          : '<p class="note">Add a flow of the <b>Run from a button</b> kind on the Flows tab first.</p>';
+        break;
+      }
       case 'custom': body = F('Power Fx', T2('fx', a.fx, 'Set(varX, true); Notify("Hi")')); break;
     }
     return `<div class="act"><div class="act-h"><span class="act-n">${i + 1}</span><select ${pth('type')} data-re="1">${sel(typeOpts, a.type)}</select>
@@ -1026,6 +1041,7 @@ function codeDialog(tab) {
   const items = [
     ['grp', 'Paste into Power Apps'], ['steps', 'Deploy steps'], ['formulas', 'App.Formulas'], ...(onStartFx(P) ? [['onstart', 'App.OnStart']] : []), ['startscreen', 'App.StartScreen'],
     ...P.screens.map((s) => ['scr:' + s.id, s.name]),
+    ...((P.flows || []).filter((f) => f.enabled !== false).length ? [['grp', 'Flows (Import Package, Legacy)'], ...P.flows.filter((f) => f.enabled !== false).map((f) => ['flow:' + f.id, f.name])] : []),
     ['grp', 'Check'], ['lint', 'Lint report'],
     ['grp', 'Data and project'], ['script', 'Provisioning script'], ['project', 'Project file'],
   ];
@@ -1050,9 +1066,19 @@ function codeDialog(tab) {
     }
     if (k === 'formulas') { title = 'App.Formulas'; text = themeFormulas(P); fname = 'App.Formulas.txt'; extra = 'In Studio: Tree view → App → choose Formulas in the property list → paste.'; }
     if (k === 'onstart') { title = 'App.OnStart'; text = onStartFx(P); fname = 'App.OnStart.txt'; extra = 'Expand the formula bar before pasting, then App → Run OnStart.'; }
-    if (k === 'startscreen') { title = 'App.StartScreen'; text = '=' + startScreenName(P); fname = 'App.StartScreen.txt'; extra = 'Paste into App → StartScreen after the screens exist.'; }
+    if (k === 'startscreen') { title = 'App.StartScreen'; text = '=' + startScreenFx(P); fname = 'App.StartScreen.txt'; extra = 'Paste into App → StartScreen after the screens exist.'; }
     if (k === 'script') { title = 'Provisioning script (PnP PowerShell)'; text = provisioningScript(P); fname = core.slug(P.app.name) + '-Provision-Lists.ps1'; extra = 'Creates the lists and columns. Fill in the EDIT ME block. Safe to run again.'; }
     if (k === 'project') { title = 'Project file'; text = JSON.stringify(P, null, 2); fname = core.slug(P.app.name) + '.pastudio.json'; extra = 'Save this to continue later, or share it. Open it with Project → Open project file.'; }
+    if (k.startsWith('flow:')) {
+      const f = P.flows.find((x) => x.id === k.slice(5));
+      main.innerHTML = `<div class="bar"><h3>${esc(f.name)}</h3><button class="btn sm" id="cEdit">Edit</button><button class="btn sm" id="cCopy">${ui('copy')}Copy definition</button><button class="btn sm pri" id="cDl">${ui('download')}Download package</button></div>
+        <ol class="checklist" style="font-size:13px"><li>Power Automate → My flows → Import → <b>Import Package (Legacy)</b> → Upload <code>${esc(flowFileName(f))}</code>.</li><li>Import setup: <b>Create as new</b>. Related resources: select your SharePoint and Office 365 Outlook connections. Import.</li><li>Open the flow, check it, and turn it on.${f.kind === 'button' ? ` In Power Apps Studio add it from the Power Automate pane; it appears as <code>${esc(flowFxName(f.name))}</code>.` : ''}</li></ol>
+        <pre class="code">${esc(JSON.stringify(flowDefinition(P, f), null, 2))}</pre>`;
+      main.querySelector('#cCopy').onclick = () => copyText(JSON.stringify(flowDefinition(P, f), null, 2));
+      main.querySelector('#cDl').onclick = () => downloadFlow(f);
+      main.querySelector('#cEdit').onclick = () => { m.close(); flowDialog(f.id); };
+      return;
+    }
     if (k.startsWith('scr:')) { const s = P.screens.find((x) => x.id === k.slice(4)); title = s.name; text = screenYaml(P, s); fname = s.name + '.pa.yaml'; extra = `Delete the old ${s.name} in Studio first (names must be unique), click the empty canvas, press Ctrl+V.`; }
     main.innerHTML = `<div class="bar"><h3>${esc(title)}</h3><button class="btn sm" id="cDl">${ui('download')}Download</button><button class="btn sm pri" id="cCopy">${ui('copy')}Copy</button></div><p class="note" style="margin:0">${esc(extra)}</p><pre class="code">${esc(text)}</pre>`;
     main.querySelector('#cCopy').onclick = () => copyText(text);
@@ -1065,7 +1091,8 @@ function codeDialog(tab) {
     root.file('README.txt', 'Power App Studio export: ' + P.app.name + '\n\n' + checklist(P).map((s, i) => `${i + 1}. ${s}`).join('\n') + '\n');
     root.file('App.Formulas.txt', themeFormulas(P));
     if (onStartFx(P)) root.file('App.OnStart.txt', onStartFx(P));
-    root.file('App.StartScreen.txt', '=' + startScreenName(P));
+    root.file('App.StartScreen.txt', '=' + startScreenFx(P));
+    for (const f of (P.flows || []).filter((x) => x.enabled !== false)) root.file('flows/' + flowFileName(f), await flowZipBlob(f));
     P.screens.forEach((s, i) => root.file(`screens/${String(i + 1).padStart(2, '0')}-${s.name}.pa.yaml`, screenYaml(P, s)));
     root.file('Provision-Lists.ps1', provisioningScript(P));
     root.file('lint.txt', lint(P).map((x) => `${x.level.toUpperCase()}\t${x.code}\t${x.where}\t${x.msg}`).join('\n') || 'No findings.');
@@ -1132,7 +1159,7 @@ function play() {
   let rt, toastTimer, focusSave = null;
   const hooks = {
     rerender: () => draw(),
-    toast: (t, kind) => { clearTimeout(toastTimer); bg.querySelector('.play-toast')?.remove(); const d = document.createElement('div'); d.className = 'play-toast ' + (kind || ''); d.textContent = t; bg.querySelector('#plFrame').appendChild(d); toastTimer = setTimeout(() => d.remove(), 2200); },
+    toast: (t, kind) => { void toastTimer; let box = bg.querySelector('.play-toasts'); if (!box) { box = document.createElement('div'); box.className = 'play-toasts'; bg.querySelector('#plFrame').appendChild(box); } const d = document.createElement('div'); d.className = 'play-toast ' + (kind || ''); d.textContent = t; box.appendChild(d); while (box.children.length > 4) box.firstChild.remove(); setTimeout(() => d.remove(), kind === 'flow' ? 4200 : 2400); },
   };
   let soon = 0;
   const env = () => ({ project: P, theme: P.theme, mode: 'play', rt, rerenderSoon: () => { clearTimeout(soon); soon = setTimeout(draw, 220); } });
@@ -1202,6 +1229,13 @@ function runCmd(cmd, el) {
     case 'addList': { let n = 'NewList', k = 2; while (P.lists.some((l) => l.name === n)) n = 'NewList' + k++; P.lists.push(newList(n)); renderPanel(); commit(); return; }
     case 'importSchema': return schemaDialog();
     case 'showScript': return codeDialog('script');
+    case 'addFlow': return addFlowDialog();
+    case 'editFlow': return flowDialog(el.dataset.fid);
+    case 'dlFlow': { const f = P.flows.find((x) => x.id === el.dataset.fid); if (f) downloadFlow(f); return; }
+    case 'dupFlow': return duplicateFlow(el.dataset.fid);
+    case 'delFlow': return deleteFlow(el.dataset.fid);
+    case 'flowSample': return loadFlowSample();
+    case 'flowSampleClear': delete P.app.flowSample; commit(); renderPanel(); return;
     case 'scrUp': if (i > 0) { P.screens.splice(i - 1, 0, P.screens.splice(i, 1)[0]); renderPanel(); renderTabs(); commit(); } return;
     case 'scrDup': {
       const src = P.screens[i], c = clone(src); c.id = uid(); c.name = core.uniqueScreenName(P, src.name + 'Copy');
@@ -1226,6 +1260,7 @@ function runCmd(cmd, el) {
 }
 
 function init() {
+  initFlowsUI({ P: () => P, modal, toast, ui, esc, svgIcon, commit, renderPanel, download, copyText, ask });
   // icons in static buttons
   $('#btnUndo').innerHTML = ui('undo'); $('#btnRedo').innerHTML = ui('redo');
   const saved = loadSaved();
@@ -1278,7 +1313,15 @@ function init() {
     if (t.dataset.tc) { P.theme.colors[t.dataset.tc] = t.value.toUpperCase(); P.theme.name = 'Custom'; const hx = panel.querySelector(`[data-tch="${t.dataset.tc}"]`); if (hx) hx.value = t.value.toUpperCase(); renderCanvas(); commitSoon(); return; }
     if (t.dataset.tch) { if (!isHex(t.value)) return; P.theme.colors[t.dataset.tch] = t.value.toUpperCase(); P.theme.name = 'Custom'; const sw = panel.querySelector(`[data-tc="${t.dataset.tch}"]`); if (sw) sw.value = t.value.slice(0, 7); renderCanvas(); commitSoon(); return; }
     if (t.dataset.app) {
-      const k = t.dataset.app; P.app[k] = t.value;
+      const k = t.dataset.app;
+      if (k === 'deepLinkScreen' || k === 'deepLinkList') {
+        const d = { screen: '', list: '', ...(P.app.deepLink || {}) };
+        d[k === 'deepLinkScreen' ? 'screen' : 'list'] = t.value;
+        if (k === 'deepLinkScreen' && t.value && !d.list) { const s = P.screens.find((x) => x.id === t.value); const b = s && [...walk(s.controls)].map(([c]) => c.bind?.list).find(Boolean); if (b) { d.list = b; const ls = panel.querySelector('[data-app="deepLinkList"]'); if (ls) ls.value = b; } }
+        if (d.screen || d.list) P.app.deepLink = d; else delete P.app.deepLink;
+        commitSoon(); renderTabs(); return;
+      }
+      P.app[k] = t.value;
       if (k === 'name') updateTop();
       if (k === 'startScreen') renderTabs();
       if (k === 'formFactor') { renderCanvas(); zoomFit(); toast('Format changed. Existing controls keep their positions; generate again or rearrange them.'); }

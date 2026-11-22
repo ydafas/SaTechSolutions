@@ -11,6 +11,7 @@
 import { CATALOG, FORM_FACTORS, INPUT_TYPES, q, s, varSel, hexToRgba, isHex, walk, colOf, hasActions, IDENT, RESERVED, allNames, SP_RESERVED_COLS } from './core.js';
 import { iconSvg } from './icons.js';
 import { notifyFx, navigateFx, rebaseFx, upsertBaseFx, ifErrorFx, spUserFx, meUserFx, recordFx, equalsFx } from './fx.js';
+import { flowFxName, deepLinkInfo, flowLint, internalName as flowInternalName } from './flows.js';
 
 // ---------------------------------------------------------------- color helpers
 export function colorFx(v) {
@@ -129,7 +130,7 @@ export const ACTION_TYPES = {
   navigate: 'Go to screen', back: 'Go back', newItem: 'Start a new item', openItem: 'Open this row (gallery)',
   save: 'Save form to list', delete: 'Delete selected item', setField: 'Set a column on selected item',
   setVar: 'Set variable', toggleVar: 'Toggle variable', notify: 'Show message', launch: 'Open a link',
-  refresh: 'Refresh list', reset: 'Clear inputs on screen', custom: 'Custom Power Fx',
+  refresh: 'Refresh list', reset: 'Clear inputs on screen', runFlow: 'Run a flow', custom: 'Custom Power Fx',
 };
 const scrName = (project, id) => project.screens.find((x) => x.id === id || x.name === id)?.name;
 
@@ -175,6 +176,14 @@ export function actionFx(project, screen, a, ctx = {}) {
     case 'reset': {
       const ins = screenInputs(screen);
       return ins.map((c) => `Reset(${c.name})`).concat(ins.filter((c) => c.type === 'person').map((c) => `Set(${pickVar(c)}, Blank())`)).join(';\n');
+    }
+    case 'runFlow': {
+      const f = (project.flows || []).find((x) => x.id === a.flow && x.kind === 'button');
+      if (!f) return '';
+      const V2 = varSel(f.list);
+      const done = [notifyFx(a.message || 'Done', 'Success')];
+      if (a.then === 'navigate') done.push(nav(a.screen)); else if (a.then === 'back') done.push('Back()');
+      return ifErrorFx(`${flowFxName(f.name)}.Run(${V2}.ID)`, 'Flow', done.filter(Boolean));
     }
     case 'custom': return (a.fx || '').replace(/^=/, '');
   }
@@ -468,6 +477,11 @@ function yNodes(nodes, pad) {
 }
 function screenOnVisible(project, screen) {
   const parts = [];
+  const dl = deepLinkInfo(project);
+  if (dl && dl.screen.id === screen.id) {
+    const V = varSel(dl.list), L = q(dl.list);
+    parts.push(`If(!IsBlank(Param("ID")) && IsBlank(${V}.ID), Set(${V}, LookUp(${L}, ID = Value(Param("ID")))))`);
+  }
   if (screen.onVisible) parts.push(screen.onVisible.replace(/^=/, ''));
   const inputs = screenInputs(screen).filter((c) => c.field?.list);
   inputs.filter((c) => c.type === 'person').forEach((c) => parts.push(`Set(${pickVar(c)}, Blank())`));
@@ -532,7 +546,11 @@ export function seededVars(project) {
 export function onStartFx(project) {
   const parts = seededVars(project).map(([k, v]) => `Set(${k}, ${v})`);
   const lists = usedLists(project);
-  for (const l of lists) if (formListUsed(project, l)) parts.push(`Set(${varSel(l)}, Defaults(${q(l)}))`);
+  const dl = deepLinkInfo(project);
+  for (const l of lists) {
+    if (dl && dl.list === l) parts.push(`Set(${varSel(l)}, If(IsBlank(Param("ID")), Defaults(${q(l)}), LookUp(${q(l)}, ID = Value(Param("ID")))))`);
+    else if (formListUsed(project, l)) parts.push(`Set(${varSel(l)}, Defaults(${q(l)}))`);
+  }
   if (project.app.onStart?.trim()) parts.push(project.app.onStart.trim().replace(/^=/, ''));
   return parts.join(';\n');
 }
@@ -546,6 +564,11 @@ function formListUsed(project, list) {
 export function startScreenName(project) {
   return (project.screens.find((x) => x.id === project.app.startScreen) || project.screens[0])?.name;
 }
+/** App.StartScreen formula (without "="). With a deep-link screen: open it when the link carries ?ID=. */
+export function startScreenFx(project) {
+  const start = startScreenName(project), dl = deepLinkInfo(project);
+  return dl && dl.screen.name !== start ? `If(IsBlank(Param("ID")), ${start}, ${dl.screen.name})` : start;
+}
 export function usedLists(project) {
   const set = new Set();
   for (const scr of project.screens) for (const [c] of walk(scr.controls)) {
@@ -554,6 +577,7 @@ export function usedLists(project) {
     if (c.bind?.list) set.add(c.bind.list);
     Object.values(c.actions || {}).flat().forEach((a) => a.list && set.add(a.list));
   }
+  const dl = deepLinkInfo(project); if (dl) set.add(dl.list);
   return [...set].filter((l) => project.lists.some((x) => x.name === l));
 }
 export function usesPeople(project) {
@@ -568,7 +592,13 @@ export function checklist(project) {
   steps.push('App → Formulas: paste the App.Formulas text (it holds the theme).');
   if (onStartFx(project)) steps.push('App → OnStart: expand the formula bar first, paste the OnStart text, then App → Run OnStart.');
   steps.push(`For each screen: delete the default Screen1 (or the old copy), click the empty canvas area, press Ctrl+V with that screen's YAML copied.`);
-  steps.push(`App → StartScreen: =${startScreenName(project)}`);
+  steps.push(`App → StartScreen: =${startScreenFx(project)}`);
+  const flows = project.flows || [];
+  if (flows.length) {
+    steps.push(`Flows: in Power Automate, My flows → Import → Import Package (Legacy). Upload each flow .zip, set Import setup to "Create as new", pick your SharePoint and Office 365 Outlook connections, Import, then open the flow and turn it on.`);
+    const btn = flows.filter((f) => f.kind === 'button');
+    if (btn.length) steps.push(`Button flows: in Power Apps Studio, Power Automate (left bar) → Add flow → ${btn.map((f) => `"${f.name}" (it appears as ${flowFxName(f.name)})`).join(', ')}. Do this before pasting screens that run them, or retype the red names afterwards.`);
+  }
   if (usesPeople(project)) steps.push('People pickers: type a name in Play mode. If results are blank, check the field casing with intellisense on First(Office365Users.SearchUser({searchTerm:"a"})). and adjust DisplayName / Mail.');
   steps.push('Press Play (F5) and test from the start screen: OnVisible and timers do not run on the editing canvas.');
   steps.push('Only expected warnings left should be delegation warnings (CountRows, Choice filters). Raise the data row limit to 2000 in Settings if your lists are small.');
@@ -578,7 +608,7 @@ export function checklist(project) {
 // ---------------------------------------------------------------- PnP provisioning script
 const xmlEsc = (t) => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/'/g, '&apos;').replace(/"/g, '&quot;');
 const psEsc = (t) => String(t).replace(/'/g, "''");
-export const internalName = (n) => String(n).replace(/[^A-Za-z0-9_]/g, '') || 'Field';
+export const internalName = flowInternalName;
 export function provisioningScript(project) {
   const lists = [...project.lists];
   // lookup targets first
@@ -667,6 +697,9 @@ export const LINT_RULES = {
   PS037: 'Input on a Save screen is not bound to a column', PS038: 'Row control shows a column of a different list',
   PS039: 'Open this row uses a different list than the gallery', PS040: 'Clickable control covered by a later control',
   PS041: 'Visible depends on a variable nothing sets', PS042: 'Screen OnVisible uses Navigate via custom action',
+  PS043: 'Flow has no list', PS044: 'Flow has no valid recipient', PS045: 'Flow needs the SharePoint site URL',
+  PS046: 'Flow watch column missing or not Choice', PS047: 'Email link needs the app link and a deep-link screen',
+  PS048: 'Unknown {token} in a flow email', PS049: 'Run a flow action without a button flow', PS050: 'Two flows with the same Power Apps name',
 };
 const overlap = (a, b) => Math.max(0, Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x)) * Math.max(0, Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y));
 const PASSIVE_COVER = new Set(['label', 'card', 'rect', 'html', 'image', 'icon', 'badge']);
@@ -740,6 +773,7 @@ export function lint(project) {
         }
         if ((a.type === 'setVar' || a.type === 'toggleVar') && a.name && !IDENT.test(a.name)) add('error', 'PS025', where, `Variable name "${a.name}" is not valid.`);
         if (a.type === 'custom' && /\bNavigate\(/.test(a.fx || '') && ev === 'OnVisible') add('error', 'PS042', where, 'Navigate() is not allowed in OnVisible.');
+        if (a.type === 'runFlow' && !(project.flows || []).some((f) => f.id === a.flow && f.kind === 'button')) add('error', 'PS049', where, `${ev}: "Run a flow" needs a flow of the "Run from a button" kind (Flows tab).`);
       }
     }
     // clickable controls covered by later siblings (later = in front and takes the click)
@@ -771,6 +805,8 @@ export function lint(project) {
       if (c.type === 'Lookup' && !project.lists.some((x) => x.name === c.lookupList)) addG('error', 'PS034', w, 'Lookup column needs a target list from the data model.');
     }
   }
+  flowLint(project, addG);
+  if (project.app.deepLink?.screen && !deepLinkInfo(project)) addG('warn', 'PS047', 'App', 'The email-link screen or its list no longer exists; pick them again on the App tab.');
   for (const scr of project.screens) for (const [c] of walk(scr.controls)) if (c.bind?.kind === 'count') { addG('info', 'PS035', `${scr.name} › ${c.name}`, 'CountRows over a SharePoint list is not delegable: counts stop at the data row limit (500 by default, 2000 max).'); break; }
   return F;
 }

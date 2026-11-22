@@ -10,6 +10,7 @@ A browser-only Power Apps canvas app designer for satechitsolutions.com. There i
 4. **Play**: runs the app against sample data, including search, open, edit, save, delete, approve/reject, variables and people pickers.
 5. **Get YAML**: App.Formulas, App.OnStart, App.StartScreen and one paste-ready YAML block per screen. It also produces a lint report, a PnP provisioning script, the project JSON and a zip of everything.
 6. **Import**: paste YAML copied from Power Apps Studio (or a `Src/*.pa.yaml` file) to keep editing it here.
+7. **Flows**: Power Automate flows for the app's lists, exported as legacy flow packages. There are four templates: email on a new item, email when a Choice column changes, a daily reminder, and a flow a button runs. The email editor uses `{Column}` tokens and `{Link}`, which deep-links into the app. Play mode shows which flows would fire.
 
 ## Files
 
@@ -23,6 +24,8 @@ A browser-only Power Apps canvas app designer for satechitsolutions.com. There i
 | `js/templates.js` | Scenarios, screen templates, insertable blocks |
 | `js/import.js` | YAML import with name-clash renaming |
 | `js/ui.js` | Designer UI: canvas, panels, inspector, dialogs, Play |
+| `js/flows.js` | Flow model and templates, Logic Apps definitions, legacy package files (`flowPackageFiles`), tokens to expressions, deep link (`deepLinkInfo`), flow lint |
+| `js/flowsui.js` | Flows tab, new-flow picker, flow editor with email preview, package download, tenant-sample loader |
 | `tests/run.mjs` | Test harness: no dependencies beyond Node 18+ and the vendored js-yaml |
 | `vendor/` | js-yaml 4.1.0 and JSZip 3.10.1, served locally |
 
@@ -70,6 +73,11 @@ Every finding has a stable code. To silence one rule on one control, put `lint-o
 | PS038, PS039 | warn | Row control or "Open this row" refers to a different list than its gallery |
 | PS040 | warn | A later control sits in front of a clickable one and takes its clicks |
 | PS041 | warn | Visible depends on a variable that nothing sets |
+| PS043–PS046 | error | Flow without a list, a valid recipient or the site URL, or watching a column that is not Choice |
+| PS047 | warn | `{Link}` without the app web link, or without a screen set to open items from email links |
+| PS048 | warn | Unknown `{token}` in a flow email |
+| PS049 | error | "Run a flow" action without a flow of the button kind |
+| PS050 | error | Two flows with the same Power Apps name once spaces are removed |
 
 To add a rule, give it the next code in `LINT_RULES`, implement it in `lint()` in `js/emit.js`, and add a failing case to the "lint rules fire" test in `tests/run.mjs`.
 
@@ -109,3 +117,32 @@ When the canvas has focus (click it, or Tab to it):
 - Delete removes the selection. Ctrl+C, Ctrl+V and Ctrl+D copy, paste and duplicate. Ctrl+Z and Ctrl+Y undo and redo.
 - Escape deselects, after which Tab leaves the canvas.
 - F5 opens Play.
+
+## Flows
+
+Each flow downloads as a `.zip` in the legacy package layout Power Automate exports:
+
+```
+manifest.json
+Microsoft.Flow/flows/manifest.json
+Microsoft.Flow/flows/<key>/definition.json
+Microsoft.Flow/flows/<key>/apisMap.json
+Microsoft.Flow/flows/<key>/connectionsMap.json
+```
+
+To install one: My flows → Import → **Import Package (Legacy)** → upload the zip → **Create as new** → pick your SharePoint and Office 365 Outlook connections → Import → turn the flow on. Packages contain no connection ids, so they import into any tenant.
+
+What each template builds:
+
+| Template | Trigger | Actions |
+|---|---|---|
+| When an item is created | SharePoint `GetOnNewItems` | Send an email (V2) |
+| When a column changes | SharePoint `GetOnUpdatedItems` | `GetItemChanges` (needs version history), a Condition on `ColumnHasChanged` and the new value, then Send an email (V2) |
+| Daily reminder | Recurrence at a set hour and time zone | Get items with an OData `$filter` (value and age), then Apply to each → Send an email (V2) |
+| Run from a button | Power Apps (V2) with an `ItemID` number | Get item, Send an email (V2), Respond to a PowerApp |
+
+Flows read columns by internal name, which is the column name without spaces, the same as the provisioning script creates. In the app, "Run a flow" emits `FlowName.Run(varSelList.ID)` inside the 3-argument `IfError`. The name is the flow's display name without spaces or symbols, and the button flow must be added in Studio's Power Automate pane.
+
+Email links: set the app web link and the screen that opens items (App tab). `App.StartScreen` becomes `If(IsBlank(Param("ID")), <start>, <screen>)`. OnStart and that screen's OnVisible both load the item from `Param("ID")`, so the non-blocking OnStart cannot overwrite it.
+
+The flow packages have not yet been import-tested in a real tenant. To match a tenant's export exactly, load one of its own exported flow packages under Flows → Tenant sample; connector display names, icons and connection names are copied from it.
