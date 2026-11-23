@@ -5,8 +5,8 @@ import { screenYaml, themeFormulas, onStartFx, startScreenName, startScreenFx, c
 import { flowDefinition, flowFileName, flowFxName, FLOW_KINDS } from './flows.js';
 import { initDescribeUI, describeDialog } from './describeui.js';
 import { initFlowsUI, panelFlows, addFlowDialog, flowDialog, downloadFlow, duplicateFlow, deleteFlow, loadFlowSample, flowZipBlob } from './flowsui.js';
-import { renderControl, renderScreen, createRuntime, svgIcon, FONT_CSS } from './render.js';
-import { SCENARIOS, generateApp, SCREEN_TEMPLATES, genBlank, genHome, genBrowse, genDetail, genEdit, genApprovals, BLOCKS, insertBlock, galleryRows } from './templates.js';
+import { renderControl, renderScreen, createRuntime, svgIcon, FONT_CSS, tryFx } from './render.js';
+import { SCENARIOS, generateApp, SCREEN_TEMPLATES, genBlank, genHome, genBrowse, genDetail, genEdit, genApprovals, genLoading, BLOCKS, insertBlock, galleryRows } from './templates.js';
 import { importYaml } from './import.js';
 import { ICONS, ICON_NAMES } from './icons.js';
 
@@ -124,9 +124,9 @@ function renderCanvas() {
 }
 /** Design view previews formulas against the first sample row of each list. */
 function designEnv() {
-  const vars = {}; for (const l of P.lists) vars[varSel(l.name)] = SAMPLE[l.name]?.[0] || {};
+  const vars = { varIsAdmin: true, locInited: true, locStep: 2 }; for (const l of P.lists) vars[varSel(l.name)] = SAMPLE[l.name]?.[0] || {};
   const noop = () => {};
-  return { project: P, theme: P.theme, mode: 'design', sample: SAMPLE, rt: { db: SAMPLE, vars, inputs: {}, galSel: {}, ctlValues: {}, api: { navigate: noop, back: noop, toast: noop, launch: noop } } };
+  return { project: P, theme: P.theme, mode: 'design', sample: SAMPLE, showHidden: S.showHidden, selIds: new Set(S.sel), rt: { db: SAMPLE, vars, inputs: {}, galSel: {}, ctlValues: {}, api: { navigate: noop, back: noop, toast: noop, launch: noop } } };
 }
 function zoomValue() {
   if (S.zoom !== 'fit') return S.zoom;
@@ -146,7 +146,16 @@ function absRect(found) {
   if (!parent) return { x: ctl.x, y: ctl.y, w: ctl.w, h: ctl.h };
   return { x: parent.x + ctl.x, y: parent.y + ctl.y, w: ctl.w, h: ctl.h };
 }
+let lastSelKey = '';
 function drawOverlay(guides = []) {
+  // selecting or deselecting a control that is conditionally hidden re-renders so it shows while selected
+  const key = S.sel.join(',');
+  if (key !== lastSelKey) {
+    const was = new Set(lastSelKey ? lastSelKey.split(',') : []);
+    lastSelKey = key;
+    const cond = (id) => { const f = findCtl(P, id); return f && (f.ctl.visibleWhen?.var || f.ctl.fx?.Visible); };
+    if ([...was, ...S.sel].some(cond) && !S.showHidden) { renderCanvasQuick(); return; }
+  }
   const ov = $('#overlay'); ov.innerHTML = '';
   const z = zoomValue(), items = selCtls();
   for (const f of items) {
@@ -950,7 +959,7 @@ function askText(title, label, value = '', area = false) {
 function newScreenDialog() {
   const lists = P.lists;
   const m = modal(`<div class="modal-h"><h2>New screen</h2><button class="mini" data-close>${ui('close')}</button></div>
-    <div class="modal-b"><div class="picks" id="tplPicks">${Object.entries(SCREEN_TEMPLATES).map(([k, t], i) => `<label><input type="radio" name="tpl" value="${k}" ${i === 0 ? 'checked' : ''}><span><b>${esc(t.label)}</b><small>${{ blank: 'A header and an empty canvas.', home: 'Welcome, KPI counts and tiles to your other screens.', browse: 'Search box and a gallery of the list; tap a row to open it.', detail: 'Every column of the selected item, with Edit and Delete.', edit: 'Inputs for every column with Save and Cancel, for new and existing items.', approvals: 'Queue of items waiting for a decision with Approve / Reject.' }[k]}</small></span></label>`).join('')}</div>
+    <div class="modal-b"><div class="picks" id="tplPicks">${Object.entries(SCREEN_TEMPLATES).map(([k, t], i) => `<label><input type="radio" name="tpl" value="${k}" ${i === 0 ? 'checked' : ''}><span><b>${esc(t.label)}</b><small>${{ blank: 'A header and an empty canvas.', home: 'Welcome, KPI counts and tiles to your other screens.', browse: 'Search box and a gallery of the list; tap a row to open it.', detail: 'Every column of the selected item, with Edit and Delete.', edit: 'Inputs for every column with Save and Cancel, for new and existing items.', approvals: 'Queue of items waiting for a decision with Approve / Reject.', loading: 'Animated monogram and progress ring, then opens your home screen. Becomes the start screen.' }[k]}</small></span></label>`).join('')}</div>
       <div class="grid2">${F('List', `<select id="tplList">${listOptions(lists[0]?.name, !lists.length, '(no lists yet)')}</select>`)}${F('Screen name (optional)', '<input id="tplName" placeholder="scrSomething">')}</div></div>
     <div class="modal-f"><button class="btn" data-close>Cancel</button><button class="btn pri" id="tplGo">Add screen</button></div>`, 'md');
   m.el.querySelector('#tplGo').onclick = () => {
@@ -967,13 +976,21 @@ function newScreenDialog() {
     if (k === 'detail') scr = genDetail(P, list, { ...opts, editScreen: findScr('scrEdit') });
     if (k === 'edit') scr = genEdit(P, list, opts);
     if (k === 'approvals') scr = genApprovals(P, list, { ...opts, back: true });
+    if (k === 'loading') {
+      if (P.screens.some((s) => s.role === 'loading')) { toast('This app already has a loading screen', true); return; }
+      const next = P.screens.find((s) => /^scrHome/.test(s.name)) || P.screens[0];
+      if (!next) { toast('Add the screen it should open first (for example a Home dashboard)', true); return; }
+      P.app.features = { ...(P.app.features || {}), loading: true };
+      scr = genLoading(P, { next: next.id, lists: P.lists.map((l) => l.name) });
+      P.app.startScreen = scr.id;
+    }
     S.screenId = scr.id; S.sel = []; m.close(); renderAll(); commit();
   };
 }
 
 // requirements wizard
 function wizard(first = false) {
-  const wz = { step: 1, scen: 'requests', name: SCENARIOS.requests.app, ff: P?.app.formFactor || 'tablet', lists: SCENARIOS.requests.lists(), screens: new Set(['home', 'browse', 'detail', 'edit']), approvals: true, theme: P?.theme?.name || THEME_PRESETS[0].name };
+  const wz = { step: 1, scen: 'requests', name: SCENARIOS.requests.app, ff: P?.app.formFactor || 'tablet', lists: SCENARIOS.requests.lists(), screens: new Set(['home', 'browse', 'detail', 'edit']), approvals: true, theme: P?.theme?.name || THEME_PRESETS[0].name, ft: { loading: true, confirm: true, stepper: true, scope: 'all', usage: false, adminGroup: '' } };
   const m = modal(`<div class="modal-h"><h2>${first ? 'Build a Power App' : 'New app from requirements'}</h2><div class="steps" id="wzSteps"></div><button class="mini" data-close>${ui('close')}</button></div><div class="modal-b" id="wzBody"></div>
     <div class="modal-f"><span class="grow" id="wzNote"></span>${first ? '<button class="btn" id="wzBlank">Start with a blank canvas</button>' : ''}<button class="btn" id="wzBack">Back</button><button class="btn pri" id="wzNext">Next</button></div>`);
   const body = m.el.querySelector('#wzBody');
@@ -1006,10 +1023,16 @@ function wizard(first = false) {
         ${pk('browse', 'Browse', 'Search plus a gallery of items.')}${pk('detail', 'Details', 'Every column of one item, with Edit and Delete.')}${pk('edit', 'New / edit form', 'Validated inputs for every column, with Save.')}
         ${appr.length ? `<label><input type="checkbox" id="wzAppr" ${wz.approvals ? 'checked' : ''}><span><b>Approvals queue</b><small>Approve / reject items in <select id="wzApprList">${appr.map((l) => `<option>${esc(l.name)}</option>`).join('')}</select></small></span></label>` : ''}
       </div></div><div><div class="sub" style="margin-top:0">Look</div><div class="presets">${THEME_PRESETS.map((p) => `<button class="preset ${p.name === wz.theme ? 'on' : ''}" data-wtheme="${esc(p.name)}"><div class="bar">${['HeaderBg', 'Primary', 'Accent', 'Bg', 'Surface'].map((k) => `<i style="background:${p.colors[k]}"></i>`).join('')}</div><span>${esc(p.name)}</span></button>`).join('')}</div>
-      <p class="note">Fine-tune colors, font and corners on the Theme tab later.</p></div></div>`;
+      <p class="note">Fine-tune colors, font and corners on the Theme tab later.</p>
+      <div class="sub">Extras</div><div class="picks">
+        ${[['loading', 'Animated loading screen', 'Your app\'s monogram flies in while lists load. Opens the home screen when ready.'], ['confirm', 'Confirmation page', 'A "submitted" page after a new item is saved, with Add another and Done.'], ['stepper', 'Status stepper', 'Details show the item\'s progress through its status values.'], ['mine', 'Show "Mine" first', 'Lists open filtered to items the signed-in person created.'], ['usage', 'Track app usage', 'One row per user in an AppUsage list: first and last visit, visit count.']].map(([k, t, d]) => `<label><input type="checkbox" data-ft="${k}" ${k === 'mine' ? (wz.ft.scope === 'mine' ? 'checked' : '') : wz.ft[k] ? 'checked' : ''}><span><b>${t}</b><small>${d}</small></span></label>`).join('')}
+      </div>
+      <label class="f"><span>Admin group ID <small>(optional: Microsoft 365 group whose members can approve and delete)</small></span><input id="wzAdmin" value="${esc(wz.ft.adminGroup)}" placeholder="00000000-0000-0000-0000-000000000000"></label></div></div>`;
       body.querySelectorAll('[data-scr]').forEach((x) => x.onchange = () => { x.checked ? wz.screens.add(x.dataset.scr) : wz.screens.delete(x.dataset.scr); });
       body.querySelector('#wzAppr')?.addEventListener('change', (e) => (wz.approvals = e.target.checked));
       body.querySelectorAll('[data-wtheme]').forEach((b) => b.onclick = () => { wz.theme = b.dataset.wtheme; draw(); });
+      body.querySelectorAll('[data-ft]').forEach((x) => x.onchange = () => { if (x.dataset.ft === 'mine') wz.ft.scope = x.checked ? 'mine' : 'all'; else wz.ft[x.dataset.ft] = x.checked; });
+      body.querySelector('#wzAdmin').oninput = (e) => (wz.ft.adminGroup = e.target.value.trim());
     }
   };
   m.el.querySelector('#wzBack').onclick = () => { wz.step--; draw(); };
@@ -1030,6 +1053,8 @@ function wizard(first = false) {
     const apprList = body.querySelector('#wzApprList')?.value;
     const sc = SCENARIOS[wz.scen];
     const approvals = wz.approvals && apprList ? (sc.approvals?.list === apprList ? sc.approvals : { list: apprList }) : null;
+    if (wz.ft.adminGroup && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(wz.ft.adminGroup)) { toast('The admin group ID should look like 00000000-0000-0000-0000-000000000000 (Entra → Groups → Object ID)', true); return; }
+    p.app.features = { ...wz.ft };
     generateApp(p, { screens: [...wz.screens], approvals });
     if (!p.screens.length) p.screens.push(newScreen(p, 'scrHome'));
     m.close();
@@ -1159,11 +1184,11 @@ function play() {
   commit();
   if (!P.screens.length) return;
   const bg = document.createElement('div'); bg.className = 'play-bg';
-  bg.innerHTML = `<div class="play-bar"><b>▶ ${esc(P.app.name)}</b><select id="plScr" aria-label="Jump to screen"></select><button class="tb" id="plRestart">Restart</button><span class="grow">Sample data · changes are not saved · Esc to close</span><button class="tb primary" id="plClose">Close</button></div><div class="play-stage"><div class="play-frame" id="plFrame"><div class="screen" id="plScreen"></div></div></div>`;
+  bg.innerHTML = `<div class="play-bar"><b>▶ ${esc(P.app.name)}</b><select id="plScr" aria-label="Jump to screen"></select><button class="tb" id="plRestart">Restart</button>${P.app.features?.adminGroup ? '<label class="pl-admin"><input type="checkbox" id="plAdmin" checked>Signed in as an admin</label>' : ''}<span class="grow">Sample data · changes are not saved · Esc to close</span><button class="tb primary" id="plClose">Close</button></div><div class="play-stage"><div class="play-frame" id="plFrame"><div class="screen" id="plScreen"></div></div></div>`;
   document.body.appendChild(bg);
   let rt, toastTimer, focusSave = null;
   const hooks = {
-    rerender: () => draw(),
+    rerender: (o) => draw(o),
     toast: (t, kind) => { void toastTimer; let box = bg.querySelector('.play-toasts'); if (!box) { box = document.createElement('div'); box.className = 'play-toasts'; bg.querySelector('#plFrame').appendChild(box); } const d = document.createElement('div'); d.className = 'play-toast ' + (kind || ''); d.textContent = t; box.appendChild(d); while (box.children.length > 4) box.firstChild.remove(); setTimeout(() => d.remove(), kind === 'flow' ? 4200 : 2400); },
   };
   let soon = 0;
@@ -1174,20 +1199,38 @@ function play() {
     const fr = bg.querySelector('#plFrame'); fr.style.width = f.w * z + 'px'; fr.style.height = f.h * z + 'px';
     bg.querySelector('#plScreen').style.transform = `scale(${z})`;
   };
-  function draw() {
+  // timers: run the current screen's auto-start timers (loading screens, polling), like the real app
+  let timerScreen = null, timers = [];
+  const stopTimers = () => { timers.forEach(clearInterval); timers = []; };
+  const startTimers = (scr) => {
+    stopTimers(); timerScreen = scr.id;
+    for (const [c] of walk(scr.controls)) {
+      if (c.type !== 'timer' || !c.props.autoStart) continue;
+      const h = setInterval(() => {
+        if (!rt || rt.current()?.id !== scr.id) return;
+        if (c.fx?.Start && !tryFx(c.fx.Start, { project: P, rt }, true)) return;
+        rt.run(scr, c.actions?.OnTimerEnd, null, { diff: true });
+        if (!c.props.repeat) clearInterval(h);
+      }, Math.max(100, Number(c.props.duration) || 1000));
+      timers.push(h);
+    }
+  };
+  function draw(opts = {}) {
     const a = document.activeElement, host = bg.querySelector('#plScreen');
     if (a && host.contains(a)) { const c = a.closest('.pa-ctl'); focusSave = c ? { id: c.dataset.id, s: a.selectionStart, e: a.selectionEnd } : null; } else focusSave = null;
     const scr = rt.current();
-    renderScreen(host, scr, env());
+    renderScreen(host, scr, env(), { diff: !!opts.diff });
+    if (timerScreen !== scr.id) startTimers(scr);
     bg.querySelector('#plScr').innerHTML = P.screens.map((s) => `<option value="${s.id}" ${s.id === scr.id ? 'selected' : ''}>${esc(s.name)}</option>`).join('');
     if (focusSave) { const el = host.querySelector(`[data-id="${focusSave.id}"] input, [data-id="${focusSave.id}"] textarea`); if (el) { el.focus(); try { el.setSelectionRange(focusSave.s, focusSave.e); } catch { /* date inputs */ } } }
     fit();
   }
-  const start = () => { rt = createRuntime(P, hooks); rt.hooks = hooks; const s = rt.current(); if (s?.onVisible) { /* evaluated by runtime on navigate */ } draw(); };
+  const start = () => { stopTimers(); timerScreen = null; rt = createRuntime(P, hooks); rt.hooks = hooks; const ad = bg.querySelector('#plAdmin'); if (ad) rt.vars.varIsAdmin = ad.checked; draw(); };
+  bg.querySelector('#plAdmin')?.addEventListener('change', (e) => { rt.vars.varIsAdmin = e.target.checked; draw(); });
   start();
   bg.querySelector('#plScr').onchange = (e) => { rt.api.navigate(e.target.value); draw(); };
   bg.querySelector('#plRestart').onclick = start;
-  const close = () => { bg.remove(); window.removeEventListener('resize', fit); document.removeEventListener('keydown', onKey, true); };
+  const close = () => { stopTimers(); bg.remove(); window.removeEventListener('resize', fit); document.removeEventListener('keydown', onKey, true); };
   const onKey = (e) => { if (e.key === 'Escape') { e.stopPropagation(); close(); } };
   bg.querySelector('#plClose').onclick = close;
   window.addEventListener('resize', fit); document.addEventListener('keydown', onKey, true);
@@ -1288,6 +1331,7 @@ function init() {
   $('#screenTabs').addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; if (b.dataset.cmd) return runCmd(b.dataset.cmd, b); S.screenId = b.dataset.scr; S.sel = []; renderTabs(); renderCanvas(); renderInspector(); renderPanelIf('screens'); renderPanelIf('layers'); });
   $$('[data-zoom]').forEach((b) => b.onclick = () => { const z = zoomValue(); S.zoom = Math.max(0.2, Math.min(2, Math.round((z + (b.dataset.zoom === '+' ? 0.1 : -0.1)) * 10) / 10)); applyZoom(); drawOverlay(); });
   $('#zoomVal').onclick = zoomFit;
+  $('#showHidden').onchange = (e) => { S.showHidden = e.target.checked; renderCanvas(); };
   window.addEventListener('resize', () => { if (S.zoom === 'fit') { applyZoom(); drawOverlay(); } });
 
   // canvas

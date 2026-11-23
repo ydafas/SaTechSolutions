@@ -1,7 +1,7 @@
 // render.js — draws controls in the designer and runs them in Play mode.
 // Play mode simulates the generated app against sample data: navigation, galleries,
 // search, forms that save, approve/reject, variables, Visible conditions, notifications.
-import { cssColor, displayValue, colOf, varSel, walk, sampleRows, PEOPLE, FORM_FACTORS, hasActions } from './core.js';
+import { cssColor, displayValue, colOf, varSel, walk, sampleRows, PEOPLE, FORM_FACTORS, hasActions, slug, INPUT_TYPES } from './core.js';
 import { ICONS } from './icons.js';
 import { flowsFor, recipientsText } from './flows.js';
 
@@ -95,7 +95,7 @@ function parse(src) {
   if (i < T.length) throw new FxError('trailing');
   return ast;
 }
-const blank = (v) => v == null || v === '' || (typeof v === 'object' && !Array.isArray(v) && Object.keys(v).length === 0);
+const blank = (v) => v == null || v === '' || (Array.isArray(v) ? v.length === 0 : typeof v === 'object' && Object.keys(v).length === 0);
 const toText = (v) => (v == null ? '' : typeof v === 'object' ? (v.DisplayName || v.Value || '') : typeof v === 'boolean' ? (v ? 'true' : 'false') : String(v));
 const cache = new Map();
 export function evalFx(src, env) {
@@ -108,7 +108,7 @@ export function tryFx(src, env, fallback) { try { return evalFx(src, env); } cat
 const themeCache = new WeakMap();
 function themeRecord(th) {
   if (themeCache.has(th)) return themeCache.get(th);
-  const r = { Radius: th.radius, Font: th.font };
+  const r = { Radius: th.radius, Font: th.font, FontCss: (FONT_CSS[th.font] || FONT_CSS['Segoe UI']).replace(/'/g, '') };
   for (const [k, v] of Object.entries(th.colors)) { r[k] = v; r[k + 'Hex'] = v; }
   themeCache.set(th, r); return r;
 }
@@ -129,6 +129,7 @@ function ev(n, env) {
     case 'arr': return n.items.map((x) => ({ Value: ev(x, env) }));
     case 'id': {
       const v = n.v;
+      if (env.scope && v in env.scope) return env.scope[v];
       if (v === 'ThisItem') return env.row || {};
       if (v === 'appTheme' && env.project) return themeRecord(env.project.theme);
       if (v === 'Self') return {};
@@ -137,6 +138,8 @@ function ev(n, env) {
       if (env.project?.lists.some((l) => l.name === v)) return { __list: v };
       if (env.project?.screens.some((s) => s.name === v)) return { __screen: v };
       if (/^(var|loc|gbl|_)/.test(v)) return undefined;
+      const inputCtl = rt && env.project && inputByName(env.project, rt, v);
+      if (inputCtl) return inputCtl;
       throw new FxError('unknown ' + v);
     }
     case 'dot': {
@@ -209,14 +212,36 @@ function call(n, env) {
     case 'Notify': rt?.api.toast(toText(A(0))); return true;
     case 'Launch': rt?.api.launch(toText(A(0))); return true;
     case 'Reset': case 'Refresh': case 'Select': case 'ClearCollect': case 'Collect': case 'Clear': return true;
-    case 'ColorValue': case 'RGBA': case 'ColorFade': return undefined;
+    case 'RGBA': { const [r, g, b, a] = [0, 1, 2, 3].map((i) => Number(A(i)) || 0); return `rgba(${r},${g},${b},${a})`; }
+    case 'ColorValue': return toText(A(0));
+    case 'ColorFade': return A(0);
+    case 'With': { const rec = A(0) || {}; return ev(n.args[1], { ...env, scope: { ...(env.scope || {}), ...rec } }); }
+    case 'IfError': {
+      let v;
+      try { v = A(0); } catch { return n.args.length > 1 ? A(1) : undefined; }
+      return n.args.length > 2 ? A(2) : v;
+    }
+    case 'Hour': { const d = new Date(); return d.getHours(); }
+    case 'Minute': return new Date().getMinutes();
+    case 'Split': return toText(A(0)).split(toText(A(1))).map((Value) => ({ Value }));
+    case 'First': { const t = A(0); return Array.isArray(t) ? t[0] : t?.__list ? (rt?.db[t.__list] || [])[0] : undefined; }
+    case 'Last': { const t = A(0); return Array.isArray(t) ? t[t.length - 1] : undefined; }
+    case 'Left': return toText(A(0)).slice(0, Number(A(1)) || 0);
+    case 'Right': { const x = toText(A(0)); return x.slice(Math.max(0, x.length - (Number(A(1)) || 0))); }
+    case 'Substitute': return toText(A(0)).split(toText(A(1))).join(toText(A(2)));
+    case 'Round': return Math.round(Number(A(0)) * 10 ** (Number(A(1)) || 0)) / 10 ** (Number(A(1)) || 0);
+    case 'Max': return Math.max(...n.args.map((_, i) => Number(A(i)) || 0));
+    case 'Min': return Math.min(...n.args.map((_, i) => Number(A(i)) || 0));
+    case 'Table': return n.args.map((_, i) => A(i));
+    case 'Concat': { const t = A(0); const rows = Array.isArray(t) ? t : rt?.db[t?.__list] || []; const sep = n.args[2] ? toText(A(2)) : ''; return rows.map((row) => toText(ev(n.args[1], { ...env, scope: { ...(env.scope || {}), ...row } }))).join(sep); }
+    case 'Param': return undefined;
+    case 'Patch': case 'Remove': throw new FxError('data write');
   }
   throw new FxError('fn ' + n.f);
 }
 function tryFx2(ast, env) {
   // evaluate a filter predicate with the row's columns in scope as bare names
-  const scoped = { ...env, rt: { ...env.rt, vars: { ...(env.rt?.vars || {}), ...(env.row || {}) } } };
-  try { return ev(ast, scoped); } catch { return true; }
+  try { return ev(ast, { ...env, scope: { ...(env.scope || {}), ...(env.row || {}) } }); } catch { return true; }
 }
 
 // ============================================================ runtime
@@ -227,6 +252,7 @@ export function createRuntime(project, hooks) {
   const start = project.screens.find((s) => s.id === project.app.startScreen) || project.screens[0];
   rt.screen = start?.id;
   for (const l of project.lists) rt.vars[varSel(l.name)] = {};
+  rt.vars.varIsAdmin = true; // Play signs you in as an admin; the Play bar can switch it off
   const scr = () => project.screens.find((s) => s.id === rt.screen);
   rt.api = {
     navigate(idOrName) {
@@ -242,14 +268,32 @@ export function createRuntime(project, hooks) {
     for (const [c] of walk(s.controls)) delete rt.inputs[c.name];
     if (s.onVisible) tryFx(s.onVisible, { project, rt });
   }
-  rt.run = (screen, actions, row) => {
+  rt.run = (screen, actions, row, opts) => {
+    const at = rt.screen;
     for (const a of actions || []) if (runAction(project, rt, screen, a, row) === false) break;
-    hooks.rerender();
+    hooks.rerender(opts?.diff && rt.screen === at ? { diff: true } : undefined);
   };
   rt.current = scr;
   rt.hooks = hooks;
   if (start) onVisible(start);
   return rt;
+}
+
+/** An input control on the current screen as Power Fx sees it (Text, Selected, SelectedItems, SelectedDate, Value). */
+function inputByName(project, rt, name) {
+  const s = project.screens.find((x) => x.id === rt.screen);
+  if (!s) return null;
+  const ctl = [...walk(s.controls)].map(([c]) => c).find((c) => c.name === name);
+  if (!ctl || !['textinput', 'dropdown', 'person', 'datepicker', 'checkbox', 'toggle'].includes(ctl.type)) return null;
+  const val = inputValue(project, rt, ctl);
+  return { __ctl: true, get: (m) => {
+    if (m === 'Text') return val == null ? '' : String(val);
+    if (m === 'Selected') return ctl.type === 'person' ? (val || undefined) : val === '' || val == null ? undefined : { Value: val };
+    if (m === 'SelectedItems') return val ? [val] : [];
+    if (m === 'SelectedDate') return val || undefined;
+    if (m === 'Value') return !!val;
+    return undefined;
+  } };
 }
 
 function inputValue(project, rt, ctl) {
@@ -292,8 +336,13 @@ function runAction(project, rt, screen, a, row) {
         if (col.required && (v == null || v === '')) missing.push(col.name);
         rec[col.name] = v;
       }
-      if (missing.length) { rt.api.toast('Save failed. Required: ' + missing.join(', '), 'error'); return false; }
+      if (missing.length) {
+        if (a.validate) { rt.vars['varTriedSave' + slug(a.list)] = true; rt.api.toast('Fill in the required fields: ' + missing.join(', '), 'warning'); }
+        else rt.api.toast('Save failed. Required: ' + missing.join(', '), 'error');
+        return false;
+      }
       const cur = rt.vars[V];
+      const wasNew = !cur?.ID;
       const fired = [];
       if (cur?.ID) {
         const r = rows.find((x) => x.ID === cur.ID);
@@ -302,20 +351,30 @@ function runAction(project, rt, screen, a, row) {
         fired.push(...flowsFor(project, a.list, 'changed', diff));
       }
       else {
-        const r = { ID: Math.max(0, ...rows.map((x) => x.ID)) + 1, Created: new Date().toISOString().slice(0, 10), Modified: new Date().toISOString().slice(0, 10), ...rec };
+        const r = { ID: Math.max(0, ...rows.map((x) => x.ID)) + 1, Created: new Date().toISOString().slice(0, 10), Modified: new Date().toISOString().slice(0, 10), Author: PEOPLE[0], 'Created By': PEOPLE[0], Editor: PEOPLE[0], 'Modified By': PEOPLE[0], ...rec };
         const st = project.lists.find((l) => l.name === a.list)?.columns.find((c) => c.type === 'Choice' && !(c.name in rec));
         if (st) r[st.name] = st.choices[0];
         rows.unshift(r); rt.vars[V] = a.then === 'stay' ? {} : r;
         fired.push(...flowsFor(project, a.list, 'created'));
       }
-      rt.api.toast(a.message || 'Saved', 'success');
+      if (a.validate) rt.vars['varTriedSave' + slug(a.list)] = false;
       fired.forEach((f) => rt.api.toast(`⚡ Flow "${f.name}" would email ${recipientsText(f)}`, 'flow'));
+      if (a.then === 'confirm') {
+        if (wasNew) { rt.vars[V] = {}; rt.vars['varDone' + slug(a.list)] = true; break; }
+        rt.api.toast(a.message || 'Saved', 'success'); rt.api.back(); break;
+      }
+      rt.api.toast(a.message || 'Saved', 'success');
       if (a.then === 'stay') for (const [c] of walk(screen.controls)) delete rt.inputs[c.name];
       after(); break;
     }
     case 'delete': {
       const cur = rt.vars[V];
       if (!cur?.ID) { rt.api.toast('Delete failed. Nothing selected.', 'error'); return false; }
+      if (a.confirm) {
+        const cv = 'varConfirmDelete' + slug(a.list);
+        if (!rt.vars[cv]) { rt.vars[cv] = true; rt.api.toast('Select Delete again to remove this item permanently.', 'warning'); return false; }
+        rt.vars[cv] = false;
+      }
       rt.db[a.list] = (rt.db[a.list] || []).filter((x) => x.ID !== cur.ID);
       rt.vars[V] = {}; rt.api.toast(a.message || 'Deleted', 'success'); after(); break;
     }
@@ -361,7 +420,13 @@ function galleryRowsFor(project, rt, ctl) {
     const col = colOf(project, d.list, d.searchField);
     if (q) rows = rows.filter((r) => displayValue(col, r[d.searchField]).toLowerCase().startsWith(q));
   }
-  if (d.filterField === 'CreatedByMe') rows = rows.filter((_, i) => i % 2 === 0);
+  if (d.scopeVar && rt.vars[d.scopeVar] === 'mine') rows = rows.filter((r) => r.Author?.DisplayName === PEOPLE[0].DisplayName);
+  if (d.statusCtl && d.statusField) {
+    const sv = rt.inputs[d.statusCtl];
+    if (sv && !/^All /.test(sv)) rows = rows.filter((r) => String(r[d.statusField] ?? '') === sv);
+  }
+  if (d.extraFilter) { let ast = null; try { ast = parse(d.extraFilter); } catch { /* shown as-is in the real app */ } if (ast) rows = rows.filter((row) => tryFx2(ast, { project, rt, row })); }
+  if (d.filterField === 'CreatedByMe') rows = rows.filter((r) => r.Author?.DisplayName === PEOPLE[0].DisplayName);
   else if (d.filterField) {
     const col = colOf(project, d.list, d.filterField);
     if (col?.type === 'Person') rows = rows.filter((r) => r[d.filterField]?.DisplayName === PEOPLE[0].DisplayName);
@@ -400,7 +465,9 @@ export function textOf(ctl, env) {
 }
 
 function isVisible(ctl, env) {
-  if (env.mode !== 'play') return true;
+  // Design view shows the same state Play starts in (overlays and empty states hidden), unless the
+  // control is selected or "Show hidden" is on, so conditional layers never block editing.
+  if (env.mode !== 'play' && (env.showHidden || env.selIds?.has(ctl.id) || !env.rt)) return true;
   if (ctl.fx?.Visible) return !!tryFx(ctl.fx.Visible, env, true);
   const v = ctl.visibleWhen;
   if (!v?.var) return true;
@@ -429,25 +496,35 @@ export function renderControl(ctl, env) {
   const play = mode === 'play';
   const click = (handler) => { if (play) { el.style.cursor = 'pointer'; el.addEventListener('click', (e) => { e.stopPropagation(); handler(); }); } };
   const runSel = () => click(() => env.rt.run(env.screen, ctl.actions?.OnSelect, env.row));
+  /** A color property that may be overridden by a Power Fx formula (e.g. an armed Delete button). */
+  const fxc = (prop, fallback) => { if (!ctl.fx?.[prop]) return fallback; const v = tryFx(ctl.fx[prop], { ...env }, undefined); return typeof v === 'string' && v ? v : fallback; };
+  /** Required input left empty after the user tried to save (red 2px border, as in the generated app). */
+  const invalid = () => {
+    if (!play || !ctl.field?.list || !INPUT_TYPES.has(ctl.type)) return false;
+    const col = colOf(env.project, ctl.field.list, ctl.field.column);
+    if (!col?.required || !env.rt.vars['varTriedSave' + slug(ctl.field.list)]) return false;
+    const v = inputValue(env.project, env.rt, ctl);
+    return v == null || (typeof v === 'string' && !v.trim());
+  };
   switch (ctl.type) {
     case 'label': {
-      el.style.cssText += `color:${C(p.color)};background:${C(p.fill)};font:${p.italic ? 'italic ' : ''}${weightCss(p.weight)} ${p.size * PT}px/1.25 ${font};justify-content:${flexAlign(p.align)};text-align:${(p.align || 'Left').toLowerCase()};align-items:${p.valign === 'Top' ? 'flex-start' : p.valign === 'Bottom' ? 'flex-end' : 'center'};`;
+      el.style.cssText += `color:${C(fxc('Color', p.color))};background:${C(fxc('Fill', p.fill))};font:${p.italic ? 'italic ' : ''}${weightCss(p.weight)} ${p.size * PT}px/1.25 ${font};justify-content:${flexAlign(p.align)};text-align:${(p.align || 'Left').toLowerCase()};align-items:${p.valign === 'Top' ? 'flex-start' : p.valign === 'Bottom' ? 'flex-end' : 'center'};`;
       el.innerHTML = `<span>${esc(textOf(ctl, env))}</span>`;
       if (hasActions(ctl)) runSel();
       break;
     }
     case 'button': case 'badge': {
-      let fill = C(p.fill);
+      let fill = C(fxc('Fill', p.fill));
       const txt = textOf(ctl, env);
       if (ctl.type === 'badge') {
         const m = String(p.colorMap || '').split('\n').map((l) => l.split('=')).find(([k]) => k?.trim() && k.trim() === txt);
         if (m) fill = C(m[1].trim());
       }
-      el.style.cssText += `background:${fill};color:${C(p.color)};border:${Number(p.borderThickness) || 0}px solid ${C(p.borderColor)};border-radius:${rad(p.radius)};font:${weightCss(p.weight)} ${p.size * PT}px/1.2 ${font};`;
+      el.style.cssText += `background:${fill};color:${C(fxc('Color', p.color))};border:${Number(p.borderThickness) || 0}px solid ${C(fxc('BorderColor', p.borderColor))};border-radius:${rad(p.radius)};font:${weightCss(p.weight)} ${p.size * PT}px/1.2 ${font};`;
       el.innerHTML = `<span>${esc(txt)}</span>`;
       if (play && ctl.type === 'button') {
         const save = (ctl.actions?.OnSelect || []).find((a) => a.type === 'save');
-        const disabled = save && missingRequired(env.project, env.rt, env.screen, save.list);
+        const disabled = save && !save.validate && missingRequired(env.project, env.rt, env.screen, save.list);
         if (disabled) el.classList.add('pa-disabled');
         else runSel();
       }
@@ -482,7 +559,7 @@ export function renderControl(ctl, env) {
       if (hasActions(ctl)) runSel();
       break;
     case 'textinput': case 'person': {
-      const base = `background:${C('@InputFill')};border:1px solid ${C('@InputBorder')};color:${C('@Text')};font:${p.size * PT}px ${font};`;
+      const base = `background:${C('@InputFill')};border:${invalid() ? `2px solid ${C('@Danger')}` : `1px solid ${C('@InputBorder')}`};color:${C('@Text')};font:${p.size * PT}px ${font};`;
       el.style.cssText += base;
       const multiline = ctl.field ? colOf(env.project, ctl.field.list, ctl.field.column)?.type === 'Note' : p.multiline;
       if (play) {
@@ -524,7 +601,7 @@ export function renderControl(ctl, env) {
     case 'dropdown': {
       const col = ctl.field ? colOf(env.project, ctl.field.list, ctl.field.column) : null;
       const items = col?.type === 'Choice' ? col.choices : col?.type === 'Lookup' ? ((env.rt?.db[col.lookupList] || env.sample?.[col.lookupList] || []).map((r) => r.Title)) : String(p.items || '').split('\n').filter(Boolean);
-      el.style.cssText += `background:${C('@InputFill')};border:1px solid ${C('@InputBorder')};color:${C('@Text')};font:${p.size * PT}px ${font};`;
+      el.style.cssText += `background:${C('@InputFill')};border:${invalid() ? `2px solid ${C('@Danger')}` : `1px solid ${C('@InputBorder')}`};color:${C('@Text')};font:${p.size * PT}px ${font};`;
       const chev = `<i class="pa-chev" style="background:${C('@Primary')}">${svgIcon('chevron', C('@OnPrimary'), 2.4)}</i>`;
       if (play) {
         const sel = document.createElement('select');
@@ -536,7 +613,7 @@ export function renderControl(ctl, env) {
       break;
     }
     case 'datepicker': {
-      el.style.cssText += `background:${C('@InputFill')};border:1px solid ${C('@InputBorder')};color:${C('@Text')};font:${p.size * PT}px ${font};`;
+      el.style.cssText += `background:${C('@InputFill')};border:${invalid() ? `2px solid ${C('@Danger')}` : `1px solid ${C('@InputBorder')}`};color:${C('@Text')};font:${p.size * PT}px ${font};`;
       const ico = `<i class="pa-chev" style="background:${C('@Primary')}">${svgIcon('calendar', C('@OnPrimary'), 2)}</i>`;
       if (play) {
         const d = document.createElement('input'); d.type = 'date'; d.value = inputValue(env.project, env.rt, ctl) || '';
@@ -559,6 +636,7 @@ export function renderControl(ctl, env) {
     case 'gallery': {
       const rowH = Math.max(8, Number(p.templateSize) || 60);
       const rows = play ? galleryRowsFor(env.project, env.rt, ctl) : (env.sample?.[ctl.data?.list || ctl.data?.previewList] || [{}, {}, {}, {}]);
+      if (env.rt?.ctlValues && !env.row) env.rt.ctlValues[ctl.name] = { __ctl: true, get: (m) => (m === 'AllItems' ? rows : m === 'Selected' ? rows.find((r) => r.ID === env.rt.galSel?.[ctl.name]) : undefined) };
       const inner = document.createElement('div'); inner.className = 'pa-gal-in';
       const n = play ? rows.length : Math.max(1, Math.min(rows.length, Math.ceil(ctl.h / rowH)));
       for (let i = 0; i < n; i++) {
@@ -574,7 +652,7 @@ export function renderControl(ctl, env) {
         }
         inner.appendChild(r);
       }
-      if (play && !rows.length) inner.innerHTML = `<div class="pa-empty" style="color:${C('@TextMuted')}">No items</div>`;
+      if (play && !rows.length && p.emptyText !== '') inner.innerHTML = `<div class="pa-empty" style="color:${C('@TextMuted')}">${esc(p.emptyText || 'No items')}</div>`;
       el.appendChild(inner);
       if (!play) el.classList.toggle('pa-gal-empty', !(ctl.children || []).length);
       break;
@@ -604,8 +682,21 @@ export function missingRequired(project, rt, screen, list) {
 }
 
 /** Render a full screen into `host` (sized to the form factor). */
-export function renderScreen(host, screen, env) {
+export function renderScreen(host, screen, env, { diff = false } = {}) {
   const ff = FORM_FACTORS[env.project.app.formFactor || 'tablet'];
+  if (diff && host.dataset.screen === screen.id) {
+    // timer ticks: replace only the controls whose markup changed, so running SVG animations keep playing
+    const old = new Map([...host.children].map((el) => [el.dataset.id, el]));
+    const fresh = screen.controls.map((ctl) => renderControl(ctl, { ...env, screen }));
+    fresh.forEach((el, i) => {
+      const prev = old.get(el.dataset.id);
+      if (prev && prev.outerHTML === el.outerHTML) { if (host.children[i] !== prev) host.insertBefore(prev, host.children[i] || null); }
+      else if (prev) host.replaceChild(el, prev);
+      else host.insertBefore(el, host.children[i] || null);
+    });
+    return;
+  }
+  host.dataset.screen = screen.id;
   host.innerHTML = '';
   host.style.width = ff.w + 'px'; host.style.height = ff.h + 'px';
   host.style.background = cssColor(screen.fill || '@Bg', env.theme);

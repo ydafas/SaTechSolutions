@@ -51,6 +51,14 @@ export const PLAN_SCHEMA = obj({
     days: { type: 'integer', description: 'reminder: minimum age in days' },
     hour: { type: 'integer', description: 'reminder: hour of day 0-23 to send' },
   })),
+  options: obj({
+    loadingScreen: { type: 'boolean', description: 'Animated loading screen with the app monogram' },
+    confirmationPage: { type: 'boolean', description: 'Show a "submitted" page after a new item is saved' },
+    statusStepper: { type: 'boolean', description: 'Show progress through the status values on the details screen' },
+    showMineFirst: { type: 'boolean', description: 'Lists open filtered to the signed-in person\'s own items' },
+    trackUsage: { type: 'boolean', description: 'Record one row per user visit in an AppUsage list' },
+    adminGroupId: str('Microsoft 365 group object ID (GUID) for admins, only if the requirements give one; else empty'),
+  }),
   assumptions: arr(str(), 'Each guess you made where the requirements were silent'),
   questions: arr(str(), 'Open questions whose answers would change the app'),
 });
@@ -71,6 +79,7 @@ How to plan:
 - When the requirements are silent on something you must decide, choose the conventional option and record it in assumptions.
 - Put anything genuinely ambiguous that would change the app into questions (at most 5). Still return a complete plan.
 - Pick formFactor phone only when the requirements mention phones, mobile or field use. Pick the theme that fits the audience: Federal Navy for government or defense, Fluent Blue for general Microsoft 365, Midnight for dark, otherwise SaTech Cyan.
+- Options: loadingScreen true unless asked for a plain app; confirmationPage true when people submit things (requests, registrations); statusStepper true when a Status choice column moves through stages; showMineFirst true when people mostly track their own items (requests, tickets) and false for shared catalogues (assets, contacts); trackUsage only when asked; adminGroupId only when a group ID is given. When an admin group is set, only admins see approve, reject and delete.
 - Use empty strings, empty arrays, 0 and false for fields that do not apply.`;
 
 /** Request body for the Messages API. history: prior [{role, content}] turns for refinements. */
@@ -182,6 +191,11 @@ export function specToProject(plan, { siteUrl = '' } = {}) {
       approvals = { list: l.name, field: col.name, pending: pick(ap.pending, /pend|submit|wait|review|new/i, 0), yes: pick(ap.approve, /approv|accept/i, 1), no: pick(ap.reject, /reject|deny|declin/i, 2) };
     } else notes.push('Approvals were requested but no matching Choice column was found, so the approvals screen was left out.');
   }
+  const op = plan?.options || {};
+  const gid = String(op.adminGroupId || '').trim();
+  const isGuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(gid);
+  if (gid && !isGuid) notes.push(`"${gid}" is not a group ID (it should look like 00000000-0000-0000-0000-000000000000), so admin-only gating was left off.`);
+  p.app.features = { loading: op.loadingScreen !== false, confirm: op.confirmationPage !== false, stepper: op.statusStepper !== false, scope: op.showMineFirst ? 'mine' : 'all', usage: !!op.trackUsage, adminGroup: isGuid ? gid : '' };
   generateApp(p, { screens, approvals });
 
   // flows
@@ -238,17 +252,28 @@ export function specToProject(plan, { siteUrl = '' } = {}) {
   return { project: p, notes };
 }
 
-/** Put a "Run a flow" button next to Edit/Delete on the flow's detail screen. */
+/** Put a "Run a flow" button on the flow's detail screen: in the header beside Edit (tablet), above the action bar (phone). */
 export function addRunFlowButton(project, flow) {
   const det = project.screens.find((s) => s.name === 'scrDetail' + slug(flow.list));
   if (!det) return null;
-  const anchor = det.controls.find((c) => c.name.startsWith('btnDelete')) || det.controls.find((c) => c.name.startsWith('btnEdit'));
-  const leftMost = det.controls.filter((c) => c.type === 'button' && anchor && c.y === anchor.y).reduce((m, c) => Math.min(m, c.x), anchor ? anchor.x : 400);
-  const w = 190;
+  const phone = project.app.formFactor === 'phone';
+  const W = phone ? 640 : 1366, H = phone ? 1136 : 768, HH = phone ? 64 : 72;
+  const label = String(flow.name).replace(/([a-z])([A-Z])/g, '$1 $2').slice(0, 26);
+  const V = 'varSel' + slug(flow.list);
+  let x, y, w, props;
+  if (phone) {
+    const runs = det.controls.filter((c) => c.name.startsWith('btnRun')).length;
+    w = W - 32; x = 16; y = H - 72 - 52 - runs * 52;
+    props = { text: label, fill: 'transparent', color: '@Primary', borderColor: '@Primary', borderThickness: 1, size: 12 };
+  } else {
+    const inHeader = det.controls.filter((c) => c.type === 'button' && c.y === (HH - 40) / 2);
+    const leftMost = inHeader.reduce((m, c) => Math.min(m, c.x), W - 24);
+    w = 180; x = leftMost - 10 - w; y = (HH - 40) / 2;
+    props = { text: label, fill: 'transparent', color: '@OnHeader', borderColor: '@OnHeader', borderThickness: 1, size: 12 };
+  }
   const btn = newControl(project, 'button', {
-    name: 'btnRun' + flowFxName(flow.name), x: Math.max(16, leftMost - w - 16), y: anchor ? anchor.y : 600, w, h: 40,
-    props: { text: String(flow.name).replace(/([a-z])([A-Z])/g, '$1 $2').slice(0, 28), fill: 'transparent', color: '@Primary', borderColor: '@Primary', borderThickness: 1 },
-    actions: { OnSelect: [{ type: 'runFlow', flow: flow.id, message: 'Done', then: '' }] },
+    name: 'btnRun' + flowFxName(flow.name), x, y, w, h: 40, props,
+    actions: { OnSelect: [{ type: 'runFlow', flow: flow.id, message: 'Done', then: '' }] }, fx: { Visible: `!IsBlank(${V}.ID)` },
   });
   det.controls.push(btn);
   return btn;

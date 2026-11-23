@@ -8,7 +8,7 @@
 //  * later in the list = in front; transparent tap buttons go after what they cover
 //  * names unique across the whole app; Patch always rebases with LookUp(List, ID = ...)
 //  * 3-argument IfError(Patch, Notify(error), success...) shape
-import { CATALOG, FORM_FACTORS, INPUT_TYPES, q, s, varSel, hexToRgba, isHex, walk, colOf, hasActions, IDENT, RESERVED, allNames, SP_RESERVED_COLS } from './core.js';
+import { CATALOG, FORM_FACTORS, INPUT_TYPES, q, s, slug, varSel, hexToRgba, isHex, walk, colOf, hasActions, IDENT, RESERVED, allNames, SP_RESERVED_COLS } from './core.js';
 import { iconSvg } from './icons.js';
 import { notifyFx, navigateFx, rebaseFx, upsertBaseFx, ifErrorFx, spUserFx, meUserFx, recordFx, equalsFx } from './fx.js';
 import { flowFxName, deepLinkInfo, flowLint, internalName as flowInternalName } from './flows.js';
@@ -118,6 +118,28 @@ function blankCheckFx(project, ctl) {
   }
   return null;
 }
+/** Required inputs on a screen for `list`: {any, list} formulas, or null when none are required. */
+export function missingFx(project, screen, list) {
+  const checks = screenInputs(screen, list).map((c) => [c, blankCheckFx(project, c)]).filter(([, b]) => b);
+  if (!checks.length) return null;
+  const rows = checks.map(([c, b]) => `{n: ${s(String(c.field.column).replace(/([a-z])([A-Z])/g, '$1 $2'))}, ok: !${b.startsWith('(') ? b : '(' + b + ')'}}`);
+  return { any: checks.map(([, b]) => b).join(' || '), list: `Concat(Filter(Table(${rows.join(', ')}), !ok), n, ", ")` };
+}
+/** Is there a validating Save for `list` on this screen? */
+const screenValidates = (screen, list) => [...walk(screen.controls)].some(([c]) => (c.actions?.OnSelect || []).some((a) => a.type === 'save' && a.validate && a.list === list));
+/** Admin check against a Microsoft 365 group (field "mail" verified in DoD365). */
+export const adminCheckFx = (groupId) => `Set(varIsAdmin, IfError(!IsBlank(LookUp(Office365Groups.ListGroupMembers(${s(groupId)}).value, Lower(mail) = Lower(User().Email))), false))`;
+/** One row per user per app in the AppUsage list (skill: app usage tracking). A failed write never blocks the app. */
+export function usageFx(project) {
+  const app = s(project.app.name || 'My App');
+  return `IfError(
+    With({hit: LookUp(AppUsage, Title = Lower(User().Email) && AppName = ${app})},
+        If(IsBlank(hit),
+            Patch(AppUsage, Defaults(AppUsage), {Title: Lower(User().Email), DisplayName: User().FullName, AppName: ${app}, FirstSeen: Now(), LastSeen: Now(), VisitCount: 1}),
+            Patch(AppUsage, hit, {LastSeen: Now(), VisitCount: Coalesce(hit.VisitCount, 0) + 1}))),
+    Blank())`;
+}
+const FONT_STACK = { 'Segoe UI': 'Segoe UI, sans-serif', 'Open Sans': 'Open Sans, sans-serif', Lato: 'Lato, sans-serif', Arial: 'Arial, sans-serif', Verdana: 'Verdana, sans-serif', Georgia: 'Georgia, serif', 'Courier New': 'Courier New, monospace' };
 /** Top-level input controls on a screen (gallery rows are not form inputs), optionally only those bound to `list`. */
 export function screenInputs(screen, list = '*') {
   const out = [];
@@ -143,23 +165,33 @@ export function actionFx(project, screen, a, ctx = {}) {
     case 'navigate': return nav(a.screen, a.transition);
     case 'back': return 'Back()';
     case 'newItem': return [`Set(${V}, Defaults(${L}))`, a.screen ? nav(a.screen) : ''].filter(Boolean).join(';\n');
-    case 'openItem': return [`Set(${V}, ThisItem)`, a.screen ? nav(a.screen) : ''].filter(Boolean).join(';\n');
+    case 'openItem': return [a.fresh ? `Set(${V}, LookUp(${L}, ID = ThisItem.ID))` : `Set(${V}, ThisItem)`, a.screen ? nav(a.screen) : ''].filter(Boolean).join(';\n');
     case 'save': {
       const inputs = screenInputs(screen, a.list);
       const fields = inputs.map((c) => [c.field.column, patchValueFx(project, c)]).filter((x) => x[1]);
       const rec = recordFx(fields.map(([k, v]) => [q(k), v]));
-      const done = [notifyFx(a.message || 'Saved', 'Success')];
-      if (a.then === 'stay') {
+      const tried = 'varTriedSave' + slug(a.list), doneVar = 'varDone' + slug(a.list);
+      let done = [notifyFx(a.message || 'Saved', 'Success')];
+      if (a.validate) done.unshift(`Set(${tried}, false)`);
+      if (a.then === 'confirm') {
+        done = [...(a.validate ? [`Set(${tried}, false)`] : []), `If(IsBlank(${V}.ID), Set(${doneVar}, true), Set(${V}, ${rebaseFx(L, V)}); ${notifyFx(a.message || 'Saved', 'Success')}; Back())`];
+      } else if (a.then === 'stay') {
         done.unshift(`If(IsBlank(${V}.ID), Set(${V}, Defaults(${L})), Set(${V}, ${rebaseFx(L, V)}))`);
         inputs.forEach((c) => done.push(`Reset(${c.name})`));
         inputs.filter((c) => c.type === 'person').forEach((c) => done.push(`Set(${pickVar(c)}, Blank())`));
       } else if (then(a)) done.push(then(a));
-      return ifErrorFx(`Patch(${L}, ${upsertBaseFx(L, V)}, ${rec})`, 'Save', done);
+      const save = ifErrorFx(`Patch(${L}, ${upsertBaseFx(L, V)}, ${rec})`, 'Save', done);
+      const missing = a.validate ? missingFx(project, screen, a.list) : null;
+      if (!missing) return save;
+      return `If(\n    ${missing.any},\n    Set(${tried}, true);\n    Notify("Fill in the required fields: " & ${missing.list}, NotificationType.Warning),\n    ${save.replace(/\n/g, '\n    ')}\n)`;
     }
     case 'delete': {
       const done = [notifyFx(a.message || 'Deleted', 'Success'), `Set(${V}, Defaults(${L}))`];
       if (then(a)) done.push(then(a));
-      return ifErrorFx(`Remove(${L}, ${rebaseFx(L, V)})`, 'Delete', done);
+      const del = ifErrorFx(`Remove(${L}, ${rebaseFx(L, V)})`, 'Delete', done);
+      if (!a.confirm) return del;
+      const cv = 'varConfirmDelete' + slug(a.list);
+      return `If(\n    !${cv},\n    Set(${cv}, true);\n    Notify("Select Delete again to remove this item permanently.", NotificationType.Warning),\n    Set(${cv}, false);\n    ${del.replace(/\n/g, '\n    ')}\n)`;
     }
     case 'setField': {
       const col = colOf(project, a.list, a.field);
@@ -224,8 +256,21 @@ export function itemsFx(project, ctl) {
     }
   }
   if (d.extraFilter) conds.push(`(${d.extraFilter})`);
-  const src = conds.length ? `Filter(${L}, ${conds.join(' && ')})` : L;
-  return d.sortField ? `SortByColumns(${src}, ${s(d.sortField)}, SortOrder.${d.sortDir || 'Descending'})` : src;
+  const F = (extra) => {
+    const all = [...conds, ...extra];
+    const src = all.length ? `Filter(${L}, ${all.join(' && ')})` : L;
+    return d.sortField ? `SortByColumns(${src}, ${s(d.sortField)}, SortOrder.${d.sortDir || 'Descending'})` : src;
+  };
+  // Mine/All toggle and a status dropdown: one delegable Filter per combination, chosen with If
+  const me = `'Created By'.Email = User().Email`;
+  const scopeT = d.scopeVar ? `${d.scopeVar} = "mine"` : null;
+  const stCol = d.statusCtl && d.statusField ? colOf(project, d.list, d.statusField) : null;
+  const st = stCol ? `${q(d.statusField)}.Value = ${d.statusCtl}.Selected.Value` : null;
+  const stT = st ? `${d.statusCtl}.Selected.Value <> ${s(d.statusAll || 'All statuses')}` : null;
+  if (scopeT && stT) return `If(\n    ${scopeT} && ${stT}, ${F([me, st])},\n    ${scopeT}, ${F([me])},\n    ${stT}, ${F([st])},\n    ${F([])}\n)`;
+  if (scopeT) return `If(\n    ${scopeT}, ${F([me])},\n    ${F([])}\n)`;
+  if (stT) return `If(\n    ${stT}, ${F([st])},\n    ${F([])}\n)`;
+  return F([]);
 }
 
 // ---------------------------------------------------------------- per-control properties
@@ -236,10 +281,10 @@ const weight = (w) => `FontWeight.${w || 'Normal'}`;
 
 function cardHtmlFx(ctl) {
   const p = ctl.props, shadow = !!p.shadow;
-  const h = shadow ? ctl.h - 12 : ctl.h + 10;
+  const h = shadow ? ctl.h - 12 : ctl.h;
   const bg = p.fill2 ? ['linear-gradient(', String(p.gradAngle ?? 135), 'deg,', cssPiece(p.fill), ',', cssPiece(p.fill2), ')'] : [cssPiece(p.fill)];
   const rad = p.radius === 'theme' || p.radius == null ? { fx: 'Text(appTheme.Radius)' } : { lit: N(p.radius) };
-  const pieces = [`<div style='${shadow ? 'margin:1px' : 'margin:-5px'};box-sizing:border-box;height:${h}px;background:`, ...bg,
+  const pieces = [`<div style='${shadow ? 'margin:1px' : 'margin:0'};box-sizing:border-box;height:${h}px;background:`, ...bg,
     `;border-radius:`, rad, 'px;'];
   if (Number(p.borderThickness) > 0) pieces.push(`border:${N(p.borderThickness)}px solid `, cssPiece(p.borderColor), ';');
   if (shadow) pieces.push('box-shadow:0 2px 6px rgba(15,23,42,0.14);');
@@ -279,7 +324,7 @@ function controlProps(project, screen, ctl) {
       add('HoverColor', 'Self.Color'); add('PressedColor', 'Self.Color');
       add('FocusedBorderColor', 'appTheme.Primary'); add('FocusedBorderThickness', '2');
       const save = (ctl.actions?.OnSelect || []).find((a) => a.type === 'save');
-      if (save) {
+      if (save && !save.validate) {
         const checks = screenInputs(screen, save.list).map((c) => blankCheckFx(project, c)).filter(Boolean);
         if (checks.length) add('DisplayMode', `If(${checks.join(' || ')}, DisplayMode.Disabled, DisplayMode.Edit)`);
       }
@@ -303,7 +348,12 @@ function controlProps(project, screen, ctl) {
       if (p.fit && p.fit !== 'Fit') add('ImagePosition', `ImagePosition.${p.fit}`);
       break;
     }
-    case 'card': add('HtmlText', cardHtmlFx(ctl)); geo(); break;
+    case 'card':
+      add('HtmlText', cardHtmlFx(ctl));
+      // HtmlViewer pads its content 5px per side: a borderless card grows the control by 5px all round so the
+      // drawn card lands exactly on the designer rectangle and its content never exceeds Height - 10.
+      if (p.shadow) geo(); else { add('X', N(ctl.x - 5)); add('Y', N(ctl.y - 5)); add('Width', N(ctl.w + 10)); add('Height', N(ctl.h + 10)); }
+      break;
     case 'html': add('HtmlText', s(p.html)); geo(); break;
     case 'rect': geo(); add('Fill', colorFx(p.fill)); add('BorderColor', colorFx(p.borderColor)); add('BorderThickness', N(p.borderThickness)); break;
     case 'textinput': {
@@ -371,6 +421,13 @@ function controlProps(project, screen, ctl) {
   if (ctl.type === 'button' || ctl.type === 'badge') add('OnSelect', actionsFx(project, screen, ctl.actions?.OnSelect));
   if (ctl.type === 'dropdown' || ctl.type === 'textinput') add('OnChange', actionsFx(project, screen, ctl.actions?.OnChange));
   if (ctl.type === 'toggle' || ctl.type === 'checkbox') { add('OnCheck', actionsFx(project, screen, ctl.actions?.OnCheck)); add('OnUncheck', actionsFx(project, screen, ctl.actions?.OnUncheck)); }
+  // required inputs turn red (2px) once the user has tried to save with them empty (WAL pattern)
+  if (f && f.col.required && ['textinput', 'dropdown', 'datepicker', 'person'].includes(ctl.type) && screenValidates(screen, f.list)) {
+    const bad = `varTriedSave${slug(f.list)} && ${blankCheckFx(project, ctl)}`;
+    const set = (k, v) => { const i = P.findIndex(([kk]) => kk === k); if (i >= 0) P[i][1] = v; else P.push([k, v]); };
+    set('BorderColor', `If(${bad}, appTheme.Danger, appTheme.InputBorder)`);
+    set('BorderThickness', `If(${bad}, 2, 1)`);
+  }
   // advanced overrides win
   for (const [k, v] of Object.entries(ctl.fx || {})) {
     if (!v && v !== 0) continue;
@@ -522,7 +579,8 @@ export function themeFormulas(project) {
   lines.push(`    HoverFade: ${t.dark ? 0.18 : -0.12},`);
   lines.push(`    PressFade: ${t.dark ? 0.3 : -0.25},`);
   lines.push(`    Radius: ${Number(t.radius) || 0},`);
-  lines.push(`    Font: Font.${q(t.font || 'Segoe UI')}`);
+  lines.push(`    Font: Font.${q(t.font || 'Segoe UI')},`);
+  lines.push(`    FontCss: ${s(FONT_STACK[t.font] || FONT_STACK['Segoe UI'])}`);
   let out = `// Theme generated by Power App Studio (${t.name || 'custom'}). Edit a value here to restyle the whole app.\nappTheme = {\n${lines.join('\n')}\n};`;
   if (project.app.formulas?.trim()) out += '\n\n' + project.app.formulas.trim();
   return out;
@@ -537,7 +595,14 @@ export function seededVars(project) {
       vars.set(a.name, /^(true|false)$/i.test(v) ? 'false' : /^-?\d/.test(v) ? '0' : /^"/.test(v) ? '""' : null);
     }
   });
+  const visit2 = (acts) => (acts || []).forEach((a) => {
+    if (a.type === 'save' && a.validate && a.list) vars.set('varTriedSave' + slug(a.list), 'false');
+    if (a.type === 'save' && a.then === 'confirm' && a.list) vars.set('varDone' + slug(a.list), 'false');
+    if (a.type === 'delete' && a.confirm && a.list) vars.set('varConfirmDelete' + slug(a.list), 'false');
+  });
   for (const scr of project.screens) for (const [c] of walk(scr.controls)) {
+    Object.values(c.actions || {}).forEach(visit2);
+    if (c.data?.scopeVar && !vars.has(c.data.scopeVar)) vars.set(c.data.scopeVar, '""');
     Object.values(c.actions || {}).forEach(visit);
     if (c.visibleWhen?.var && !vars.has(c.visibleWhen.var)) vars.set(c.visibleWhen.var, c.visibleWhen.op === 'eq' || c.visibleWhen.op === 'neq' ? (/^-?\d/.test(c.visibleWhen.value) ? '0' : '""') : 'false');
   }
@@ -551,6 +616,9 @@ export function onStartFx(project) {
     if (dl && dl.list === l) parts.push(`Set(${varSel(l)}, If(IsBlank(Param("ID")), Defaults(${q(l)}), LookUp(${q(l)}, ID = Value(Param("ID")))))`);
     else if (formListUsed(project, l)) parts.push(`Set(${varSel(l)}, Defaults(${q(l)}))`);
   }
+  const ft = project.app.features || {};
+  if (ft.adminGroup) parts.push(adminCheckFx(ft.adminGroup));
+  if (ft.usage && !project.screens.some((sc) => sc.role === 'loading')) parts.push(usageFx(project));
   if (project.app.onStart?.trim()) parts.push(project.app.onStart.trim().replace(/^=/, ''));
   return parts.join(';\n');
 }
@@ -578,6 +646,7 @@ export function usedLists(project) {
     Object.values(c.actions || {}).flat().forEach((a) => a.list && set.add(a.list));
   }
   const dl = deepLinkInfo(project); if (dl) set.add(dl.list);
+  if (project.app.features?.usage) set.add('AppUsage');
   return [...set].filter((l) => project.lists.some((x) => x.name === l));
 }
 export function usesPeople(project) {
@@ -588,7 +657,10 @@ export function checklist(project) {
   const lists = usedLists(project), steps = [];
   const ff = FORM_FACTORS[project.app.formFactor || 'tablet'];
   steps.push(`Create a blank canvas app (${project.app.formFactor === 'phone' ? 'Phone' : 'Tablet'} format, ${ff.w} × ${ff.h}).`);
-  if (lists.length || usesPeople(project)) steps.push('Data → Add data: ' + [...lists.map((l) => `SharePoint list "${l}"`), ...(usesPeople(project) ? ['Office 365 Users'] : [])].join(', ') + '. Names must match exactly.');
+  const groups = !!project.app.features?.adminGroup;
+  if (lists.length || usesPeople(project) || groups) steps.push('Data → Add data: ' + [...lists.map((l) => `SharePoint list "${l}"`), ...(usesPeople(project) ? ['Office 365 Users'] : []), ...(groups ? ['Office 365 Groups'] : [])].join(', ') + '. Names must match exactly.');
+  if (groups) steps.push(`Admins: the app checks membership of the Microsoft 365 group ${project.app.features.adminGroup} (Office365Groups.ListGroupMembers, field "mail"). If admins see no admin buttons, check the member field name with intellisense on First(Office365Groups.ListGroupMembers("<id>").value).`);
+  if (project.app.features?.usage) steps.push('App usage: create the AppUsage list (in the provisioning script) and give users Contribute on it. One row per user per app records first and last visit and a visit count.');
   steps.push('App → Formulas: paste the App.Formulas text (it holds the theme).');
   if (onStartFx(project)) steps.push('App → OnStart: expand the formula bar first, paste the OnStart text, then App → Run OnStart.');
   steps.push(`For each screen: delete the default Screen1 (or the old copy), click the empty canvas area, press Ctrl+V with that screen's YAML copied.`);
@@ -660,7 +732,7 @@ export function provisioningScript(project) {
         case 'Note': xml = `<Field Type='Note' ${base} NumLines='6' RichText='FALSE' />`; break;
         case 'Number': xml = `<Field Type='Number' ${base} />`; break;
         case 'Currency': xml = `<Field Type='Currency' ${base} LCID='1033' />`; break;
-        case 'DateTime': xml = `<Field Type='DateTime' ${base} Format='DateOnly' />`; break;
+        case 'DateTime': xml = `<Field Type='DateTime' ${base} Format='${c.withTime ? 'DateTime' : 'DateOnly'}' />`; break;
         case 'Choice': xml = `<Field Type='Choice' ${base} Format='Dropdown'><CHOICES>${c.choices.map((x) => `<CHOICE>${xmlEsc(x)}</CHOICE>`).join('')}</CHOICES>${c.choices[0] ? `<Default>${xmlEsc(c.choices[0])}</Default>` : ''}</Field>`; break;
         case 'YesNo': xml = `<Field Type='Boolean' ${base.replace(/Required='TRUE'/, "Required='FALSE'")}><Default>0</Default></Field>`; break;
         case 'Person': xml = `<Field Type='User' ${base} UserSelectionMode='PeopleOnly' />`; break;
@@ -699,10 +771,25 @@ export const LINT_RULES = {
   PS041: 'Visible depends on a variable nothing sets', PS042: 'Screen OnVisible uses Navigate via custom action',
   PS043: 'Flow has no list', PS044: 'Flow has no valid recipient', PS045: 'Flow needs the SharePoint site URL',
   PS046: 'Flow watch column missing or not Choice', PS047: 'Email link needs the app link and a deep-link screen',
-  PS048: 'Unknown {token} in a flow email', PS049: 'Run a flow action without a button flow', PS050: 'Two flows with the same Power Apps name',
+  PS048: 'Unknown {token} in a flow email', PS049: 'Run a flow action without a button flow', PS050: 'Two flows with the same Power Apps name', PS051: 'HTML box taller than its control allows',
 };
 const overlap = (a, b) => Math.max(0, Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x)) * Math.max(0, Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y));
 const PASSIVE_COVER = new Set(['label', 'card', 'rect', 'html', 'image', 'icon', 'badge']);
+
+/** px by which the first fixed-height box in an HtmlViewer overflows a control of height h (0 when it fits or cannot be read). */
+export function htmlOverflow(html, h) {
+  const m = /height:\s*(\d+(?:\.\d+)?)px/.exec(html);
+  if (!m) return 0;
+  const seg = html.slice(Math.max(0, html.lastIndexOf('style=', m.index)), m.index + m[0].length + 200).split(/['"](?=\s*>)/)[0];
+  const mg = /(?:^|[;\s'"])margin:\s*([^;'"]+)/.exec(seg);
+  let top = 0, bottom = 0;
+  if (mg) {
+    const v = mg[1].trim().split(/\s+/).map((x) => (x === '0' ? 0 : /^-?\d+(?:\.\d+)?px$/.test(x) ? parseFloat(x) : NaN));
+    if (v.some(Number.isNaN)) return 0;
+    top = v[0]; bottom = v.length >= 3 ? v[2] : v[0];
+  }
+  return Math.max(0, Math.ceil(parseFloat(m[1]) + top + bottom - (h - 10)));
+}
 
 export function lint(project) {
   const F = [];
@@ -780,7 +867,8 @@ export function lint(project) {
     const checkCover = (list) => list.forEach((c, i) => {
       const clickable = (c.type === 'button' && hasActions(c)) || (['label', 'card', 'rect', 'html', 'image', 'icon'].includes(c.type) && hasActions(c));
       if (!clickable) return;
-      const cover = list.slice(i + 1).find((o) => PASSIVE_COVER.has(o.type) && !hasActions(o) && overlap(c, o) > 0.25 * c.w * c.h);
+      // a cover that is only sometimes visible (an overlay, an empty state) is intended, so it does not count
+      const cover = list.slice(i + 1).find((o) => PASSIVE_COVER.has(o.type) && !hasActions(o) && !o.visibleWhen?.var && !o.fx?.Visible && overlap(c, o) > 0.25 * c.w * c.h);
       if (cover) mk(fxText(c))('warn', 'PS040', `${scr.name} › ${c.name}`, `${cover.name} sits in front of this clickable control and will take most clicks. Move ${c.name} to the front (Layers) or ${cover.name} behind it.`);
     });
     checkCover(scr.controls);
@@ -807,6 +895,12 @@ export function lint(project) {
   }
   flowLint(project, addG);
   if (project.app.deepLink?.screen && !deepLinkInfo(project)) addG('warn', 'PS047', 'App', 'The email-link screen or its list no longer exists; pick them again on the App tab.');
+  // HtmlViewer pads 5px on every side: the first box's height plus its vertical margins must fit in Height - 10 or a scrollbar appears
+  for (const scr of project.screens) for (const [c] of walk(scr.controls)) {
+    if (c.type !== 'html') continue;
+    const over = htmlOverflow(String(c.props?.html || ''), c.h);
+    if (over > 0) mk(fxText(c))('warn', 'PS051', `${scr.name} › ${c.name}`, `The HTML box is ${over}px taller than this control can show (HtmlViewer adds 5px padding on each side), so Power Apps will draw a scrollbar. Make the box ${over}px shorter or the control ${over}px taller.`);
+  }
   for (const scr of project.screens) for (const [c] of walk(scr.controls)) if (c.bind?.kind === 'count') { addG('info', 'PS035', `${scr.name} › ${c.name}`, 'CountRows over a SharePoint list is not delegable: counts stop at the data row limit (500 by default, 2000 max).'); break; }
   return F;
 }

@@ -72,6 +72,8 @@ button { cursor: pointer; }
 .tabs button.on { background: var(--ink); color: #fff; }
 .tabs button .star { color: var(--cyan2); font-size: 11px; }
 .tabs .add { color: var(--cyan); }
+.showhid { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: var(--muted); white-space: nowrap; cursor: pointer; }
+.showhid input { accent-color: var(--cyan); }
 .zoom { display: flex; align-items: center; gap: 2px; flex: none; }
 .zoom .ic { color: var(--muted); width: 28px; height: 28px; }
 .zoom .ic:hover { background: var(--bg); color: var(--text); }
@@ -381,6 +383,8 @@ input[type=range] { width: 100%; accent-color: var(--cyan); }
 .play-bar b { color: #fff; }
 .play-bar select { background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.16); color: #fff; border-radius: 7px; height: 32px; padding: 0 8px; }
 .play-bar select option { color: var(--text); }
+.pl-admin { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: #cbd5e1; }
+.pl-admin input { accent-color: var(--cyan2); }
 .play-bar .grow { flex: 1; font-size: 12px; color: #94a3b8; }
 .play-stage { flex: 1; display: grid; place-items: center; overflow: hidden; position: relative; }
 .play-frame { position: relative; box-shadow: 0 30px 90px rgba(0,0,0,.5); border-radius: 6px; overflow: hidden; }

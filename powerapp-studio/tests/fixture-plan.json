@@ -7,30 +7,188 @@
       "name": "Training Requests",
       "purpose": "One employee's request to attend a training course.",
       "columns": [
-        { "name": "Title", "type": "Text", "required": true, "choices": [], "lookupList": "" },
-        { "name": "Provider", "type": "Text", "required": true, "choices": [], "lookupList": "" },
-        { "name": "Course Cost", "type": "Currency", "required": true, "choices": [], "lookupList": "" },
-        { "name": "StartDate", "type": "DateTime", "required": true, "choices": [], "lookupList": "" },
-        { "name": "Justification", "type": "Note", "required": false, "choices": [], "lookupList": "" },
-        { "name": "Supervisor", "type": "Person", "required": true, "choices": [], "lookupList": "" },
-        { "name": "Status", "type": "Choice", "required": false, "choices": ["Submitted", "Approved", "Rejected"], "lookupList": "" },
-        { "name": "Format", "type": "Choice", "required": false, "choices": [], "lookupList": "" },
-        { "name": "Vendor", "type": "Lookup", "required": false, "choices": [], "lookupList": "Vendors" }
+        {
+          "name": "Title",
+          "type": "Text",
+          "required": true,
+          "choices": [],
+          "lookupList": ""
+        },
+        {
+          "name": "Provider",
+          "type": "Text",
+          "required": true,
+          "choices": [],
+          "lookupList": ""
+        },
+        {
+          "name": "Course Cost",
+          "type": "Currency",
+          "required": true,
+          "choices": [],
+          "lookupList": ""
+        },
+        {
+          "name": "StartDate",
+          "type": "DateTime",
+          "required": true,
+          "choices": [],
+          "lookupList": ""
+        },
+        {
+          "name": "Justification",
+          "type": "Note",
+          "required": false,
+          "choices": [],
+          "lookupList": ""
+        },
+        {
+          "name": "Supervisor",
+          "type": "Person",
+          "required": true,
+          "choices": [],
+          "lookupList": ""
+        },
+        {
+          "name": "Status",
+          "type": "Choice",
+          "required": false,
+          "choices": [
+            "Submitted",
+            "Approved",
+            "Rejected"
+          ],
+          "lookupList": ""
+        },
+        {
+          "name": "Format",
+          "type": "Choice",
+          "required": false,
+          "choices": [],
+          "lookupList": ""
+        },
+        {
+          "name": "Vendor",
+          "type": "Lookup",
+          "required": false,
+          "choices": [],
+          "lookupList": "Vendors"
+        }
       ]
     }
   ],
-  "screens": { "home": true, "browse": true, "detail": true, "edit": true,
-    "approvals": { "enabled": true, "list": "Training Requests", "field": "Status", "pending": "Submitted", "approve": "Approved", "reject": "Rejected" } },
+  "screens": {
+    "home": true,
+    "browse": true,
+    "detail": true,
+    "edit": true,
+    "approvals": {
+      "enabled": true,
+      "list": "Training Requests",
+      "field": "Status",
+      "pending": "Submitted",
+      "approve": "Approved",
+      "reject": "Rejected"
+    }
+  },
   "flows": [
-    { "kind": "created", "name": "Notify supervisor", "list": "Training Requests", "recipients": [{ "kind": "column", "value": "Supervisor" }],
-      "subject": "Training request: {Title}", "body": "{Author} requested {Title} from {Provider} ({Course Cost}).\n\n{Link}", "statusField": "", "statusValues": [], "reminderValue": "", "days": 0, "hour": 0 },
-    { "kind": "statusChanged", "name": "Tell employee the decision", "list": "Training Requests", "recipients": [{ "kind": "author", "value": "" }, { "kind": "column", "value": "Provider" }],
-      "subject": "Your training request was {Status}", "body": "Your request for {Title} is now {Status}.\n{Link}", "statusField": "Status", "statusValues": ["Approved", "Rejected", "Maybe"], "reminderValue": "", "days": 0, "hour": 0 },
-    { "kind": "reminder", "name": "Daily waiting reminder", "list": "Training Requests", "recipients": [{ "kind": "column", "value": "Supervisor" }, { "kind": "address", "value": "not an email" }],
-      "subject": "Still waiting: {Title}", "body": "{Title} has waited since {Created}.", "statusField": "Status", "statusValues": [], "reminderValue": "Submitted", "days": 3, "hour": 31 },
-    { "kind": "button", "name": "Send summary to me", "list": "Training Requests", "recipients": [{ "kind": "me", "value": "" }],
-      "subject": "Summary: {Title}", "body": "{Title}: {Course Cost} starting {StartDate}.", "statusField": "", "statusValues": [], "reminderValue": "", "days": 0, "hour": 0 }
+    {
+      "kind": "created",
+      "name": "Notify supervisor",
+      "list": "Training Requests",
+      "recipients": [
+        {
+          "kind": "column",
+          "value": "Supervisor"
+        }
+      ],
+      "subject": "Training request: {Title}",
+      "body": "{Author} requested {Title} from {Provider} ({Course Cost}).\n\n{Link}",
+      "statusField": "",
+      "statusValues": [],
+      "reminderValue": "",
+      "days": 0,
+      "hour": 0
+    },
+    {
+      "kind": "statusChanged",
+      "name": "Tell employee the decision",
+      "list": "Training Requests",
+      "recipients": [
+        {
+          "kind": "author",
+          "value": ""
+        },
+        {
+          "kind": "column",
+          "value": "Provider"
+        }
+      ],
+      "subject": "Your training request was {Status}",
+      "body": "Your request for {Title} is now {Status}.\n{Link}",
+      "statusField": "Status",
+      "statusValues": [
+        "Approved",
+        "Rejected",
+        "Maybe"
+      ],
+      "reminderValue": "",
+      "days": 0,
+      "hour": 0
+    },
+    {
+      "kind": "reminder",
+      "name": "Daily waiting reminder",
+      "list": "Training Requests",
+      "recipients": [
+        {
+          "kind": "column",
+          "value": "Supervisor"
+        },
+        {
+          "kind": "address",
+          "value": "not an email"
+        }
+      ],
+      "subject": "Still waiting: {Title}",
+      "body": "{Title} has waited since {Created}.",
+      "statusField": "Status",
+      "statusValues": [],
+      "reminderValue": "Submitted",
+      "days": 3,
+      "hour": 31
+    },
+    {
+      "kind": "button",
+      "name": "Send summary to me",
+      "list": "Training Requests",
+      "recipients": [
+        {
+          "kind": "me",
+          "value": ""
+        }
+      ],
+      "subject": "Summary: {Title}",
+      "body": "{Title}: {Course Cost} starting {StartDate}.",
+      "statusField": "",
+      "statusValues": [],
+      "reminderValue": "",
+      "days": 0,
+      "hour": 0
+    }
   ],
-  "assumptions": ["Cost is in US dollars."],
-  "questions": ["Should requests over a certain cost need a second approver?"]
+  "assumptions": [
+    "Cost is in US dollars."
+  ],
+  "questions": [
+    "Should requests over a certain cost need a second approver?"
+  ],
+  "options": {
+    "loadingScreen": true,
+    "confirmationPage": true,
+    "statusStepper": true,
+    "showMineFirst": true,
+    "trackUsage": true,
+    "adminGroupId": "not-a-guid"
+  }
 }

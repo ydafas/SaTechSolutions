@@ -13,6 +13,29 @@ A browser-only Power Apps canvas app designer for satechitsolutions.com. There i
 8. **Describe your app** (uses Claude): write requirements in plain English. Claude returns a plan of lists, screens, approvals and flows, which you review and refine before the studio builds it. It uses the visitor's own Anthropic API key.
 7. **Flows**: Power Automate flows for the app's lists, exported as legacy flow packages. There are four templates: email on a new item, email when a Choice column changes, a daily reminder, and a flow a button runs. The email editor uses `{Column}` tokens and `{Link}`, which deep-links into the app. Play mode shows which flows would fire.
 
+## What the generator builds
+
+The wizard, the Describe dialog and **New screen** all use the same templates (`js/templates.js`). They follow the hand-built apps in the powerapps-canvas-yaml skill:
+
+- **Home**: a gradient hero with a greeting and the main action, KPI cards with icon chips (one per status value), a *My items* list and a *Waiting on me* queue, each with an empty state. Phones get a two-column layout.
+- **Browse**: search, an **All / Mine** switch, a status filter ("All statuses" plus the choices), a row count, card rows (title, meta line, status pill, chevron), an empty state, and a floating + button on phones. Each combination is its own delegable `Filter` chosen with `If` (Mine is `'Created By'.Email = User().Email`).
+- **Details**: a summary card ("Created by … on … · #ID"), a status stepper, field sections, Approve / Reject while the item is pending, and a **two-click Delete** ("Confirm delete" on the first click). It shows an empty state when nothing is selected.
+- **New / edit**: section cards (Details, People and dates, Notes) in two or three columns and a bottom action bar. Saving with blank required fields sets `varTriedSave<List>`, which turns those inputs' borders red and shows a **Still needed: …** strip. Saving a new item opens a **confirmation page** with *Add another* and *Done*.
+- **Approvals**: a queue with a count and a review panel, with an "All caught up" empty state.
+- **Loading screen** (optional): an original hexagon monogram drawn as a SMIL SVG and gated on `locInited`, plus a separate progress ring. A hidden self-starting timer refreshes the lists, records usage and checks access, then navigates home from `OnTimerEnd`, never from `OnVisible`. It becomes the start screen.
+- **Admins** (optional): give a Microsoft 365 group ID and `App.OnStart` sets `varIsAdmin` with `IfError(... Office365Groups.ListGroupMembers(id).value, Lower(mail) = Lower(User().Email) ...)`. Approve, Reject, Delete and the Approvals tile then show only for admins. Play has a "Signed in as an admin" toggle.
+- **Usage tracking** (optional): an `AppUsage` list (provisioned by the PnP script) and the skill's `IfError` upsert, one row per user.
+
+Spacing and type follow one scale: 16/24 px padding, 12–26 px type, the theme radius on every card, and the theme font in HTML (`appTheme.FontCss`, which has no quotes so it can sit inside `style='…'`). Every HtmlViewer obeys the 5 px padding rule: the first box's height plus its margins is at most Height − 10. Lint PS051 checks this.
+
+Wizard step 3 ("Extras") and the Claude plan's `options` object choose these features: `loadingScreen`, `confirmationPage`, `statusStepper`, `showMineFirst`, `trackUsage` and `adminGroupId`. Older projects and plans without them get the defaults: loading, confirmation and stepper on, All first, no usage, no admin group.
+
+In the designer, conditional overlays (confirmation page, empty states, "Still needed") are evaluated as in Play. Tick **Show hidden** in the stage bar to see them all, or select one in Layers.
+
+### Needs a real-tenant paste test
+
+These templates passed the harness and the skill's `screen_tool.py check`, but have not yet been pasted into a tenant: the stepper HTML built with `With()`, the confirmation overlay on a multi-screen app, the Mine/All `If` branches over `SortByColumns(Filter(...))`, the loading-screen emblem data URI with the timer step machine, and `appTheme.FontCss` inside HtmlViewer styles. The admin check (`mail` field) and the AppUsage block are copied from verified skill patterns.
+
 ## Files
 
 | File | Role |
@@ -81,6 +104,7 @@ Every finding has a stable code. To silence one rule on one control, put `lint-o
 | PS048 | warn | Unknown `{token}` in a flow email |
 | PS049 | error | "Run a flow" action without a flow of the button kind |
 | PS050 | error | Two flows with the same Power Apps name once spaces are removed |
+| PS051 | warn | An HTML box (first fixed `height:`, plus its margins) is taller than the HtmlViewer's Height − 10, so Power Apps shows a scrollbar |
 
 To add a rule, give it the next code in `LINT_RULES`, implement it in `lint()` in `js/emit.js`, and add a failing case to the "lint rules fire" test in `tests/run.mjs`.
 
@@ -104,6 +128,11 @@ The harness covers:
 - The three-column layout for tall forms.
 - Play-mode save and validation.
 - Provisioning-script ordering.
+- Every scenario in tablet and phone format with every option on: lint-clean with no warnings, paste rules, every HtmlViewer within Height − 10, loading screen first and navigating home from `OnTimerEnd`, admin check wrapped in `IfError`, AppUsage provisioned, the Mine filter, red borders, confirmation page and two-click delete present.
+- The same app with every option off.
+- PS051 and quote-free `FontCss`.
+- Play: "Still needed" names the blank field, the confirmation page appears, two-click delete, items created in Play count as Mine, and the loading timer reaches Home.
+- A plan's `options` reach the app, a bad group ID is dropped and reported, old plans and projects get defaults.
 
 Run the harness before every push. If you change the emitter on purpose, look at the diff of a generated screen before pasting it into Studio.
 
