@@ -16,13 +16,19 @@ const FX = await import('../js/fx.js');
 const { importYaml } = await import('../js/import.js');
 const { createRuntime } = await import('../js/render.js');
 const FL = await import('../js/flows.js');
+const AI = await import('../js/ai.js');
+const fs = await import('node:fs');
+const FIXTURE = JSON.parse(fs.readFileSync(new URL('./fixture-plan.json', import.meta.url), 'utf8'));
 
 // ---------------------------------------------------------------- tiny runner
 let pass = 0, fail = 0;
 const failures = [];
+const pending = [];
 function test(name, fn) {
-  try { fn(); pass++; process.stdout.write('.'); }
-  catch (e) { fail++; failures.push(`✗ ${name}\n    ${e.message}`); process.stdout.write('F'); }
+  const ok = () => { pass++; process.stdout.write('.'); };
+  const bad = (e) => { fail++; failures.push(`✗ ${name}\n    ${e.message}`); process.stdout.write('F'); };
+  try { const r = fn(); if (r && typeof r.then === 'function') pending.push(r.then(ok, bad)); else ok(); }
+  catch (e) { bad(e); }
 }
 function assert(cond, msg) { if (!cond) throw new Error(msg); }
 const eq = (a, b, msg) => assert(a === b, `${msg}: expected ${JSON.stringify(b)}, got ${JSON.stringify(a)}`);
@@ -371,5 +377,76 @@ test('old project files without flows still load', () => {
   eq(errors(p).length, 0, 'still lint-clean');
 });
 
+// ---------------------------------------------------------------- describe with Claude
+test('plan schema stays inside structured-output limits', () => {
+  const bad = ['minimum', 'maximum', 'maxItems', 'minLength', 'maxLength', 'oneOf', 'not', 'pattern'];
+  const walkS = (s, path) => {
+    for (const k of bad) assert(!(k in s), `${path} uses unsupported ${k}`);
+    if (s.type === 'object') {
+      eq(s.additionalProperties, false, path + ' additionalProperties');
+      eq(JSON.stringify([...s.required].sort()), JSON.stringify(Object.keys(s.properties).sort()), path + ' requires every property');
+      for (const [k, v] of Object.entries(s.properties)) walkS(v, path + '.' + k);
+    }
+    if (s.type === 'array') walkS(s.items, path + '[]');
+  };
+  walkS(AI.PLAN_SCHEMA, 'plan');
+  const req = AI.buildRequest('An app', 'claude-sonnet-5-5');
+  eq(req.output_config.format.type, 'json_schema', 'structured output');
+  assert(!('temperature' in req), 'no temperature (removed in API 2026-10-21)');
+});
+
+test('callClaude sends browser-access headers and reads the plan', async () => {
+  let seen = null;
+  const fetchFn = async (url, init) => { seen = { url, init }; return { ok: true, status: 200, json: async () => ({ stop_reason: 'end_turn', content: [{ type: 'thinking', thinking: '…' }, { type: 'text', text: JSON.stringify(FIXTURE) }], usage: { input_tokens: 10, output_tokens: 20 } }) }; };
+  const r = await AI.callClaude({ key: 'sk-ant-test', model: 'claude-sonnet-5-5', text: 'x', fetchFn });
+  eq(seen.url, 'https://api.anthropic.com/v1/messages', 'endpoint');
+  eq(seen.init.headers['anthropic-dangerous-direct-browser-access'], 'true', 'CORS opt-in');
+  eq(seen.init.headers['anthropic-version'], '2026-10-21', 'version');
+  eq(r.plan.appName, 'Training Requests', 'plan parsed past the thinking block');
+  let msg = '';
+  try { await AI.callClaude({ key: 'sk-ant-x', text: 'x', fetchFn: async () => ({ ok: false, status: 401, json: async () => ({ error: { message: 'invalid x-api-key' } }) }) }); } catch (e) { msg = e.message; }
+  assert(/rejected/.test(msg), '401 explained: ' + msg);
+  msg = '';
+  try { await AI.callClaude({ key: 'nope', text: 'x', fetchFn }); } catch (e) { msg = e.message; }
+  assert(/sk-ant-/.test(msg), 'bad key caught before sending');
+});
+
+test('a messy plan becomes a clean, lint-free project', () => {
+  const { project: p, notes } = AI.specToProject(FIXTURE, { siteUrl: 'https://contoso.sharepoint.com/sites/Team' });
+  eq(p.lists[0].name, 'TrainingRequests', 'list name without spaces');
+  const names = p.lists[0].columns.map((c) => c.name);
+  assert(names.includes('CourseCost') && !names.includes('Course Cost'), 'column names cleaned');
+  assert(names.filter((n) => n === 'Title').length === 1, 'Title not duplicated');
+  assert(names.includes('TrainingRequestStartDate') && !names.includes('StartDate'), 'reserved StartDate renamed');
+  eq(p.lists[0].columns.find((c) => c.name === 'Format').type, 'Text', 'choice without choices → text');
+  eq(p.lists[0].columns.find((c) => c.name === 'Vendor').type, 'Text', 'lookup to a missing list → text');
+  assert(p.screens.some((s) => s.name === 'scrApprovalsTrainingRequests'), 'approvals screen');
+  const [created, changed, reminder, button] = p.flows;
+  assert(created.body.includes('{CourseCost}'), 'tokens follow renamed columns: ' + created.body);
+  eq(JSON.stringify(changed.statusValues), '["Approved","Rejected"]', 'unknown status values dropped');
+  eq(changed.recipients.length, 1, 'non-person column recipient dropped');
+  eq(reminder.hour, 23, 'hour clamped');
+  eq(reminder.recipients.length, 1, 'bad address dropped');
+  eq(button.name, 'SendSummaryToMe', 'button flow name is an identifier');
+  const det = p.screens.find((s) => s.name === 'scrDetailTrainingRequests');
+  assert(det.controls.some((c) => c.actions?.OnSelect?.some((a) => a.type === 'runFlow' && a.flow === button.id)), 'button flow wired to a detail button');
+  eq(p.app.deepLink?.screen, det.id, 'email links open the detail screen');
+  assert(notes.length >= 4, 'fixes reported');
+  eq(errors(p).length, 0, 'lint errors: ' + errors(p).map((x) => `${x.code} ${x.where} ${x.msg}`).join('; '));
+  const seen = new Set();
+  for (const s of p.screens) checkScreenYaml(E.screenYaml(p, s), seen);
+  for (const f of p.flows) checkExpressions(FL.flowDefinition(p, f));
+});
+
+test('an empty or broken plan still builds something usable', () => {
+  const { project: p } = AI.specToProject({ lists: [], screens: {}, flows: [{ kind: 'nonsense' }] });
+  assert(p.lists.length === 1 && p.screens.length > 0, 'fallback list and screens');
+  eq(errors(p).length, 0, 'lint-clean');
+  let msg = '';
+  try { AI.parseResponse({ stop_reason: 'max_tokens', content: [] }); } catch (e) { msg = e.message; }
+  assert(/cut off/.test(msg), 'truncation explained');
+});
+
+await Promise.all(pending);
 console.log(`\n\n${pass} passed, ${fail} failed`);
 if (failures.length) { console.log(failures.join('\n')); process.exit(1); }

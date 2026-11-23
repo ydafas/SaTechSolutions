@@ -10,6 +10,7 @@ A browser-only Power Apps canvas app designer for satechitsolutions.com. There i
 4. **Play**: runs the app against sample data, including search, open, edit, save, delete, approve/reject, variables and people pickers.
 5. **Get YAML**: App.Formulas, App.OnStart, App.StartScreen and one paste-ready YAML block per screen. It also produces a lint report, a PnP provisioning script, the project JSON and a zip of everything.
 6. **Import**: paste YAML copied from Power Apps Studio (or a `Src/*.pa.yaml` file) to keep editing it here.
+8. **Describe your app** (uses Claude): write requirements in plain English. Claude returns a plan of lists, screens, approvals and flows, which you review and refine before the studio builds it. It uses the visitor's own Anthropic API key.
 7. **Flows**: Power Automate flows for the app's lists, exported as legacy flow packages. There are four templates: email on a new item, email when a Choice column changes, a daily reminder, and a flow a button runs. The email editor uses `{Column}` tokens and `{Link}`, which deep-links into the app. Play mode shows which flows would fire.
 
 ## Files
@@ -25,6 +26,8 @@ A browser-only Power Apps canvas app designer for satechitsolutions.com. There i
 | `js/import.js` | YAML import with name-clash renaming |
 | `js/ui.js` | Designer UI: canvas, panels, inspector, dialogs, Play |
 | `js/flows.js` | Flow model and templates, Logic Apps definitions, legacy package files (`flowPackageFiles`), tokens to expressions, deep link (`deepLinkInfo`), flow lint |
+| `js/ai.js` | Describe-your-app: plan JSON schema, system prompt, browser call to the Claude API, `specToProject` (cleans the plan and builds the project, wiring button flows and deep links) |
+| `js/describeui.js` | The Describe dialog: requirements, key, model, review, refine, build |
 | `js/flowsui.js` | Flows tab, new-flow picker, flow editor with email preview, package download, tenant-sample loader |
 | `tests/run.mjs` | Test harness: no dependencies beyond Node 18+ and the vendored js-yaml |
 | `vendor/` | js-yaml 4.1.0 and JSZip 3.10.1, served locally |
@@ -146,3 +149,21 @@ Flows read columns by internal name, which is the column name without spaces, th
 Email links: set the app web link and the screen that opens items (App tab). `App.StartScreen` becomes `If(IsBlank(Param("ID")), <start>, <screen>)`. OnStart and that screen's OnVisible both load the item from `Param("ID")`, so the non-blocking OnStart cannot overwrite it.
 
 The flow packages have not yet been import-tested in a real tenant. To match a tenant's export exactly, load one of its own exported flow packages under Flows → Tenant sample; connector display names, icons and connection names are copied from it.
+
+## Describe your app (Claude)
+
+The browser calls `https://api.anthropic.com/v1/messages` directly, sending the `anthropic-dangerous-direct-browser-access: true` header and `anthropic-version: 2026-10-21`. It asks for JSON that matches `PLAN_SCHEMA` through structured outputs (`output_config.format`). No server is involved:
+
+- The API key is typed by the visitor. It is kept in `sessionStorage`, or `localStorage` if they tick Remember, and never written to project files or exports.
+- The description goes to Anthropic and is billed to the visitor's key. The dialog says so before sending.
+- `specToProject()` never trusts the plan:
+  - Names are made into identifiers, and names SharePoint already uses are renamed.
+  - Choice columns without choices and Lookups to missing lists become text.
+  - Recipients must be Person columns or real addresses.
+  - Status values must exist, and hours and days are clamped.
+  - Email tokens follow renamed columns.
+  - Every fix is shown to the visitor.
+- Refining sends the requirements, the previous plan and the requested change as a three-turn conversation.
+- `tests/fixture-plan.json` is a deliberately messy plan. The tests check that it builds a lint-clean project, and they mock `fetch` to check the request headers and error handling.
+
+Corporate and government networks often block `api.anthropic.com`; the dialog reports that case clearly. The Claude artifact preview also blocks outside requests, so this feature only works on the live site.
