@@ -28,7 +28,8 @@
         <button class="ic" id="btnUndo" title="Undo (Ctrl+Z)" aria-label="Undo"></button>
         <button class="ic" id="btnRedo" title="Redo (Ctrl+Y)" aria-label="Redo"></button>
         <span class="sep"></span>
-        <button class="tb" id="btnWizard" title="Generate an app from your requirements">New app</button>
+        <button class="tb" id="btnDescribe" title="Describe the app in plain English; Claude plans it">Describe</button>
+        <button class="tb" id="btnWizard" title="Generate an app from a scenario">New app</button>
         <div class="dd" id="fileMenu">
           <button class="tb" id="btnFile" aria-haspopup="true">Project</button>
           <div class="dd-menu" role="menu">
@@ -37,6 +38,7 @@
             <button data-cmd="open">Open project file…</button>
             <button data-cmd="paste">Paste project JSON…</button>
             <hr>
+            <button data-cmd="describe">Describe your app (Claude)…</button>
             <button data-cmd="import">Import screen YAML…</button>
             <hr>
             <button data-cmd="help">How it works</button>

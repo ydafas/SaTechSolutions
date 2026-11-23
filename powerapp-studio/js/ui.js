@@ -3,6 +3,7 @@ import * as core from './core.js';
 import { CATALOG, CATS, COLTYPES, THEME_COLORS, THEME_PRESETS, FONTS, FORM_FACTORS, clone, uid, walk, findCtl, newControl, newScreen, newList, newColumn, allNames, IDENT, RESERVED, sampleRows, varSel, companions, INPUT_TYPES, colOf, cssColor, isHex, s as fxString, renameCopy, normalizeProject } from './core.js';
 import { screenYaml, themeFormulas, onStartFx, startScreenName, startScreenFx, checklist, provisioningScript, lint, ACTION_TYPES, controlYaml, usedLists } from './emit.js';
 import { flowDefinition, flowFileName, flowFxName, FLOW_KINDS } from './flows.js';
+import { initDescribeUI, describeDialog } from './describeui.js';
 import { initFlowsUI, panelFlows, addFlowDialog, flowDialog, downloadFlow, duplicateFlow, deleteFlow, loadFlowSample, flowZipBlob } from './flowsui.js';
 import { renderControl, renderScreen, createRuntime, svgIcon, FONT_CSS } from './render.js';
 import { SCENARIOS, generateApp, SCREEN_TEMPLATES, genBlank, genHome, genBrowse, genDetail, genEdit, genApprovals, BLOCKS, insertBlock, galleryRows } from './templates.js';
@@ -527,6 +528,7 @@ function panelApp() {
     <label class="f"><span>Extra App.OnStart (Power Fx)</span><textarea data-app="onStart" rows="4" placeholder="Set(varIsAdmin, false)">${esc(P.app.onStart)}</textarea></label>
     <label class="f"><span>Extra App.Formulas (named formulas)</span><textarea data-app="formulas" rows="4" placeholder="AppVersion = &quot;1.0&quot;;">${esc(P.app.formulas)}</textarea></label>
     <div class="sub">Build</div>
+    <button class="rowbtn" data-cmd="describe"><i>${ui('edit')}</i><span>Describe your app<small>Write the requirements; Claude plans the lists, screens and flows</small></span></button>
     <button class="rowbtn" data-cmd="wizard"><i>${ui('star')}</i><span>New app from requirements<small>Pick a scenario, shape the lists, generate every screen</small></span></button>
     <button class="rowbtn" data-cmd="import"><i>${ui('upload')}</i><span>Import screen YAML<small>Bring a screen from Power Apps Studio back in to edit</small></span></button>
     <button class="rowbtn" data-cmd="code"><i>${ui('html')}</i><span>Get YAML<small>App.Formulas, OnStart and every screen, ready to paste</small></span></button>
@@ -981,10 +983,13 @@ function wizard(first = false) {
     m.el.querySelector('#wzNext').textContent = wz.step === 3 ? 'Generate app' : 'Next';
     m.el.querySelector('#wzNote').textContent = wz.step === 1 ? 'You can change everything afterwards in the designer.' : wz.step === 2 ? 'These become SharePoint lists. Required columns get validation in the form.' : '';
     if (wz.step === 1) {
-      body.innerHTML = `<div class="scen">${Object.entries(SCENARIOS).map(([k, s]) => `<button data-scen="${k}" class="${k === wz.scen ? 'on' : ''}"><i>${svgIcon(s.icon, '#fff', 2)}</i><b>${esc(s.label)}</b><small>${esc(s.blurb)}</small></button>`).join('')}</div>
+      body.innerHTML = `<button class="describe-cta" id="wzDescribe"><i>${svgIcon('edit', '#fff', 2)}</i><span><b>Describe it in your own words</b><small>Write the requirements in plain English. Claude plans the lists, screens and flows, and you review the plan before anything is built. Needs your Anthropic API key.</small></span><em>Describe →</em></button>
+        <div class="sub" style="margin-top:16px">Or start from a scenario</div>
+        <div class="scen">${Object.entries(SCENARIOS).map(([k, s]) => `<button data-scen="${k}" class="${k === wz.scen ? 'on' : ''}"><i>${svgIcon(s.icon, '#fff', 2)}</i><b>${esc(s.label)}</b><small>${esc(s.blurb)}</small></button>`).join('')}</div>
         <div class="grid2" style="margin-top:18px">${F('App name', `<input id="wzName" value="${esc(wz.name)}">`)}${F('Format', `<select id="wzFF">${Object.entries(FORM_FACTORS).map(([k, v]) => `<option value="${k}" ${k === wz.ff ? 'selected' : ''}>${v.label}</option>`).join('')}</select>`)}</div>`;
       body.querySelectorAll('[data-scen]').forEach((b) => b.onclick = () => { wz.scen = b.dataset.scen; wz.name = SCENARIOS[wz.scen].app; wz.lists = SCENARIOS[wz.scen].lists(); wz.approvals = !!SCENARIOS[wz.scen].approvals; draw(); });
       body.querySelector('#wzName').oninput = (e) => (wz.name = e.target.value);
+      body.querySelector('#wzDescribe').onclick = () => { m.close(); describeDialog(); };
       body.querySelector('#wzFF').onchange = (e) => (wz.ff = e.target.value);
     }
     if (wz.step === 2) {
@@ -1229,6 +1234,7 @@ function runCmd(cmd, el) {
     case 'addList': { let n = 'NewList', k = 2; while (P.lists.some((l) => l.name === n)) n = 'NewList' + k++; P.lists.push(newList(n)); renderPanel(); commit(); return; }
     case 'importSchema': return schemaDialog();
     case 'showScript': return codeDialog('script');
+    case 'describe': return describeDialog();
     case 'addFlow': return addFlowDialog();
     case 'editFlow': return flowDialog(el.dataset.fid);
     case 'dlFlow': { const f = P.flows.find((x) => x.id === el.dataset.fid); if (f) downloadFlow(f); return; }
@@ -1261,6 +1267,7 @@ function runCmd(cmd, el) {
 
 function init() {
   initFlowsUI({ P: () => P, modal, toast, ui, esc, svgIcon, commit, renderPanel, download, copyText, ask });
+  initDescribeUI({ P: () => P, modal, toast, ui, esc, ask, setProject: (p) => { setProject(p, true); commit(); } });
   // icons in static buttons
   $('#btnUndo').innerHTML = ui('undo'); $('#btnRedo').innerHTML = ui('redo');
   const saved = loadSaved();
@@ -1270,6 +1277,7 @@ function init() {
   $('#appName').addEventListener('input', (e) => { P.app.name = e.target.value; commitSoon(); renderPanelIf('app'); });
   $('#btnUndo').onclick = undo; $('#btnRedo').onclick = redo;
   $('#btnWizard').onclick = () => wizard();
+  $('#btnDescribe').onclick = () => describeDialog();
   $('#btnPlay').onclick = play;
   $('#btnCode').onclick = () => codeDialog();
   const fm = $('#fileMenu');
