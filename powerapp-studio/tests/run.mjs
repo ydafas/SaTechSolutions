@@ -1115,13 +1115,15 @@ test('approval chain: default output is byte-identical to round 3', () => {
   const out = [];
   const dump = (p) => { out.push(E.themeFormulas(p), E.onStartFx(p), E.provisioningScript(p), JSON.stringify(E.checklist(p))); for (const s of p.screens) out.push(E.screenYaml(p, s)); for (const f of p.flows || []) out.push(JSON.stringify(FL.flowDefinition(p, f))); };
   const navy = () => core.clone(core.THEME_PRESETS.find((t) => t.name === 'Federal Navy'));
-  for (const [, sc] of Object.entries(SCENARIOS)) for (const ff of ['tablet', 'phone']) {
+  // the scenarios that existed in round 3 (later rounds add more; their output is covered by their own tests)
+  for (const sc of ['requests', 'assets', 'events', 'tasks', 'contacts', 'blank'].map((k) => SCENARIOS[k])) for (const ff of ['tablet', 'phone']) {
     const p = core.newProject(); p.app.name = sc.app; p.app.formFactor = ff; p.lists = sc.lists(); p.theme = navy(); p.app.siteUrl = 'https://x.sharepoint.us/sites/a';
     generateApp(p, { screens: ['home', 'browse', 'detail', 'edit'], approvals: sc.approvals || null }); dump(p);
   }
   const r = AI.specToProject(FIXTURE); r.project.theme = navy(); dump(r.project);
   // sha256 of the same output on origin/main 308cbb9 (round 3)
-  eq(createHash('sha256').update(out.join('\n')).digest('hex'), 'b9b9ec87f1ba70053febf80704bb907b5dcb17e1432d6c07a3daba3940c4660f', 'output hash');
+  // round 6: detail section titles now hide with their cards (Visible: has); the only change vs round 3
+  eq(createHash('sha256').update(out.join('\n')).digest('hex'), '7ba2ef8bb522888d4bc3dde46ab6f572ae71a83354f4cd075049da751f319a3d', 'output hash');
   assert(!r.project.app.chain, 'the round-3 plan fixture (no stages) stays a single approvals queue');
 });
 test('approval chain: lint catches bad group IDs, wrong approver columns and missing columns', () => {
@@ -1466,6 +1468,279 @@ test('history: snapshot, diff, restore and cap', () => {
   const n = core.normalizeProject(JSON.parse(JSON.stringify({ ...r, snapshots: [...r.snapshots, { data: 'not json' }, null] })));
   eq(n.snapshots.length, core.MAX_SNAPSHOTS, 'junk snapshots dropped on load');
   assert(!JSON.parse(n.snapshots[0].data).snapshots, 'snapshots do not nest');
+});
+
+// ---------------------------------------------------------------- round 6: scenario gallery
+const SC6 = await import('../js/scenarios.js');
+const NEW_SCENARIOS = ['workorders', 'checkout', 'incidents', 'onboarding', 'leave', 'policies'];
+/** What Finish setup fills in, so lint judges the app rather than the missing setup values. */
+function setupDone(p) {
+  p.app.siteUrl = 'https://contoso.sharepoint.com/sites/Team';
+  p.app.appLink = 'https://apps.powerapps.com/play/e/env/a/app?tenantId=t';
+  for (const st of p.app.chain?.stages || []) if (st.approver === 'group' && !st.groupId) st.groupId = '11111111-2222-4333-8444-555555555555';
+  if (p.app.features?.usage) p.app.setup = { ...(p.app.setup || {}), usageConfirmed: true };
+  return p;
+}
+test('round 6: every new scenario builds a lint-clean, paste-safe app (tablet + phone, options on and off)', () => {
+  const variants = [{}, { loading: false, confirm: false, stepper: false, scope: 'all' }, { loading: true, confirm: true, stepper: true, scope: 'mine', usage: true, adminGroup: '11111111-2222-4333-8444-555555555555' }];
+  for (const k of NEW_SCENARIOS) for (const ff of ['tablet', 'phone']) for (const v of variants) {
+    const p = setupDone(SC6.buildScenario(k, { formFactor: ff, features: v }));
+    const bad = E.lint(p).filter((x) => x.level !== 'info');
+    eq(bad.length, 0, `${k} ${ff} ${JSON.stringify(v)}: ` + bad.map((x) => `${x.code} ${x.where} ${x.msg}`).join('; '));
+    const seen = new Set();
+    for (const s of p.screens) checkScreenYaml(E.screenYaml(p, s), seen);
+    for (const f of p.flows || []) checkExpressions(FL.flowDefinition(p, f));
+  }
+});
+test('round 6: scenarios carry their flows, chain and attachments', () => {
+  const wo = SC6.buildScenario('workorders');
+  eq(wo.flows.length, 3, 'work order flows');
+  assert(wo.flows.every((f) => f.recipients.length), 'every flow has a recipient');
+  assert(wo.app.deepLink?.screen, 'email links open the details screen');
+  const lv = SC6.buildScenario('leave');
+  eq(lv.app.chain?.stages.length, 2, 'leave has a 2-stage chain');
+  assert(lv.flows.some((f) => f.chain), 'chain flows added');
+  const ob = SC6.buildScenario('onboarding');
+  eq(ob.lists.find((l) => l.name === 'OnboardingTasks').columns.find((c) => c.name === 'Hire').lookupList, 'NewHires', 'lookup to hires');
+  assert(SC6.buildScenario('policies').lists[0].attachments === true, 'policies turn attachments on');
+  assert(/flows/.test(SC6.scenarioIncludes('incidents')) && /2-step approvals/.test(SC6.scenarioIncludes('leave')), 'gallery summaries');
+  eq(SC6.buildScenario('checkout', { flows: false }).flows.length, 0, 'flows can be left out');
+});
+test('round 6: flows of a scenario survive the user removing their list', () => {
+  const p = core.newProject(); p.lists = SCENARIOS.checkout.lists().filter((l) => l.name === 'Equipment');
+  generateApp(p, {});
+  const added = SC6.addScenarioFlows(p, SCENARIOS.checkout);
+  eq(added.length, 0, 'flows for the removed Checkouts list are skipped');
+});
+
+// ---------------------------------------------------------------- round 6: attachments on forms
+const AT = await import('../js/attach.js');
+test('round 6 attachments: off by default, nothing names a form', () => {
+  for (const k of ['requests', 'assets', 'events', 'tasks', 'contacts', 'workorders', 'leave']) {
+    const p = SC6.buildScenario(k);
+    for (const s of p.screens) assert(!/frmAttach/.test(E.screenYaml(p, s)), `${k} ${s.name} names no attachments form`);
+    assert(!/EnableAttachments/.test(E.provisioningScript(p)), `${k}: provisioning untouched`);
+    assert(!DP.deploySteps(p).some((x) => x.kind === 'attach'), `${k}: no attachments step`);
+  }
+});
+test('round 6 attachments: edit screen loads, saves and resets the hand-added form; details only shows it', () => {
+  for (const ff of ['tablet', 'phone']) {
+    const p = setupDone(SC6.buildScenario('policies', { formFactor: ff }));
+    const edit = p.screens.find((x) => x.name === 'scrEditPolicies'), det = p.screens.find((x) => x.name === 'scrDetailPolicies');
+    const ey = E.screenYaml(p, edit), dy = E.screenYaml(p, det);
+    assert(/Patch\(Policies, [^\n]*\n(?:[^\n]*\n)*?\s*\}, frmAttachPolicies\.Updates\)/.test(ey), 'Save merges frmAttachPolicies.Updates as an extra Patch argument');
+    assert(ey.includes('If(IsBlank(varSelPolicies.ID), NewForm(frmAttachPolicies), EditForm(frmAttachPolicies))'), 'loader in OnVisible');
+    assert(ey.includes('ResetForm(frmAttachPolicies)'), '"Add another" clears the files');
+    assert(/htmlAttachEditPolicies/.test(ey) && /frmAttachViewPolicies/.test(dy), 'placeholders on both screens');
+    eq(dy.split('\n').filter((l) => /frmAttachView/.test(l) && !/HtmlText|<div/.test(l)).length, 0, 'no formula on details names the view form');
+    const lint = E.lint(p);
+    eq(lint.filter((x) => x.level !== 'info').length, 0, ff + ' lint clean: ' + lint.filter((x) => x.level !== 'info').map((x) => x.code + ' ' + x.where).join('; '));
+    eq(lint.filter((x) => x.code === 'PS060').length, 2, 'PS060 reminder per placeholder');
+    const seen = new Set();
+    for (const s of p.screens) checkScreenYaml(E.screenYaml(p, s), seen);
+    assert(/Set-PnPList -Identity 'Policies' -EnableAttachments \$true/.test(E.provisioningScript(p)), 'provisioning turns attachments on');
+  }
+});
+test('round 6 attachments: Paste assistant step, paste-error report, normalize', () => {
+  const p = setupDone(SC6.buildScenario('policies'));
+  const steps = DP.deploySteps(p);
+  const at = steps.filter((x) => x.kind === 'attach');
+  eq(at.length, 2, 'one step per screen');
+  const i = steps.findIndex((x) => x.key === 'attach:' + at[1].screen.id);
+  eq(steps[i - 1].key, 'scr:' + at[1].screen.id, 'right after its screen');
+  const how = at.find((x) => x.screen.name === 'scrEditPolicies').how;
+  for (const bit of ['Rename it to frmAttachPolicies', 'Data source: Policies', 'remove every field except Attachments', 'Item: =varSelPolicies', 'DefaultMode: =FormMode.Edit', 'Unlock', 'DisplayMode: =DisplayMode.Edit', 'Notepad']) assert(how.includes(bit), 'instructions: ' + bit);
+  assert(steps.find((x) => x.key === 'scr:' + at[0].screen.id).how.includes('Notepad'), 'screen step warns about re-pastes');
+  for (const s of steps) DP.markDeployed(p, s);
+  const edit = p.screens.find((x) => x.name === 'scrEditPolicies');
+  edit.controls.find((c) => c.name.startsWith('btnCancel')).props.text = 'Close';
+  const pend = DP.pendingSteps(p).map((x) => x.key);
+  assert(pend.includes('scr:' + edit.id) && pend.includes('attach:' + edit.id), 're-pasting the screen brings the attachments step back');
+  const f = FB.analyze(p, "Name isn't valid. 'frmAttachPolicies' isn't recognized.")[0];
+  eq(f.family, 'attachForm', 'recognized');
+  assert(f.where.startsWith('scrEditPolicies') && f.actions.some((a) => a.kind === 'select'), 'points at the placeholder');
+  const n = core.normalizeProject(JSON.parse(JSON.stringify({ ...p, lists: p.lists.map((l) => ({ ...l, attachments: 'yes' })) })));
+  assert(!n.lists[0].attachments, 'only true turns attachments on');
+  const bad = JSON.parse(JSON.stringify(p));
+  bad.screens[0].controls.push({ id: 'x1', type: 'html', name: 'htmlX', props: {}, attachSlot: { list: 7, mode: 'oops' } });
+  assert(!core.normalizeProject(bad).screens[0].controls.at(-1).attachSlot, 'junk placeholder metadata dropped');
+});
+test('round 6 attachments: toggling on an existing app adds, rebuilds or removes the placeholders', () => {
+  for (const ff of ['tablet', 'phone']) {
+    const p = setupDone(SC6.buildScenario('requests', { formFactor: ff }));
+    const ids = p.screens.map((s) => s.id + s.name).join();
+    p.lists[0].attachments = true;
+    const tight = ED.attachNoRoom(p, 'Requests');
+    const r = ED.syncAttachSlots(p, 'Requests', { rebuild: true });
+    eq(r.rebuilt.length, tight.length, 'screens without room are rebuilt');
+    eq(r.added.length + r.rebuilt.length, 2, 'edit and details both get the box');
+    eq(p.screens.map((s) => s.id + s.name).join(), ids, 'same screen ids and names');
+    eq(E.lint(p).filter((x) => x.level !== 'info').length, 0, ff + ' lint clean after the toggle');
+    assert(E.screenYaml(p, p.screens.find((x) => x.name === 'scrEditRequests')).includes('frmAttachRequests.Updates'), 'save uses the form');
+    delete p.lists[0].attachments;
+    const off = ED.syncAttachSlots(p, 'Requests');
+    eq(off.removed.length, 2, 'off removes both');
+    assert(p.screens.every((s) => !/frmAttach/.test(E.screenYaml(p, s))), 'no reference left');
+  }
+  // without rebuild the box still lands behind every clickable control
+  const q = setupDone(SC6.buildScenario('requests'));
+  q.lists[0].attachments = true;
+  ED.syncAttachSlots(q, 'Requests');
+  assert(!E.lint(q).some((x) => x.code === 'PS040'), 'never covers a button');
+  // a list rename follows the placeholder and its form name
+  const p2 = SC6.buildScenario('policies');
+  ED.renameListIn(p2, 'Policies', 'Procedures');
+  const ey = E.screenYaml(p2, p2.screens.find((x) => /^scrEdit/.test(x.name)));
+  assert(ey.includes('frmAttachProcedures.Updates') && ey.includes('<b>frmAttachProcedures</b>'), 'renamed form');
+});
+test('round 6 attachments: Play keeps files with the item', () => {
+  const p = SC6.buildScenario('policies');
+  const rt = createRuntime(p, { toast: () => {}, rerender: () => {} });
+  assert(rt.db.Policies.some((r) => r.Attachments?.length), 'sample rows carry files');
+  const edit = p.screens.find((x) => x.name === 'scrEditPolicies');
+  const slot = edit.controls.find((c) => c.attachSlot);
+  const save = edit.controls.find((c) => c.name.startsWith('btnSave'));
+  rt.vars.varSelPolicies = rt.db.Policies[0];
+  rt.inputs[slot.name] = [...(rt.db.Policies[0].Attachments || []), { DisplayName: 'new.pdf' }];
+  rt.run(edit, save.actions.OnSelect);
+  assert(rt.db.Policies[0].Attachments.some((f) => f.DisplayName === 'new.pdf'), 'saved with the item');
+});
+
+// ---------------------------------------------------------------- round 6: approval-chain extras
+const ADM = '11111111-2222-4333-8444-555555555555';
+/** The leave scenario with every extra on (deadlines 3 and 2 days, reassign, admin override). */
+function leaveExtras(ff = 'tablet', adminGroup = ADM) {
+  const sc = SCENARIOS.leave, orig = sc.chain;
+  sc.chain = { ...orig, reassign: true, override: true, stages: orig.stages.map((st, i) => ({ ...st, slaDays: i ? 2 : 3 })) };
+  try { return setupDone(SC6.buildScenario('leave', { formFactor: ff, features: { adminGroup } })); } finally { sc.chain = orig; }
+}
+test('round 6 chain extras: off by default, every extra opt-in', () => {
+  const p = SC6.buildScenario('leave');
+  const l = p.lists.find((x) => x.name === 'LeaveRequests');
+  assert(!l.columns.some((c) => /Delegate$|^StageSince$/.test(c.name)), 'no extra columns');
+  assert(!p.flows.some((f) => f.chainStage), 'no reminder flows');
+  assert(!p.screens.some((s) => [...core.walk(s.controls)].some(([c]) => /^(btnChainMore|lblOverdue|btnPanelDetails)/.test(c.name))), 'no extra controls');
+  const n = core.normalizeChain({ list: 'X', stages: [{ name: 'A', slaDays: '400' }, { name: 'B', slaDays: -2 }], reassign: 'yes', override: 1 });
+  eq(n.stages[0].slaDays, 90, 'deadline capped'); assert(!('slaDays' in n.stages[1]) && !n.reassign && !n.override, 'only real values turn extras on');
+});
+test('round 6 chain extras: lint-clean, paste-safe screens and formulas (tablet + phone)', () => {
+  for (const ff of ['tablet', 'phone']) {
+    const p = leaveExtras(ff);
+    const bad = E.lint(p).filter((x) => x.level !== 'info');
+    eq(bad.length, 0, ff + ': ' + bad.map((x) => `${x.code} ${x.where} ${x.msg}`).join('; '));
+    const seen = new Set();
+    for (const s of p.screens) checkScreenYaml(E.screenYaml(p, s), seen);
+    for (const f of p.flows) checkExpressions(FL.flowDefinition(p, f));
+    const l = p.lists.find((x) => x.name === 'LeaveRequests');
+    for (const c of ['SupervisorDelegate', 'HRDelegate', 'StageSince']) assert(l.columns.some((x) => x.name === c && x.chain), c + ' column (hidden from forms)');
+    const det = E.screenYaml(p, p.screens.find((s) => s.name === 'scrDetailLeaveRequests'));
+    assert(det.includes('SupervisorDelegate: {\'@odata.type\'') && det.includes('Reassigned to " & varPickppReassign'), 'reassign writes the stand-in and a history line');
+    assert(det.includes('Approved (admin override)') && det.includes('Give a reason for the override.'), 'override needs a reason and is logged');
+    assert(det.includes('StageSince: Today()'), 'decisions restart the stage clock');
+    assert(/overdue/.test(det), 'details say when a stage is overdue');
+    const ap = E.screenYaml(p, p.screens.find((s) => s.name === 'scrApprovalsLeaveRequests'));
+    assert(ap.includes('SupervisorDelegate.Email = User().Email') && ap.includes('lblOverdue'), 'queue includes stand-ins and the overdue badge');
+    const edit = E.screenYaml(p, p.screens.find((s) => s.name === 'scrEditLeaveRequests'));
+    assert(edit.includes('StageSince: Coalesce(LookUp(LeaveRequests, ID = varSelLeaveRequests.ID).StageSince, Today())'), 'new items start the clock');
+    const rem = p.flows.filter((f) => f.chainStage);
+    eq(rem.length, 2, 'a reminder per stage with a deadline');
+    const q = FL.flowDefinition(p, rem[0]).actions.Get_items.inputs.parameters.$filter;
+    assert(q.startsWith('CurrentStage eq 1 and StageSince lt'), 'reminder filter: ' + q);
+    assert(rem[1].recipients.some((r) => r.value === 'HRDelegate'), 'group stage reminder goes to its stand-in');
+  }
+  const noAdmin = leaveExtras('tablet', '');
+  assert(E.lint(noAdmin).some((x) => x.code === 'PS061'), 'override without an admin group is flagged');
+});
+test('round 6 chain extras: Play reassigns, overrides and shows overdue items', () => {
+  const p = leaveExtras();
+  const ch = p.app.chain;
+  const rt = createRuntime(p, { toast: () => {}, rerender: () => {} });
+  const rows = rt.db.LeaveRequests;
+  assert(rows.some((r) => CHN.playOverdue(ch, r) > 0), 'sample data has overdue items');
+  const det = p.screens.find((s) => s.name === 'scrDetailLeaveRequests');
+  const r = rows.find((x) => x.CurrentStage === 1 && x.Author === core.PEOPLE[0]);
+  assert(r && !CHN.playCanDecide(ch, r, rt.vars), 'own request cannot be decided');
+  rt.vars.varSelLeaveRequests = r;
+  const ppName = [...core.walk(det.controls)].map(([c]) => c).find((c) => c.name.startsWith('ppReassign')).name;
+  rt.inputs[ppName] = core.PEOPLE[4];
+  rt.run(det, [{ type: 'reassign', list: 'LeaveRequests', picker: ppName }]);
+  eq(r.SupervisorDelegate?.DisplayName, core.PEOPLE[4].DisplayName, 'stand-in set');
+  assert(r.ApprovalHistory.split('\n')[0].includes('Reassigned to ' + core.PEOPLE[4].DisplayName), 'history line');
+  assert(CHN.playCanDecide(ch, r, rt.vars, core.PEOPLE[4].Mail), 'the stand-in may decide');
+  rt.vars.varIsAdmin = true;
+  const reason = [...core.walk(det.controls)].map(([c]) => c).find((c) => c.name.startsWith('txtOverrideReason')).name;
+  rt.run(det, [{ type: 'override', list: 'LeaveRequests', decision: 'Approved', commentCtl: reason }]);
+  eq(r.CurrentStage, 1, 'no reason, no override');
+  rt.inputs[reason] = 'Supervisor on leave';
+  rt.run(det, [{ type: 'override', list: 'LeaveRequests', decision: 'Approved', commentCtl: reason }]);
+  eq(r.CurrentStage, 2, 'override moved it on');
+  assert(r.ApprovalHistory.split('\n')[0].includes('Approved (admin override)  ·  Supervisor on leave'), 'override logged with its reason');
+  eq(r.StageSince, new Date().toISOString().slice(0, 10), 'stage clock restarted');
+});
+test('round 6 chain extras: Ask for a change and plans carry them', () => {
+  const p = build('requests');
+  const ops = [{ op: 'setApprovalStages', list: 'Requests', column: 'Status', reassign: true, adminOverride: false, stages: [{ name: 'Manager', approverKind: 'personColumn', approverColumn: '', groupId: '', notifyEmail: '', slaDays: 2 }, { name: 'Director', approverKind: 'personColumn', approverColumn: '', groupId: '', notifyEmail: '', slaDays: 0 }] }];
+  eq(CH.applyOps(p, ops).applied.length, 1, 'applied');
+  assert(p.app.chain.reassign && !p.app.chain.override && p.app.chain.stages[0].slaDays === 2 && !p.app.chain.stages[1].slaDays, 'chain settings');
+  assert(p.flows.some((f) => f.chainStage === 1), 'reminder flow added');
+  p.app.siteUrl = 'https://contoso.sharepoint.us/sites/ops';
+  const errs = errors(p); assert(!errs.length, errs.map((x) => `${x.code} ${x.where} ${x.msg}`).join('; '));
+  assert(CH.CHANGE_SCHEMA.properties.ops.items.properties.reassign && AI.STAGE_SPEC.properties.slaDays, 'schemas');
+  const plan = JSON.parse(JSON.stringify(FIXTURE));
+  plan.screens.approvals.stages = [{ name: 'Manager', approverKind: 'personColumn', approverColumn: '', groupId: '', notifyEmail: '', slaDays: 4 }, { name: 'Finance', approverKind: 'personColumn', approverColumn: '', groupId: '', notifyEmail: '', slaDays: 0 }];
+  plan.screens.approvals.reassign = true; plan.screens.approvals.adminOverride = true;
+  const { project: q, notes } = AI.specToProject(plan, { siteUrl: 'https://contoso.sharepoint.com/sites/Team' });
+  assert(q.app.chain?.reassign && q.app.chain.override && q.app.chain.stages[0].slaDays === 4, 'plan → chain extras');
+  assert(notes.some((n) => /admin group/.test(n)) || q.app.features.adminGroup, 'override without a group is explained');
+});
+
+// ---------------------------------------------------------------- round 6: polish (lint size actions, versions, bundle merge)
+const VST = await import('../js/versionstore.js');
+test('round 6 polish: lint findings name the list behind PS035 and PS059', () => {
+  const p = build('requests');
+  const f35 = E.lint(p).find((x) => x.code === 'PS035');
+  if (f35) eq(f35.list, 'Requests', 'PS035 carries its list');
+  p.lists[0].size = 'large';
+  p.screens.find((s) => s.name === 'scrBrowseRequests').controls.find((c) => c.type === 'gallery').fx.Items = 'Search(Requests, "x", "Title")';
+  const f59 = E.lint(p).find((x) => x.code === 'PS059');
+  assert(f59 && f59.list === 'Requests', 'PS059 carries its list');
+});
+test('round 6 polish: YAML line diff between two versions', () => {
+  const rows = HI.lineDiff('a\nb\nc\nd\ne\nf\ng', 'a\nb\nX\nd\ne\nf\ng\nh', 1);
+  eq(rows.map((r) => r.t).join(''), '… -+ … +', 'folded rows, one line of context');
+  const a = build('requests'), b = JSON.parse(JSON.stringify(a));
+  b.screens.find((s) => s.name === 'scrEditRequests').controls.find((c) => c.name.startsWith('btnSave')).props.text = 'Send';
+  const d = HI.screenYamlDiffs(a, b, E.screenYaml);
+  eq(d.length, 1, 'one screen differs'); eq(d[0].name, 'scrEditRequests', 'the edit screen');
+  assert(d[0].rows.some((r) => r.t === '+' && r.s.includes('"Send"')) && d[0].rows.some((r) => r.t === '-' && r.s.includes('"Save"')), 'the changed line');
+});
+test('round 6 polish: versions stored apart from the project (localStorage fallback without IndexedDB)', async () => {
+  const mem = new Map(), ls = { getItem: (k) => mem.get(k) ?? null, setItem: (k, v) => mem.set(k, String(v)), removeItem: (k) => mem.delete(k) };
+  const p = build('requests');
+  HI.takeSnapshot(p, 'one'); HI.takeSnapshot(p, 'two');
+  eq(await VST.writeVersions(p.snapshots, { idb: null, ls }), 'ls', 'falls back to localStorage');
+  const back = await VST.readVersions({ idb: null, ls });
+  eq(back.map((x) => x.name).join(), 'one,two', 'read back');
+  eq(VST.versionsSig(back), VST.versionsSig(p.snapshots), 'same signature');
+  await VST.writeVersions([], { idb: null, ls });
+  eq((await VST.readVersions({ idb: null, ls })).length, 0, 'emptied');
+  eq(await VST.writeVersions(p.snapshots, { idb: null, ls: null }), '', 'reports when nothing can store them');
+});
+test('round 6 polish: a bundle can be added to the open app', () => {
+  const t = setupDone(SC6.buildScenario('requests')), src = SC6.buildScenario('requests');
+  src.lists[0].columns.push(core.newColumn('Extra', 'Text'));
+  const before = t.screens.length;
+  const r = BU.mergeProjects(t, src);
+  eq(r.lists.join(), 'Requests2', 'a different list with the same name is renamed');
+  eq(t.screens.length, before + src.screens.length, 'screens added');
+  const names = [...core.allNames(t)]; eq(new Set(names).size, names.length, 'names unique');
+  const bad = E.lint(t).filter((x) => x.level === 'error');
+  eq(bad.length, 0, bad.map((x) => `${x.code} ${x.where} ${x.msg}`).join('; '));
+  const seen = new Set(); for (const s of t.screens) checkScreenYaml(E.screenYaml(t, s), seen);
+  const t2 = SC6.buildScenario('requests'), s2 = SC6.buildScenario('checkout');
+  const r2 = BU.mergeProjects(t2, s2);
+  eq(r2.lists.join(), 'Equipment,Checkouts', 'new lists come in as they are');
+  assert(t2.flows.length >= 2, 'flows added');
 });
 
 await Promise.all(pending);

@@ -2,7 +2,8 @@
 import { newControl, newScreen, newList, newColumn, FORM_FACTORS, allNames, slug, varSel, uid } from './core.js';
 import { readFx, missingFx, usageFx } from './emit.js';
 import { newFlow } from './flows.js';
-import { guessChainValues, chainFor, canDecideFx, canResubmitFx, queueFx, stepperTpl, ensureChainColumns, normalizeChain, stageCols } from './chain.js';
+import { placeholderHtml } from './attach.js';
+import { guessChainValues, chainFor, canDecideFx, canResubmitFx, queueFx, stepperTpl, ensureChainColumns, normalizeChain, stageCols, chainSla, overdueFx, canReassignFx } from './chain.js';
 
 
 // ---------------------------------------------------------------- scenarios (the requirements wizard)
@@ -48,6 +49,98 @@ export const SCENARIOS = {
     app: 'Contact Directory',
     lists: () => [newList('Contacts', [C('Company', 'Text'), C('Email', 'Text'), C('Phone', 'Text'),
       C('ContactType', 'Choice', { choices: ['Customer', 'Vendor', 'Partner', 'Internal'] }), C('Notes', 'Note')])],
+  },
+  workorders: {
+    label: 'Work orders (IT / Facilities)', icon: 'settings', cat: 'Operations', blurb: 'Report a problem, assign a technician, track priority and status to completion.',
+    app: 'Work Orders',
+    lists: () => [newList('WorkOrders', [
+      C('Details', 'Note', { required: true }), C('Category', 'Choice', { choices: ['Facilities', 'IT', 'Electrical', 'Plumbing', 'Other'], required: true }),
+      C('Priority', 'Choice', { choices: ['Normal', 'Low', 'High', 'Critical'] }),
+      C('Status', 'Choice', { choices: ['New', 'Assigned', 'In progress', 'On hold', 'Completed', 'Cancelled'] }),
+      C('Technician', 'Person'), C('Building', 'Text'), C('DueDate', 'DateTime'), C('Resolution', 'Note')])],
+    features: { loading: true, confirm: true, stepper: true, scope: 'all' },
+    flows: [
+      { kind: 'statusChanged', name: 'Tell the technician', list: 'WorkOrders', recipients: [{ kind: 'column', value: 'Technician' }], statusField: 'Status', statusValues: ['Assigned'], subject: 'Work order assigned: {Title}', body: 'Hello,\n\nWork order "{Title}" ({Priority}, {Building}) is assigned to you.\n\n{Details}\n\nOpen it in the app: {Link}' },
+      { kind: 'statusChanged', name: 'Tell the requester it is done', list: 'WorkOrders', recipients: [{ kind: 'author', value: '' }], statusField: 'Status', statusValues: ['Completed'], subject: 'Work order completed: {Title}', body: 'Hello {Author},\n\nYour work order "{Title}" is completed.\n\n{Resolution}\n\nOpen it in the app: {Link}' },
+      { kind: 'reminder', name: 'Daily reminder for open work orders', list: 'WorkOrders', recipients: [{ kind: 'column', value: 'Technician' }], statusField: 'Status', reminderValue: 'In progress', days: 3, hour: 7, subject: 'Still open: {Title}', body: 'Work order "{Title}" has been in progress since {Created}.\n\nOpen it in the app: {Link}' },
+    ],
+  },
+  checkout: {
+    label: 'Equipment check-out', icon: 'box', cat: 'Operations', blurb: 'Lend laptops, radios or tools: who has what, when it is due back, and what came back.',
+    app: 'Equipment Check-out',
+    lists: () => [
+      newList('Equipment', [C('AssetTag', 'Text', { required: true }), C('Category', 'Choice', { choices: ['Laptop', 'Projector', 'Radio', 'Camera', 'Tool', 'Other'] }),
+        C('Availability', 'Choice', { choices: ['Available', 'Checked out', 'In repair', 'Retired'] }), C('Notes', 'Note')]),
+      newList('Checkouts', [C('Item', 'Lookup', { lookupList: 'Equipment', required: true }), C('Borrower', 'Person', { required: true }),
+        C('DueBack', 'DateTime', { required: true }), C('ReturnedOn', 'DateTime'),
+        C('LoanStatus', 'Choice', { choices: ['Checked out', 'Returned', 'Lost'] }), C('ReturnNotes', 'Note')]),
+    ],
+    features: { loading: true, confirm: true, stepper: false, scope: 'all' },
+    flows: [
+      { kind: 'created', name: 'Confirm the loan to the borrower', list: 'Checkouts', recipients: [{ kind: 'column', value: 'Borrower' }], subject: 'You checked out {Item}', body: 'Hello {Borrower},\n\nYou checked out {Item}. Please return it by {DueBack}.\n\nOpen the loan in the app: {Link}' },
+      { kind: 'reminder', name: 'Weekly return reminder', list: 'Checkouts', recipients: [{ kind: 'column', value: 'Borrower' }], statusField: 'LoanStatus', reminderValue: 'Checked out', days: 7, hour: 8, subject: 'Reminder: {Item} is due back {DueBack}', body: 'Hello {Borrower},\n\n{Item} is still checked out to you (due back {DueBack}).\n\nOpen the loan in the app: {Link}' },
+    ],
+  },
+  incidents: {
+    label: 'Incident & safety reporting', icon: 'alert', cat: 'Compliance', blurb: 'Anyone reports an incident or near miss; an investigator records the cause and the corrective action.',
+    app: 'Incident Reporting',
+    lists: () => [newList('Incidents', [
+      C('Details', 'Note', { required: true }), C('IncidentDate', 'DateTime', { required: true }),
+      C('Severity', 'Choice', { choices: ['Low', 'Medium', 'High', 'Critical'], required: true }),
+      C('IncidentType', 'Choice', { choices: ['Near miss', 'Injury', 'Property damage', 'Environmental', 'Security'] }),
+      C('Site', 'Text'), C('Investigator', 'Person'),
+      C('Status', 'Choice', { choices: ['Reported', 'Under investigation', 'Corrective action', 'Closed'] }),
+      C('RootCause', 'Choice', { choices: ['Not yet known', 'Equipment', 'Procedure', 'Training', 'Environment', 'Human factors'] }), C('CorrectiveAction', 'Note')])],
+    features: { loading: true, confirm: true, stepper: true, scope: 'mine' },
+    flows: [
+      { kind: 'statusChanged', name: 'Tell the investigator', list: 'Incidents', recipients: [{ kind: 'column', value: 'Investigator' }], statusField: 'Status', statusValues: ['Under investigation'], subject: 'Incident to investigate: {Title} ({Severity})', body: 'Hello,\n\nYou are the investigator for "{Title}" ({IncidentType}, {Severity}) at {Site} on {IncidentDate}.\n\n{Details}\n\nOpen it in the app: {Link}' },
+      { kind: 'statusChanged', name: 'Tell the reporter it is closed', list: 'Incidents', recipients: [{ kind: 'author', value: '' }], statusField: 'Status', statusValues: ['Closed'], subject: 'Incident closed: {Title}', body: 'Hello {Author},\n\nThe incident you reported, "{Title}", is closed.\n\nCorrective action: {CorrectiveAction}\n\nOpen it in the app: {Link}' },
+    ],
+  },
+  onboarding: {
+    label: 'Employee onboarding', icon: 'users', cat: 'People', blurb: 'One record per new hire and a checklist of tasks for IT, facilities, HR and the manager.',
+    app: 'Onboarding',
+    lists: () => [
+      newList('NewHires', [C('StartOn', 'DateTime', { required: true }), C('Department', 'Choice', { choices: ['Operations', 'Finance', 'IT', 'HR', 'Engineering', 'Other'] }),
+        C('HiringManager', 'Person', { required: true }), C('Buddy', 'Person'),
+        C('HireStatus', 'Choice', { choices: ['Pre-start', 'First week', 'First 90 days', 'Complete'] })]),
+      newList('OnboardingTasks', [C('Hire', 'Lookup', { lookupList: 'NewHires', required: true }), C('TaskOwner', 'Person', { required: true }),
+        C('DueDate', 'DateTime'), C('TaskArea', 'Choice', { choices: ['IT', 'Facilities', 'HR', 'Training', 'Manager'] }),
+        C('TaskStatus', 'Choice', { choices: ['Not started', 'In progress', 'Done'] }), C('Notes', 'Note')]),
+    ],
+    features: { loading: true, confirm: true, stepper: true, scope: 'all' },
+    flows: [
+      { kind: 'created', name: 'Tell the task owner', list: 'OnboardingTasks', recipients: [{ kind: 'column', value: 'TaskOwner' }], subject: 'Onboarding task for {Hire}: {Title}', body: 'Hello {TaskOwner},\n\nYou have an onboarding task for {Hire}: {Title} (due {DueDate}).\n\nOpen it in the app: {Link}' },
+      { kind: 'reminder', name: 'Daily reminder for tasks not started', list: 'OnboardingTasks', recipients: [{ kind: 'column', value: 'TaskOwner' }], statusField: 'TaskStatus', reminderValue: 'Not started', days: 2, hour: 8, subject: 'Not started yet: {Title} for {Hire}', body: 'Hello {TaskOwner},\n\n"{Title}" for {Hire} has not been started (added {Created}).\n\nOpen it in the app: {Link}' },
+      { kind: 'created', name: 'Welcome note to the hiring manager', list: 'NewHires', recipients: [{ kind: 'column', value: 'HiringManager' }], subject: 'New hire added: {Title}', body: 'Hello {HiringManager},\n\n{Title} starts on {StartOn}. Their onboarding tasks will appear in the app.\n\n{Link}' },
+    ],
+  },
+  leave: {
+    label: 'Leave requests (2-step approval)', icon: 'calendar', cat: 'People', blurb: 'Employees request leave; their supervisor, then HR, approve or reject, with a full decision history.',
+    app: 'Leave Requests',
+    lists: () => [newList('LeaveRequests', [
+      C('LeaveType', 'Choice', { choices: ['Annual', 'Sick', 'Personal', 'Training', 'Unpaid'], required: true }),
+      C('FromDate', 'DateTime', { required: true }), C('ToDate', 'DateTime', { required: true }), C('Hours', 'Number', { required: true }),
+      C('Reason', 'Note'), C('Supervisor', 'Person', { required: true }),
+      C('Status', 'Choice', { choices: ['Submitted', 'In review', 'Approved', 'Rejected'] })])],
+    approvals: { list: 'LeaveRequests', field: 'Status' },
+    chain: { stages: [{ name: 'Supervisor', approver: 'column', column: 'Supervisor', groupId: '', notify: '' }, { name: 'HR', approver: 'group', column: '', groupId: '', notify: '' }] },
+    features: { loading: true, confirm: true, stepper: true, scope: 'mine' },
+  },
+  policies: {
+    label: 'Document & policy review', icon: 'file', cat: 'Compliance', blurb: 'Owners send policies for review; reviewers approve or request changes before the review due date.',
+    app: 'Policy Review',
+    lists: () => { const l = newList('Policies', [
+      C('PolicyNumber', 'Text', { required: true }), C('PolicyOwner', 'Person', { required: true }), C('Reviewer', 'Person', { required: true }),
+      C('ReviewDue', 'DateTime', { required: true }), C('PolicyVersion', 'Text'), C('Summary', 'Note'),
+      C('ReviewStatus', 'Choice', { choices: ['Draft', 'In review', 'Approved', 'Changes requested', 'Published'] })]); l.attachments = true; return [l]; },
+    approvals: { list: 'Policies', field: 'ReviewStatus', pending: 'In review', yes: 'Approved', no: 'Changes requested' },
+    features: { loading: true, confirm: true, stepper: true, scope: 'all' },
+    flows: [
+      { kind: 'statusChanged', name: 'Ask the reviewer', list: 'Policies', recipients: [{ kind: 'column', value: 'Reviewer' }], statusField: 'ReviewStatus', statusValues: ['In review'], subject: 'Please review {PolicyNumber}: {Title}', body: 'Hello {Reviewer},\n\n{PolicyOwner} sent {PolicyNumber} "{Title}" (version {PolicyVersion}) for review. Please review it by {ReviewDue}.\n\nOpen it in the app: {Link}' },
+      { kind: 'statusChanged', name: 'Tell the owner the outcome', list: 'Policies', recipients: [{ kind: 'column', value: 'PolicyOwner' }], statusField: 'ReviewStatus', statusValues: ['Approved', 'Changes requested'], subject: '{PolicyNumber} review: {ReviewStatus}', body: 'Hello {PolicyOwner},\n\nThe review of {PolicyNumber} "{Title}" is {ReviewStatus}.\n\nOpen it in the app: {Link}' },
+      { kind: 'reminder', name: 'Daily reminder for reviews waiting', list: 'Policies', recipients: [{ kind: 'column', value: 'Reviewer' }], statusField: 'ReviewStatus', reminderValue: 'In review', days: 5, hour: 8, subject: 'Review waiting: {PolicyNumber}', body: 'Hello {Reviewer},\n\n{PolicyNumber} "{Title}" is still waiting for your review (due {ReviewDue}).\n\nOpen it in the app: {Link}' },
+    ],
   },
   blank: { label: 'Start from my own lists', icon: 'grid', blurb: 'Design your lists first, then generate screens for them.', app: 'My App', lists: () => [newList('Items', [C('Status', 'Choice', { choices: ['Open', 'Closed'] })])] },
 };
@@ -208,6 +301,26 @@ export function sectionCard(add, name, x, y, w, title) {
   add('label', { name: 'lblSec' + name, x: x + 20, y: y + 14, w: w - 40, h: 26, props: { text: title, size: 12, weight: 'Semibold', color: '@Text' } });
   return card;
 }
+/** Make room by shortening multi-line inputs (bottom first, never below 40px) and moving what sits below them up. */
+function shrinkNotes(scr, need, listName) {
+  const notes = scr.controls.filter((c) => c.type === 'textinput' && c.props.multiline && c.field?.list === listName).sort((a, b) => b.y - a.y);
+  let left = need;
+  for (const n of notes) {
+    const d = Math.min(left, n.h - 40);
+    if (d <= 0) continue;
+    const edge = n.y + n.h;
+    n.h -= d;
+    for (const c of scr.controls) if (c !== n) { if (c.y >= edge) c.y -= d; else if (c.y < n.y && c.y + c.h >= edge) c.h -= d; }
+    if ((left -= d) <= 0) break;
+  }
+  return need - Math.max(0, left);
+}
+/** Attachments placeholder (a dashed box naming the form to insert by hand; see attach.js). */
+export const ATTACH_H = { edit: 100, view: 84 };
+export function attachSlot(add, list, mode, name, x, y, w) {
+  const h = ATTACH_H[mode];
+  return add('html', { name, x, y, w, h, props: { html: placeholderHtml(list.name, mode, h) }, attachSlot: { list: list.name, mode } });
+}
 const hideStatus = (project, list) => {
   const ch = chainFor(project, list.name);
   if (ch) return ch.field;
@@ -245,12 +358,17 @@ export function genEdit(project, list, opts = {}) {
   const BAR = 72, top = HH + 16, bottom = H - BAR - 12;
   const FIELD = 76, NOTE = 124, SEC_HEAD = 48, SEC_GAP = 14;
   const height = (n) => groups.reduce((h, g) => h + SEC_HEAD + (g.title === 'Notes' ? g.cols.length * NOTE : Math.ceil(g.cols.length / n) * FIELD) + 8 + SEC_GAP, 0);
-  const colsN = phone ? 1 : height(2) <= bottom - top ? 2 : 3;
+  const att = !!list.attachments, attH = att && !(!phone && groups.some((g) => g.title === 'Notes')) ? ATTACH_H.edit + SEC_GAP : 0;
+  const colsN = phone ? 1 : height(2) <= bottom - top - attH ? 2 : 3;
   let y = top;
   const cw0 = W - pad * 2;
+  // tablet: the attachments box sits beside the Notes card
+  const beside = att && !phone && groups.some((g) => g.title === 'Notes') ? Math.floor((cw0 - 12) * 0.62) : 0;
   for (const g of groups) {
-    const card = sectionCard(add, 'Sec' + slug(g.title) + T, pad, y, cw0, g.title);
-    const inner = cw0 - 40, n = g.title === 'Notes' ? 1 : colsN, gap = 20, cw = Math.floor((inner - gap * (n - 1)) / n);
+    const gw = beside && g.title === 'Notes' ? beside : cw0;
+    const card = sectionCard(add, 'Sec' + slug(g.title) + T, pad, y, gw, g.title);
+    if (gw !== cw0) attachSlot(add, list, 'edit', 'htmlAttach' + T, pad + gw + 12, y, cw0 - gw - 12);
+    const inner = gw - 40, n = g.title === 'Notes' ? 1 : colsN, gap = 20, cw = Math.floor((inner - gap * (n - 1)) / n);
     let fy = y + SEC_HEAD, i = 0, rowBottom = fy;
     for (const c of g.cols) {
       const r = inputFor(project, scr, list, c, pad + 20 + (i % n) * (cw + gap), fy, cw);
@@ -260,6 +378,14 @@ export function genEdit(project, list, opts = {}) {
     }
     card.h = rowBottom + 20 - y;
     y += card.h + SEC_GAP;
+  }
+  // a long form on a phone: shorten the multi-line boxes rather than run under the Save bar
+  const under = y - SEC_GAP - bottom;
+  if (under > 0) y -= shrinkNotes(scr, under, list.name);
+  if (att && !beside) {
+    const over = y + ATTACH_H.edit - bottom;
+    if (over > 0) y -= shrinkNotes(scr, over, list.name);
+    attachSlot(add, list, 'edit', 'htmlAttach' + T, pad, y, cw0);
   }
   // bottom action bar with the "still needed" summary
   add('rect', { name: 'rectBar' + T, x: 0, y: H - BAR, w: W, h: BAR, props: { fill: '@Surface', borderThickness: 0 } });
@@ -366,7 +492,8 @@ export function genDetail(project, list, opts = {}) {
   }
   let y = sy + sh + (phone && ap ? 60 : 12);
   const ch = chainFor(project, list.name);
-  if (ch) y = chainDetailBlock(project, scr, list, ch, { x: pad, y, w: sw, T, has });
+  let chainOverlay = null;
+  if (ch) ({ y, overlay: chainOverlay } = chainDetailBlock(project, scr, list, ch, { x: pad, y, w: sw, T, has }));
   // stepper
   else if (ft.stepper && st && st.choices.filter((c) => !NEG.test(c)).length >= 2) {
     const h = 112;
@@ -376,7 +503,9 @@ export function genDetail(project, list, opts = {}) {
   // sections
   const cols = list.columns.filter((c) => !c.builtin && !c.chain && c !== st);
   const groups = sections(cols);
-  const bottomLimit = phone ? H - 84 : H - 16;
+  const besideV = !!list.attachments && !phone && cols.some((c) => c.type === 'Note');
+  const attV = list.attachments && !besideV ? ATTACH_H.view + 12 : 0;
+  const bottomLimit = (phone ? H - 84 : H - 16) - attV;
   const people = groups.find((g) => g.title === 'People and dates');
   const details = groups.find((g) => g.title === 'Details');
   const notes = groups.find((g) => g.title === 'Notes');
@@ -384,6 +513,9 @@ export function genDetail(project, list, opts = {}) {
   const fieldGrid = (g, x, gy, w, n) => {
     const card = sectionCard(add, 'Sec' + slug(g.title) + T, x, gy, w, g.title);
     card.fx.Visible = has;
+    // the title hides with its card, or it floats over the "nothing selected" state
+    const ttl = scr.controls.find((c) => c.name === 'lblSecSec' + slug(g.title) + T);
+    if (ttl) ttl.fx = { ...(ttl.fx || {}), Visible: has };
     const inner = w - 40, gap = 16, cw = Math.floor((inner - gap * (n - 1)) / n);
     let i = 0, fy = gy + 46, bottom = fy;
     for (const c of g.cols) {
@@ -405,7 +537,14 @@ export function genDetail(project, list, opts = {}) {
   } else {
     for (const g of [details, people].filter(Boolean)) y += fieldGrid(g, pad, y, sw, phone ? 2 : 3) + 12;
   }
-  if (notes) fieldGrid(notes, pad, y, sw, 1);
+  if (besideV) {
+    const nw = Math.floor((sw - 12) * 0.6);   // lines up with the People card above
+    fieldGrid(notes, pad, y, nw, 1);
+    attachSlot(add, list, 'view', 'htmlAttach' + T, pad + nw + 12, y, sw - nw - 12).fx.Visible = has;
+  } else {
+    if (notes) y += fieldGrid(notes, pad, y, sw, 1) + 12;
+    if (list.attachments) attachSlot(add, list, 'view', 'htmlAttach' + T, pad, y, sw).fx.Visible = has;
+  }
   // phone: bottom action bar
   if (phone) {
     add('rect', { name: 'rectBar' + T, x: 0, y: H - 72, w: W, h: 72, props: { fill: '@Surface', borderThickness: 0 }, fx: { ...vis } });
@@ -415,6 +554,8 @@ export function genDetail(project, list, opts = {}) {
     delBtn(pad, H - 56, editScr ? bw : W - pad * 2);
   }
   scr.onVisible = `Set(${confirmVar}, false)`;
+  // approval options overlay (reassign / admin override): front-most, so added last
+  if (chainOverlay) { chainOverlay(); scr.onVisible += `;\nSet(varChainMore${slug(list.name)}, false)`; }
   void L;
   return scr;
 }
@@ -431,6 +572,8 @@ function chainDetailBlock(project, scr, list, ch, { x, y, w, T, has }) {
   const hx0 = phone ? x : x + stW + 12, hy = phone ? y + sh + 12 : y, hw = phone ? w : w - stW - 12, hh = phone ? 120 : sh;
   const card = sectionCard(add, 'SecHistory' + T, hx0, hy, hw, 'History');
   card.h = hh; card.fx.Visible = has;
+  const ttl = scr.controls.find((c) => c.name === 'lblSecSecHistory' + T);
+  if (ttl) ttl.fx = { ...(ttl.fx || {}), Visible: has };
   add('label', { name: 'lblHistory' + T, x: hx0 + 18, y: hy + 40, w: hw - 36, h: hh - 50, props: { text: '', size: 10, color: '@TextMuted', valign: 'Top' },
     fx: { ...vis, Text: `Coalesce(${V}.ApprovalHistory, "No decisions yet.")` } });
   y = (phone ? hy + hh : y + sh) + 12;
@@ -441,23 +584,70 @@ function chainDetailBlock(project, scr, list, ch, { x, y, w, T, has }) {
   void bar;
   const who = (st) => st.approver === 'group' ? `"${(st.groupLabel || st.name + ' group').replace(/"/g, '""')}"` : `Coalesce(${V}.${/^[A-Za-z_]\w*$/.test(st.column) ? st.column : `'${st.column}'`}.DisplayName, "the ${st.name.replace(/"/g, '""')} approver")`;
   const stField = `${V}.${/^[A-Za-z_]\w*$/.test(ch.field) ? ch.field : `'${ch.field}'`}.Value`;
-  const stateFx = `Switch(${V}.CurrentStage, ${ch.stages.map((st, i) => `${i + 1}, "Waiting on ${st.name.replace(/"/g, '""')} approval: " & ${who(st)}`).join(', ')}, If(${stField} = "${ch.values.rejected.replace(/"/g, '""')}", "Rejected. The requester can change it and resubmit.", If(${stField} = "${ch.values.approved.replace(/"/g, '""')}", "Approved by every stage.", ${stField})))`;
+  const late = chainSla(ch) ? ` & If(${overdueFx(ch, V)}, "  ·  overdue", "")` : '';
+  const who2 = (st) => ch.reassign ? `Coalesce(${V}.${stageCols(st).delegate}.DisplayName, ${who(st)})` : who(st);
+  const stateFx = `Switch(${V}.CurrentStage, ${ch.stages.map((st, i) => `${i + 1}, "Waiting on ${st.name.replace(/"/g, '""')} approval: " & ${who2(st)}${late}`).join(', ')}, If(${stField} = "${ch.values.rejected.replace(/"/g, '""')}", "Rejected. The requester can change it and resubmit.", If(${stField} = "${ch.values.approved.replace(/"/g, '""')}", "Approved by every stage.", ${stField})))`;
   add('label', { name: 'lblDecisionState' + T, x: x + 18, y: y + (phone ? 12 : 12), w: w - 36 - (phone ? 0 : 170), h: phone ? 44 : 40, props: { text: '', size: 12, weight: 'Semibold', color: '@Text' },
     fx: { Visible: `${has} && !(${can})`, Text: stateFx } });
   if (ch.resubmit) add('button', { name: 'btnResubmit' + T, x: phone ? x + 18 : x + w - 18 - 150, y: phone ? y + 60 : y + 12, w: phone ? w - 36 : 150, h: 40, props: { text: 'Resubmit', size: 12 },
     actions: { OnSelect: [{ type: 'resubmit', list: list.name }] }, fx: { Visible: resub } });
   const bw = 112;
-  const cx = x + 18, cw = phone ? w - 36 : w - 36 - bw * 2 - 24;
+  const extras = !!(ch.reassign || ch.override), admin = !!features(project).adminGroup;
+  const cx = x + 18, cw = phone ? w - 36 : w - 36 - bw * 2 - 24 - (extras ? bw + 12 : 0);
   const cy = phone ? y + 12 : y + 12;
   const comment = add('textinput', { name: 'txtDecisionComment' + T, x: cx, y: cy, w: cw, h: 40, props: { hint: 'Comment (required to reject)', defaultText: '', size: 12 }, fx: { Visible: can } });
-  const by = phone ? y + 64 : cy, bx = phone ? x + 18 : cx + cw + 12, pbw = phone ? Math.floor((w - 36 - 12) / 2) : bw;
+  const by = phone ? y + 64 : cy, bx = phone ? x + 18 : cx + cw + 12, pbw = phone ? Math.floor((w - 36 - 12 * (extras ? 2 : 1)) / (extras ? 3 : 2)) : bw;
   add('button', { name: 'btnChainApprove' + T, x: bx, y: by, w: pbw, h: 40, props: { text: 'Approve', fill: '@Success', borderColor: '@Success', size: 12 },
     actions: { OnSelect: [{ type: 'decide', list: list.name, decision: 'Approved', commentCtl: comment.name }] }, fx: { Visible: can } });
   add('button', { name: 'btnChainReject' + T, x: bx + pbw + 12, y: by, w: pbw, h: 40, props: { text: 'Reject', fill: '@Danger', borderColor: '@Danger', size: 12 },
     actions: { OnSelect: [{ type: 'decide', list: list.name, decision: 'Rejected', commentCtl: comment.name }] },
     fx: { Visible: can, DisplayMode: `If(IsBlank(Trim(${comment.name}.Text)), DisplayMode.Disabled, DisplayMode.Edit)` } });
-  return y + bh + 12;
+  if (!extras) return { y: y + bh + 12 };
+  // round 6: reassign / admin override live in an overlay opened from here
+  const moreVar = 'varChainMore' + slug(list.name);
+  const reVis = ch.reassign ? canReassignFx(ch, V, admin) : '';
+  const ovVis = ch.override && admin ? `!IsBlank(${V}.ID) && ${V}.CurrentStage > 0 && varIsAdmin` : '';
+  const optVis = [reVis, ovVis].filter(Boolean).map((v) => `(${v})`).join(' || ') || 'false';
+  add('button', { name: 'btnChainMore' + T, x: phone ? x + 18 + (pbw + 12) * 2 : x + w - 18 - bw, y: phone ? y + 64 : cy, w: phone ? pbw : bw, h: 40,
+    props: { text: 'Options', fill: 'transparent', color: '@Primary', borderColor: '@Primary', borderThickness: 1, size: 12 },
+    actions: { OnSelect: [{ type: 'setVar', name: moreVar, value: 'true' }] }, fx: { Visible: optVis } });
+  const overlay = () => chainOptionsOverlay(project, scr, list, ch, { T, moreVar, reVis, ovVis });
+  return { y: y + bh + 12, overlay };
 }
+
+/** "Approval options" overlay: reassign the waiting stage (picker + button) and/or admin override (reason + approve/reject). */
+function chainOptionsOverlay(project, scr, list, ch, { T, moreVar, reVis, ovVis }) {
+  const { W, H, phone, add } = ctx(project, scr);
+  const on = (v) => (v ? `${moreVar} && (${v})` : 'false');
+  const cw = phone ? W - 32 : 560, secR = ch.reassign ? 112 : 0, secO = ovVis ? 156 : 0;
+  const ch0 = 64 + secR + secO + 8, cx = (W - cw) / 2, cy = Math.max(80, Math.round((H - ch0) / 2));
+  add('rect', { name: 'rectMoreDim' + T, x: 0, y: 0, w: W, h: H, props: { fill: '#0F172A73', borderThickness: 0 }, fx: { Visible: moreVar } });
+  add('card', { name: 'cardMore' + T, x: cx, y: cy, w: cw, h: ch0, props: { fill: '@Surface', borderColor: '@Border', borderThickness: 1, radius: 'theme', shadow: true }, fx: { Visible: moreVar } });
+  add('label', { name: 'lblMoreTitle' + T, x: cx + 24, y: cy + 18, w: cw - 124, h: 30, props: { text: 'Approval options', size: 16, weight: 'Semibold', color: '@Text' }, fx: { Visible: moreVar } });
+  add('button', { name: 'btnMoreClose' + T, x: cx + cw - 24 - 76, y: cy + 16, w: 76, h: 34, props: { text: 'Close', fill: 'transparent', color: '@Primary', borderColor: '@Border', borderThickness: 1, size: 11 },
+    actions: { OnSelect: [{ type: 'setVar', name: moreVar, value: 'false' }] }, fx: { Visible: moreVar } });
+  const ry = cy + 64, oy = ry + secR;
+  // admin override first in the layer order, so the people picker's results list (added after) draws over it
+  if (ovVis) {
+    add('label', { name: 'lblOverride' + T, x: cx + 24, y: oy, w: cw - 48, h: 24, props: { text: 'Admin override', size: 13, weight: 'Semibold', color: '@Text' }, fx: { Visible: on(ovVis) } });
+    add('label', { name: 'lblOverrideHint' + T, x: cx + 24, y: oy + 26, w: cw - 48, h: 20, props: { text: 'Decide for the approver. The reason is kept in the history.', size: 11, color: '@TextMuted' }, fx: { Visible: on(ovVis) } });
+    const reason = add('textinput', { name: 'txtOverrideReason' + T, x: cx + 24, y: oy + 52, w: cw - 48, h: 40, props: { hint: 'Reason (required)', defaultText: '', size: 12 }, fx: { Visible: on(ovVis) } });
+    const bw = Math.floor((cw - 48 - 12) / 2), dis = `If(IsBlank(Trim(${reason.name}.Text)), DisplayMode.Disabled, DisplayMode.Edit)`;
+    add('button', { name: 'btnOverrideApprove' + T, x: cx + 24, y: oy + 100, w: bw, h: 40, props: { text: 'Approve (override)', fill: '@Success', borderColor: '@Success', size: 12 },
+      actions: { OnSelect: [{ type: 'override', list: list.name, decision: 'Approved', commentCtl: reason.name }] }, fx: { Visible: on(ovVis), DisplayMode: dis } });
+    add('button', { name: 'btnOverrideReject' + T, x: cx + 24 + bw + 12, y: oy + 100, w: bw, h: 40, props: { text: 'Reject (override)', fill: '@Danger', borderColor: '@Danger', size: 12 },
+      actions: { OnSelect: [{ type: 'override', list: list.name, decision: 'Rejected', commentCtl: reason.name }] }, fx: { Visible: on(ovVis), DisplayMode: dis } });
+  }
+  if (ch.reassign) {
+    add('label', { name: 'lblReassign' + T, x: cx + 24, y: ry, w: cw - 48, h: 24, props: { text: 'Reassign this stage', size: 13, weight: 'Semibold', color: '@Text' }, fx: { Visible: on(reVis) } });
+    add('label', { name: 'lblReassignHint' + T, x: cx + 24, y: ry + 26, w: cw - 48, h: 20, props: { text: 'The person you pick can decide it instead.', size: 11, color: '@TextMuted' }, fx: { Visible: on(reVis) } });
+    const pw = cw - 48 - 12 - 130;
+    const pick = add('person', { name: 'ppReassign' + T, x: cx + 24, y: ry + 52, w: pw, h: 40, props: { hint: 'Search people', size: 12 }, fx: { Visible: on(reVis) } });
+    add('button', { name: 'btnReassign' + T, x: cx + 24 + pw + 12, y: ry + 52, w: 130, h: 40, props: { text: 'Reassign', size: 12 },
+      actions: { OnSelect: [{ type: 'reassign', list: list.name, picker: pick.name }] }, fx: { Visible: on(reVis), DisplayMode: `If(IsBlank(varPick${pick.name}), DisplayMode.Disabled, DisplayMode.Edit)` } });
+  }
+}
+
 
 /** Approval queue for a chain: items at a stage the signed-in user may decide, with a decision panel (tablet). */
 export function genChainApprovals(project, list, ch, opts = {}) {
@@ -471,6 +661,8 @@ export function genChainApprovals(project, list, ch, opts = {}) {
     fx: { Items: queueFx(ch) },
     actions: { OnSelect: [{ type: 'openItem', list: list.name, screen: phone ? (opts.detailScreen?.id || '') : '', fresh: true }] } });
   galleryRows(project, scr, gal, list);
+  if (chainSla(ch)) add('label', { name: 'lblOverdue' + T, x: qw - 104, y: 47, w: 64, h: 17, props: { text: 'Overdue', size: 9, weight: 'Semibold', color: '#FFFFFF', fill: '@Danger', align: 'Center' },
+    fx: { Visible: overdueFx(ch, 'ThisItem') } }, gal.children);
   add('label', { name: 'lblQueue' + T, x: pad, y: HH + 14, w: qw, h: 32, props: { text: 'Waiting for your decision', size: 13, weight: 'Semibold', color: '@Text' },
     fx: { Text: `"Waiting for your decision (" & CountRows(${gal.name}.AllItems) & ")"` } });
   emptyState(project, scr, gal, { x: pad, y: gy + 60, w: qw, title: 'All caught up', hint: 'Nothing is waiting for your decision.' });
@@ -485,6 +677,12 @@ export function genChainApprovals(project, list, ch, opts = {}) {
     fx: { Visible: has, Text: `Switch(${V}.CurrentStage, ${ch.stages.map((st, i) => `${i + 1}, "Stage ${i + 1} of ${ch.stages.length}: ${st.name.replace(/"/g, '""')}"`).join(', ')}, "")` } });
   add('label', { name: 'lblPanelMeta' + T, x: px + 24, y: panel.y + 80, w: pw - 48, h: 24, props: { text: '', size: 11, color: '@TextMuted' },
     fx: { Visible: has, Text: `"Submitted by " & ${V}.'Created By'.DisplayName & " on " & Text(${V}.Created, "mm/dd/yyyy")` } });
+  if ((ch.reassign || ch.override) && opts.detailScreen) {
+    // reassign and admin override live on the details screen
+    scr.controls.find((c) => c.name === 'lblPanelTitle' + T).w = pw - 48 - 142;
+    add('button', { name: 'btnPanelDetails' + T, x: px + pw - 24 - 130, y: panel.y + 20, w: 130, h: 36, props: { text: 'Options', fill: 'transparent', color: '@Primary', borderColor: '@Primary', borderThickness: 1, size: 11 },
+      actions: { OnSelect: [{ type: 'navigate', screen: opts.detailScreen.id }] }, fx: { Visible: has } });
+  }
   let y = panel.y + 116;
   const pcols = list.columns.filter((c) => !c.builtin && !c.chain && c.name !== ch.field);
   const ordered = [...pcols.filter((c) => c.type !== 'Note'), ...pcols.filter((c) => c.type === 'Note')];

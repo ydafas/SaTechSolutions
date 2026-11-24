@@ -27,6 +27,7 @@ export const STAGE_SPEC = obj({
   approverColumn: str('personColumn: a Person column of the approvals list that names this stage\'s approver. Empty for group.'),
   groupId: str('group: the Microsoft 365 group object ID if the requirements give one; else empty'),
   notifyEmail: str('group: the group\'s shared mailbox if the requirements give one; else empty'),
+  slaDays: { type: 'integer', description: 'Days this stage may wait before it is overdue (a daily reminder goes to its approver). 0 when the requirements give no deadline.' },
 });
 export const PLAN_SCHEMA = obj({
   appName: str('Short app name, 2-4 words'),
@@ -42,11 +43,14 @@ export const PLAN_SCHEMA = obj({
       choices: arr(str(), 'Choice columns only; first choice is the starting value. Empty for other types.'),
       lookupList: str('Lookup columns only: name of another list in this plan. Empty otherwise.'),
     })),
+    attachments: { type: 'boolean', description: 'True only when people attach files (documents, photos, receipts) to items of this list.' },
   })),
   screens: obj({
     home: { type: 'boolean' }, browse: { type: 'boolean' }, detail: { type: 'boolean' }, edit: { type: 'boolean' },
     approvals: obj({ enabled: { type: 'boolean' }, list: str(), field: str('A Choice column'), pending: str(), approve: str(), reject: str(),
       stages: arr(STAGE_SPEC, 'Only for 2-4 sequential approval steps (e.g. manager then finance). Empty for a single approve/reject step.'),
+      reassign: { type: 'boolean', description: 'Stages: true when an approver may hand a waiting stage to someone else (delegate).' },
+      adminOverride: { type: 'boolean', description: 'Stages: true when admins may approve or reject a waiting stage with a reason. Needs an admin group.' },
     }),
   }),
   flows: arr(obj({
@@ -178,6 +182,7 @@ export function specToProject(plan, { siteUrl = '' } = {}) {
       colMap[name][rc.name] = cn; colMap[name][cn] = cn;
       l.columns.push(newColumn(cn, type, { required: type === 'YesNo' ? false : !!rc.required, choices, lookupList: type === 'Lookup' ? String(rc.lookupList || '') : '' }));
     }
+    if (rl.attachments === true) l.attachments = true;
     p.lists.push(l);
   }
   if (!p.lists.length) { p.lists.push(newList('Items')); notes.push('The plan had no lists, so an empty Items list was added.'); }
@@ -212,7 +217,8 @@ export function specToProject(plan, { siteUrl = '' } = {}) {
   const rs = Array.isArray(ap?.stages) ? ap.stages.slice(0, 4) : [];
   if (approvals && rs.length >= 2) {
     const stages = stagesFromSpec(findList(approvals.list), rs, findCol, notes);
-    chain = { list: approvals.list, field: approvals.field, values: { ...guessChainValues(findList(approvals.list), approvals.field), pending: approvals.pending, approved: approvals.yes, rejected: approvals.no }, stages };
+    chain = { list: approvals.list, field: approvals.field, values: { ...guessChainValues(findList(approvals.list), approvals.field), pending: approvals.pending, approved: approvals.yes, rejected: approvals.no }, stages, reassign: ap.reassign === true, override: ap.adminOverride === true };
+    if (chain.override && !p.app.features.adminGroup) notes.push('Admin override needs an admin group; add its ID on the App tab, or lint flags the chain.');
   }
   generateApp(p, { screens, approvals, chain });
   if (p.app.chain) addChainFlows(p);
@@ -286,17 +292,18 @@ export function applyFlowFields(p, f, rf, l, { findCol, notes = [] }) {
 
 /** Approval stages from Claude's STAGE_SPEC objects → chain stages (cleaned; bad IDs and columns become notes). */
 export function stagesFromSpec(l, rs, findCol, notes = []) {
+  const sla = (st) => (Math.round(Number(st?.slaDays)) > 0 ? { slaDays: Math.min(90, Math.round(Number(st.slaDays))) } : {});
   return (rs || []).slice(0, 4).map((st, i) => {
     const name = String(st?.name || `Stage ${i + 1}`).trim();
     if (st?.approverKind === 'group') {
       const g = String(st.groupId || '').trim(), ok = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(g);
       if (g && !ok) notes.push(`Stage "${name}": "${g}" is not a group ID; add it in Finish setup.`);
       const em = String(st.notifyEmail || '').trim();
-      return { name, approver: 'group', groupId: ok ? g : '', notify: isEmail(em) ? em : '' };
+      return { name, approver: 'group', groupId: ok ? g : '', notify: isEmail(em) ? em : '', ...sla(st) };
     }
     const c = findCol(l, st?.approverColumn);
     if (st?.approverColumn && c?.type !== 'Person') notes.push(`Stage "${name}": "${st.approverColumn}" is not a Person column of ${l.name}, so a new approver column was added.`);
-    return { name, approver: 'column', column: c?.type === 'Person' ? c.name : '' };
+    return { name, approver: 'column', column: c?.type === 'Person' ? c.name : '', ...sla(st) };
   });
 }
 /** Add the approval chain's flows (one per stage hand-off, a resubmit notice and the final outcome email). Replaces earlier chain flows for the list. */
@@ -312,6 +319,7 @@ export function addChainFlows(project) {
     const f = flowFromSpec(project, { ...spec, list: l.name }, { findList, findCol });
     if (!f) continue;
     f.chain = true;
+    if (spec.chainStage) f.chainStage = spec.chainStage;
     project.flows.push(f); out.push(f);
   }
   // the emails' {Link} opens the item's details

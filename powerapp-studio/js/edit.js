@@ -1,8 +1,9 @@
 // edit.js — targeted edits to an existing project. Used by the Data tab (renames) and by
 // "Ask for a change" (Claude edit operations). Every function changes only what it must:
 // screens it does not touch keep byte-identical YAML.
-import { walk, slug, varSel, q, newColumn, SP_RESERVED_COLS, COLTYPES, IDENT, FORM_FACTORS } from './core.js';
-import { inputFor, sectionOf, sectionCard, layoutCtx, galleryRows, stepperFx, summaryFx, statusCol } from './templates.js';
+import { placeholderHtml } from './attach.js';
+import { walk, slug, varSel, q, newColumn, SP_RESERVED_COLS, COLTYPES, IDENT, FORM_FACTORS, hasActions } from './core.js';
+import { attachSlot, ATTACH_H, genEdit, genDetail, inputFor, sectionOf, sectionCard, layoutCtx, galleryRows, stepperFx, summaryFx, statusCol } from './templates.js';
 import { missingFx } from './emit.js';
 
 const pretty = (n) => String(n).replace(/([a-z])([A-Z])/g, '$1 $2');
@@ -63,6 +64,7 @@ export function renameListIn(project, oldN, newN) {
   for (const s of project.screens) for (const [c] of walk(s.controls)) {
     if (c.field?.list === oldN) c.field.list = newN; if (c.bind?.list === oldN) c.bind.list = newN; if (c.data?.list === oldN) c.data.list = newN;
     if (c.data?.previewList === oldN) c.data.previewList = newN;
+    if (c.attachSlot?.list === oldN) { c.attachSlot.list = newN; c.props.html = placeholderHtml(newN, c.attachSlot.mode, c.h); }
     Object.values(c.actions || {}).flat().forEach((a) => { if (a.list === oldN) a.list = newN; });
   }
   for (const f of project.flows || []) if (f.list === oldN) f.list = newN;
@@ -424,4 +426,61 @@ export function makeColumn(list, spec) {
   if (type === 'Choice' && !choices.length) { type = 'Text'; note = (note ? note + ' ' : '') + `${name} had no choices, so it is a text column.`; }
   if (type !== 'Choice') choices = [];
   return { col: newColumn(name, type, { required: type === 'YesNo' ? false : !!spec.required, choices, lookupList: type === 'Lookup' ? String(spec.lookupList || '') : '' }), note };
+}
+
+// ------------------------------------------------------------------ attachments toggle on an existing app
+/** Where the placeholder would go on an existing screen: {y, fits}. */
+function attachSpot(project, scr, mode) {
+  const { H } = layoutCtx(project, scr);
+  const bar = scr.controls.find((c) => /^rectBar(?!Line)/.test(c.name));
+  const limit = bar ? bar.y : H;
+  const content = scr.controls.filter((c) => !c.visibleWhen && c.h < H * 0.9 && c.y + c.h <= limit && c.y > 40);
+  const y = Math.max(0, ...content.map((c) => c.y + c.h)) + 12;
+  return { y, fits: y + ATTACH_H[mode] <= limit };
+}
+const SLOT_KINDS = [['edit', 'edit'], ['detail', 'view']];
+/** Edit/detail screens of a list that have no free space for the placeholder (names). */
+export function attachNoRoom(project, listName) {
+  const out = [];
+  for (const [kind, mode] of SLOT_KINDS) for (const scr of screensFor(project, listName, kind)) {
+    if (!scr.controls.some((c) => c.attachSlot?.list === listName) && !attachSpot(project, scr, mode).fits) out.push(scr.name);
+  }
+  return out;
+}
+/**
+ * After a list's Attachments toggle changes: add the placeholder to its edit and detail screens or remove it.
+ * Where a screen has no room: with `rebuild`, regenerate it in place (same id and name, laid out like a new app);
+ * otherwise put the box below the content, behind every clickable control, for the user to move.
+ * Returns {added, removed, rebuilt: [screen names], screens: [touched screens]}.
+ */
+export function syncAttachSlots(project, listName, { rebuild = false } = {}) {
+  const l = project.lists.find((x) => x.name === listName);
+  const on = !!l?.attachments, out = { added: [], removed: [], rebuilt: [], screens: [] };
+  for (const [kind, mode] of SLOT_KINDS) for (const scr0 of screensFor(project, listName, kind)) {
+    const scr = project.screens.find((x) => x.id === scr0.id);
+    const has = scr.controls.find((c) => c.attachSlot?.list === listName);
+    if (!on) { if (has) { scr.controls.splice(scr.controls.indexOf(has), 1); out.removed.push(scr.name); out.screens.push(scr); } continue; }
+    if (has) continue;
+    const spot = attachSpot(project, scr, mode);
+    if (!spot.fits && rebuild) {
+      const at = project.screens.indexOf(scr);
+      project.screens.splice(at, 1);
+      const edit = kind === 'detail' ? screensFor(project, listName, 'edit')[0] : null;
+      const fresh = kind === 'edit' ? genEdit(project, l) : genDetail(project, l, { editScreen: edit });
+      project.screens.splice(project.screens.indexOf(fresh), 1);
+      fresh.id = scr.id; fresh.name = scr.name;
+      project.screens.splice(at, 0, fresh);
+      out.rebuilt.push(fresh.name); out.screens.push(fresh);
+      continue;
+    }
+    const { W, pad, add } = layoutCtx(project, scr);
+    const ctl = attachSlot(add, l, mode, 'htmlAttach' + scr.name.replace(/^scr/, ''), pad, spot.y, W - pad * 2);
+    if (mode === 'view') ctl.fx.Visible = `!IsBlank(${varSel(listName)}.ID)`;
+    // behind every clickable control and overlay, so it never takes a click
+    scr.controls.pop();
+    const at = scr.controls.findIndex((c) => hasActions(c) || c.visibleWhen);
+    scr.controls.splice(at < 0 ? scr.controls.length : at, 0, ctl);
+    out.added.push(scr.name); out.screens.push(scr);
+  }
+  return out;
 }

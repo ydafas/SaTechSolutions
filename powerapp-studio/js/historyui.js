@@ -1,6 +1,8 @@
-// historyui.js — Project → "Version history": save named versions, compare any of them with now, restore.
-import { takeSnapshot, deleteSnapshot, restoreSnapshot, snapshotProject, diffProjects, describeDiff, diffIsEmpty, snapshotsBytes, WARN_BYTES } from './history.js';
-import { MAX_SNAPSHOTS } from './core.js';
+// historyui.js — Project → "Version history": save named versions, compare any two (or one with now) down to
+// each screen's YAML, restore.
+import { takeSnapshot, deleteSnapshot, restoreSnapshot, snapshotProject, diffProjects, describeDiff, diffIsEmpty, snapshotsBytes, WARN_BYTES, screenYamlDiffs } from './history.js';
+import { MAX_SNAPSHOTS, normalizeProject } from './core.js';
+import { screenYaml } from './emit.js';
 
 let H = null; // { P, modal, toast, ui, esc, ask, persist, replaceProject }
 export function initHistoryUI(helpers) { H = helpers; }
@@ -10,7 +12,7 @@ const when = (at) => { const d = new Date(at); return isNaN(d) ? '' : d.toLocale
 
 export function historyDialog() {
   const esc = H.esc, ui = H.ui;
-  const st = { view: 'list', id: null };
+  const st = { view: 'list', id: null, from: null, to: 'now' };
   const m = H.modal(`<div class="modal-h"><h2>Version history</h2><button class="mini" data-close>${ui('close')}</button></div>
     <div class="modal-b" id="hBody"></div><div class="modal-f" id="hFoot"></div>`, 'md');
   const body = m.el.querySelector('#hBody'), foot = m.el.querySelector('#hFoot');
@@ -19,6 +21,7 @@ export function historyDialog() {
     const P = H.P(), snaps = [...(P.snapshots || [])].reverse(), bytes = snapshotsBytes(P);
     body.innerHTML = `<p class="note" style="margin-top:0">Versions are kept inside the project, so they travel with the project file and the app bundle. A version is also saved automatically before Describe → Build, Ask for a change, a Studio import and a bundle import. Up to ${MAX_SNAPSHOTS} are kept; the oldest automatic ones go first.</p>
       <div class="h-save"><input class="inp" id="hName" maxlength="80" placeholder="Name this version, e.g. Before the approvals rework" aria-label="Version name"><button class="btn pri" id="hSave">${ui('plus')}Save version</button></div>
+      ${snaps.length ? `<div class="h-cmp"><span>Compare</span><select class="inp" id="hFrom" aria-label="Older version">${snaps.map((s) => `<option value="${esc(s.id)}">${esc(s.name)} · ${esc(when(s.at))}</option>`).join('')}</select><span>with</span><select class="inp" id="hTo" aria-label="Newer version"><option value="now">The app now</option>${snaps.map((s) => `<option value="${esc(s.id)}">${esc(s.name)} · ${esc(when(s.at))}</option>`).join('')}</select><button class="btn sm" id="hCmp">Compare</button></div>` : ''}
       ${bytes > WARN_BYTES ? `<div class="note-box warn"><b>Versions take ${kb(bytes)}.</b>This browser keeps about 5 MB per site. Delete old versions, or save a project file, so nothing is lost.</div>` : ''}
       ${snaps.length ? `<div class="h-list">${snaps.map((s) => `<div class="h-row" data-id="${esc(s.id)}"><div class="h-main"><b>${esc(s.name)}</b><small>${esc(when(s.at))}${s.auto ? ' · <span class="h-auto">automatic</span>' : ''}</small></div>
           <button class="btn sm" data-h="diff">Compare with now</button><button class="btn sm" data-h="restore">Restore</button><button class="mini danger" data-h="del" title="Delete version" aria-label="Delete ${esc(s.name)}">${ui('trash')}</button></div>`).join('')}</div>`
@@ -32,12 +35,17 @@ export function historyDialog() {
       drawList();
     };
     body.querySelector('#hSave').onclick = save;
+    body.querySelector('#hCmp')?.addEventListener('click', () => {
+      const from = body.querySelector('#hFrom').value, to = body.querySelector('#hTo').value;
+      if (from === to) { H.toast('Pick two different versions', true); return; }
+      st.view = 'diff'; st.id = from; st.to = to; draw();
+    });
     name.onkeydown = (e) => { if (e.key === 'Enter') save(); };
     body.querySelector('.h-list')?.addEventListener('click', (e) => {
       const b = e.target.closest('[data-h]'); if (!b) return;
       const id = b.closest('[data-id]').dataset.id, s = (H.P().snapshots || []).find((x) => x.id === id);
       if (!s) return;
-      if (b.dataset.h === 'diff') { st.view = 'diff'; st.id = id; draw(); }
+      if (b.dataset.h === 'diff') { st.view = 'diff'; st.id = id; st.to = 'now'; draw(); }
       if (b.dataset.h === 'restore') restore(s);
       if (b.dataset.h === 'del') H.ask('Delete version?', `Delete "${s.name}" from ${when(s.at)}? This cannot be undone.`, 'Delete').then((ok) => { if (ok) { deleteSnapshot(H.P(), id); H.persist(); drawList(); } });
     });
@@ -45,14 +53,25 @@ export function historyDialog() {
 
   function drawDiff() {
     const P = H.P(), s = (P.snapshots || []).find((x) => x.id === st.id);
-    if (!s) { st.view = 'list'; return draw(); }
-    let lines = [], err = '';
-    try { const d = diffProjects(snapshotProject(s), P); lines = diffIsEmpty(d) ? [] : describeDiff(d); } catch (e) { err = e.message; }
-    body.innerHTML = `<p class="note" style="margin-top:0">What changed from <b>${esc(s.name)}</b> (${esc(when(s.at))}) to the app as it is now.</p>
-      ${err ? `<div class="note-box err">${esc(err)}</div>` : lines.length ? `<ul class="h-diff">${lines.map((l) => `<li>${esc(l)}</li>`).join('')}</ul>` : '<div class="note-box"><b>No differences.</b>The app is the same as this version.</div>'}`;
-    foot.innerHTML = `<button class="btn" id="hBack">Back to versions</button><span class="grow"></span><button class="btn pri" id="hRestore" ${lines.length ? '' : 'disabled'}>Restore this version</button>`;
+    const t = st.to === 'now' ? null : (P.snapshots || []).find((x) => x.id === st.to);
+    if (!s || (st.to !== 'now' && !t)) { st.view = 'list'; return draw(); }
+    // older on the left: swap when the "to" version is the older one
+    const [A, B] = t && String(t.at) < String(s.at) ? [t, s] : [s, t];
+    let lines = [], yd = [], err = '';
+    try {
+      const pa = normalizeProject(snapshotProject(A)), pb = B ? normalizeProject(snapshotProject(B)) : P;
+      const d = diffProjects(pa, pb); lines = diffIsEmpty(d) ? [] : describeDiff(d);
+      yd = screenYamlDiffs(pa, pb, screenYaml);
+    } catch (e) { err = e.message; }
+    const label = (x) => x ? `<b>${esc(x.name)}</b> (${esc(when(x.at))})` : '<b>the app as it is now</b>';
+    const row = (r) => `<div class="yd-${r.t === '+' ? 'add' : r.t === '-' ? 'del' : r.t === '…' ? 'gap' : 'eq'}"><i>${r.t === '…' ? '⋯' : esc(r.t)}</i>${esc(r.s)}</div>`;
+    body.innerHTML = `<p class="note" style="margin-top:0">What changed from ${label(A)} to ${label(B)}.</p>
+      ${err ? `<div class="note-box err">${esc(err)}</div>` : lines.length ? `<ul class="h-diff">${lines.map((l) => `<li>${esc(l)}</li>`).join('')}</ul>` : '<div class="note-box"><b>No differences.</b>The two are the same.</div>'}
+      ${yd.length ? `<h4 class="h-yh">Screen YAML</h4>${yd.map((x) => `<details class="h-yd"><summary><b>${esc(x.name)}</b><span class="yd-n"><span class="p">+${x.plus}</span> <span class="m">−${x.minus}</span></span></summary><div class="yd">${x.rows.map(row).join('')}</div></details>`).join('')}` : ''}`;
+    const canRestore = lines.length && !B;
+    foot.innerHTML = `<button class="btn" id="hBack">Back to versions</button><span class="grow"></span>${B ? '' : `<button class="btn pri" id="hRestore" ${canRestore ? '' : 'disabled'}>Restore this version</button>`}`;
     foot.querySelector('#hBack').onclick = () => { st.view = 'list'; draw(); };
-    foot.querySelector('#hRestore').onclick = () => restore(s);
+    foot.querySelector('#hRestore')?.addEventListener('click', () => restore(A));
   }
 
   function restore(s) {

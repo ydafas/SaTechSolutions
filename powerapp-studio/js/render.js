@@ -4,7 +4,8 @@
 import { cssColor, displayValue, colOf, varSel, walk, sampleRows, PEOPLE, FORM_FACTORS, hasActions, slug, INPUT_TYPES } from './core.js';
 import { ICONS } from './icons.js';
 import { flowsFor, recipientsText } from './flows.js';
-import { chainFor, playDecide, playResubmit, playCanDecide, stageCols } from './chain.js';
+import { chainFor, playDecide, playResubmit, playCanDecide, playReassign, stageCols } from './chain.js';
+import { attachOn, attachSlots } from './attach.js';
 
 const PT = 96 / 72; // Power Apps font Size is in points
 export const FONT_CSS = {
@@ -339,6 +340,8 @@ function runAction(project, rt, screen, a, row) {
         if (col.required && (v == null || v === '')) missing.push(col.name);
         rec[col.name] = v;
       }
+      // attachments: the simulated form's files are saved with the item
+      for (const x of attachSlots(project, screen, 'edit').filter((x) => x.list === a.list)) rec.Attachments = (rt.inputs[x.ctl.name] ?? rt.vars[V]?.Attachments ?? []).slice();
       if (missing.length) {
         if (a.validate) { rt.vars['varTriedSave' + slug(a.list)] = true; rt.api.toast('Fill in the required fields: ' + missing.join(', '), 'warning'); }
         else rt.api.toast('Save failed. Required: ' + missing.join(', '), 'error');
@@ -405,6 +408,24 @@ function runAction(project, rt, screen, a, row) {
       rt.api.toast(`⚡ Flow "${f.name}" ran: email to ${recipientsText(f)}`, 'flow');
       rt.api.toast(a.message || 'Done', 'success');
       if (a.then === 'back') rt.api.back(); else if (a.then === 'navigate') toScreen(a.screen);
+      break;
+    }
+    case 'reassign': case 'override': {
+      const ch = chainFor(project, a.list);
+      const cur = rt.vars[V];
+      const r = ch && cur?.ID && (rt.db[a.list] || []).find((x) => x.ID === cur.ID);
+      if (!r) { rt.api.toast((a.type === 'reassign' ? 'Reassign' : 'Override') + ' failed. Nothing selected.', 'error'); return false; }
+      let res;
+      if (a.type === 'reassign') res = playReassign(ch, r, rt.inputs[a.picker]);
+      else if (rt.vars.varIsAdmin === false) res = { error: 'Only admins can override.' };
+      else res = playDecide(ch, r, a.decision, rt.inputs[a.commentCtl] ?? '', undefined, { override: true });
+      if (res.error) { rt.api.toast(res.error, 'warning'); return false; }
+      delete rt.inputs[a.picker]; delete rt.inputs[a.commentCtl];
+      r.Modified = new Date().toISOString().slice(0, 10);
+      rt.vars[V] = r;
+      rt.vars['varChainMore' + slug(a.list)] = false;
+      flowsFor(project, a.list, 'changed', res.changed).forEach((f) => rt.api.toast(`⚡ Flow "${f.name}" would email ${recipientsText(f)}`, 'flow'));
+      rt.api.toast(res.msg, a.decision === 'Rejected' ? 'warning' : 'success');
       break;
     }
     case 'decide': case 'resubmit': {
@@ -584,6 +605,7 @@ export function renderControl(ctl, env) {
       break;
     }
     case 'html':
+      if (play && ctl.attachSlot && attachOn(env.project, ctl.attachSlot.list)) { playAttachments(el, ctl, env, C, font); break; }
       { const src = ctl.fx?.HtmlText ? tryFx(ctl.fx.HtmlText, env, null) : p.html;
         el.innerHTML = `<div class="pa-html" style="font-family:${font};color:${C('@Text')}">${src == null ? '<code style="opacity:.6">ƒx HtmlText</code>' : sanitizeHtml(String(src))}</div>`; }
       if (hasActions(ctl)) runSel();
@@ -732,4 +754,22 @@ export function renderScreen(host, screen, env, { diff = false } = {}) {
   host.style.background = cssColor(screen.fill || '@Bg', env.theme);
   host.style.fontFamily = FONT_CSS[env.theme.font] || FONT_CSS['Segoe UI'];
   for (const ctl of screen.controls) host.appendChild(renderControl(ctl, { ...env, screen }));
+}
+
+/** Play stand-in for the hand-added attachments form: the item's files, plus add/remove on edit screens. */
+function playAttachments(el, ctl, env, C, font) {
+  const edit = ctl.attachSlot.mode === 'edit', rt = env.rt;
+  const files = edit ? (rt.inputs[ctl.name] ?? (rt.vars[varSel(ctl.attachSlot.list)]?.Attachments || [])) : (rt.vars[varSel(ctl.attachSlot.list)]?.Attachments || []);
+  const box = document.createElement('div');
+  box.className = 'pa-attach';
+  box.style.cssText = `font-family:${font};color:${C('@Text')};border:1px solid ${C('@Border')};background:${C('@Surface')}`;
+  box.innerHTML = `<div class="pa-attach-h">Attachments <span style="color:${C('@TextMuted')}">(${files.length})</span></div>`
+    + `<div class="pa-attach-l">${files.map((f, i) => `<span class="pa-file" style="border-color:${C('@Border')}">${esc(f.DisplayName)}${edit ? `<button type="button" data-rm="${i}" aria-label="Remove ${esc(f.DisplayName)}">×</button>` : ''}</span>`).join('') || `<span style="color:${C('@TextMuted')}">${edit ? 'No files yet.' : 'There is nothing attached.'}</span>`}</div>`
+    + (edit ? `<label class="pa-attach-add" style="color:${C('@Primary')}">+ Attach file<input type="file" multiple hidden></label>` : '');
+  if (edit) {
+    const set = (list) => { rt.inputs[ctl.name] = list; rt.hooks?.rerender(); };
+    box.querySelector('input').addEventListener('change', (e) => { const add = [...e.target.files].map((f) => ({ DisplayName: f.name })); if (add.length) set([...files, ...add]); });
+    box.querySelectorAll('[data-rm]').forEach((b) => b.addEventListener('click', (e) => { e.stopPropagation(); set(files.filter((_, i) => i !== +b.dataset.rm)); }));
+  }
+  el.appendChild(box);
 }

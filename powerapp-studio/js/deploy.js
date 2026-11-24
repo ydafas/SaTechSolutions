@@ -4,6 +4,7 @@
 import { screenYaml, themeFormulas, onStartFx, startScreenFx, usedLists, usesPeople, provisioningScript } from './emit.js';
 import { flowDefinition, flowFxName, flowFileName } from './flows.js';
 import { FORM_FACTORS } from './core.js';
+import { attachSlots, attachHow, attachCopyText } from './attach.js';
 
 /** FNV-1a 32-bit, hex. Deterministic and fast; collisions only matter as "looks unchanged". */
 export function hash(text) {
@@ -26,7 +27,7 @@ export function deploySteps(project) {
     const t = provisioningScript(project);
     steps.push({ key: 'lists', kind: 'lists', title: 'SharePoint lists', text: t, copyLabel: 'Copy provisioning script',
       how: `Create ${project.lists.map((l) => `"${l.name}"`).join(', ')} on your site, by hand or with this PnP PowerShell script (fill in its EDIT ME block). Skip this step if the lists already exist with these columns.`,
-      hash: hash(JSON.stringify(project.lists.map((l) => [l.name, l.columns.map((c) => [c.name, c.type, c.required, c.choices, c.lookupList])])) + (project.app.features?.usage ? '+usage' : '')) });
+      hash: hash(JSON.stringify(project.lists.map((l) => [l.name, l.columns.map((c) => [c.name, c.type, c.required, c.choices, c.lookupList])])) + (project.app.features?.usage ? '+usage' : '') + project.lists.filter((l) => l.attachments).map((l) => '+att:' + l.name).join('')) });
   }
   steps.push({ key: 'app', kind: 'static', title: 'Blank canvas app', hash: hash(project.app.formFactor),
     how: `In Power Apps, create a blank canvas app in ${project.app.formFactor === 'phone' ? 'Phone' : 'Tablet'} format (${ff.w} × ${ff.h}). Skip this when you are updating an app you already deployed.` });
@@ -47,8 +48,14 @@ export function deploySteps(project) {
   }
   for (const scr of project.screens) {
     const y = screenYaml(project, scr);
+    const att = attachSlots(project, scr);
     steps.push({ key: 'scr:' + scr.id, kind: 'screen', screen: scr, title: 'Screen ' + scr.name, text: y, copyLabel: 'Copy screen YAML', hash: hash(y),
-      how: `Delete the old ${scr.name} (and any copy using the same control names) if it exists. Click an empty spot on the canvas, then press Ctrl+V.` });
+      how: `Delete the old ${scr.name} (and any copy using the same control names) if it exists. Click an empty spot on the canvas, then press Ctrl+V.`
+        + (att.length ? `\nIf you added ${att.map((x) => x.form).join(' / ')} by hand before: select it, Ctrl+C and keep it in Notepad before you delete the screen, then paste it back.` : '') });
+    if (att.length) {
+      const how = attachHow(scr.name, att);
+      steps.push({ key: 'attach:' + scr.id, kind: 'attach', screen: scr, title: 'Attachments on ' + scr.name, text: attachCopyText(att), copyLabel: 'Copy the property values', hash: hash(how + y), how });
+    }
   }
   const ss = '=' + startScreenFx(project);
   steps.push({ key: 'startscreen', kind: 'startscreen', title: 'App.StartScreen', text: ss, copyLabel: 'Copy StartScreen', hash: hash(ss),

@@ -57,6 +57,9 @@ These templates passed the harness and the skill's `screen_tool.py check`, but h
 | `js/core.js` | Project model and JSDoc types, control catalog, column types, theme presets, sample data, `renameCopy` (unique names for copies), `normalizeProject` (makes loaded and shared projects safe) |
 | `js/fx.js` | Power Fx builders for the field-tested shapes: `ifErrorFx`, `upsertBaseFx`, `rebaseFx`, `spUserFx` / `meUserFx`, `recordFx`, `equalsFx`, `notifyFx`, `navigateFx` |
 | `js/emit.js` | YAML and Power Fx generation, deploy checklist, PnP script, lint (`LINT_RULES`) |
+| `js/scenarios.js` | Round 6: `buildScenario` (one call from a gallery card to a finished app with options, chain and flows), gallery summaries |
+| `js/attach.js` | Round 6: attachments placeholders, form names, loader line, Paste assistant text |
+| `js/versionstore.js` | Round 6: Version history in IndexedDB, with a localStorage fallback |
 | `js/render.js` | Control rendering, HTML sanitizer, mini Power Fx evaluator, Play runtime |
 | `js/templates.js` | Scenarios, screen templates, insertable blocks |
 | `js/import.js` | YAML import with name-clash renaming |
@@ -145,6 +148,9 @@ Every finding has a stable code. To silence one rule on one control, put `lint-o
 | PS057 | error | Approve/Reject action without a chain, or Reject without a comment box |
 | PS058 | warn | A formula override on a property the tenant rejected (switched off in *Report a paste error*): the override is dropped from the YAML |
 | PS059 | warn | On a list marked Large: `CountRows` without the "2000+" cap, `Search()`, or a `Filter` on the list itself using `<>`, `in`, `= Blank()`, `IsBlank()` or a function over a column |
+
+| PS060 | info / warn | Attachments: reminder to insert the hand-added Edit form over each placeholder after pasting (info); a placeholder whose list has Attachments off, or inside a gallery, does nothing (warn) |
+| PS061 | error | Approval chain with admin override but no admin group |
 
 To add a rule, give it the next code in `LINT_RULES`, implement it in `lint()` in `js/emit.js`, and add a failing case to the "lint rules fire" test in `tests/run.mjs`.
 
@@ -397,3 +403,21 @@ The generated Mine, status and search filters were already delegable (`'Created 
 - A PA2108 copied from Studio, switched off, and the screen pasted again.
 - The "2000+" KPI labels and a reshaped extra filter on a list with more than 2,000 items (no delegation warning in Studio).
 - A bundle made here opened by `screen_tool.py`, and one made by `screen_tool.py` imported here.
+
+## Round 6: scenario gallery, attachments, approval-chain extras, version compare
+
+**Scenario gallery.** *New app* opens on a gallery of twelve scenarios, each card with a rendered home screen and what it includes (lists, screens, flows, approvals, attachments). *Preview in Play* runs the scenario without touching your app; *Use this* goes to the data step. New scenarios: Work orders, Equipment checkout (lookup between two lists), Incident reports, Employee onboarding (lookup), Leave requests (two-stage chain: Supervisor column, then HR group) and Policy review (attachments on). Each ships with its flows (turn them off in the wizard) and builds lint-clean on tablet and phone with the options on or off.
+
+**Attachments** (Data tab → a list's *Attachments* toggle, the skill's pattern). Attachments cannot be pasted, so the edit and details screens get a dashed placeholder naming the form to insert by hand: `frmAttach<List>` on the edit screen (an Edit form: Item `=varSel<List>`, DefaultMode Edit, only the Attachments card, unlocked with DisplayMode Edit) and `frmAttachView<List>` on details (View, referenced by no formula). With the toggle on, the edit screen's OnVisible calls `If(IsBlank(varSel.ID), NewForm(frm), EditForm(frm))`, Save passes `frm.Updates` as an extra `Patch` argument, and "Add another" calls `ResetForm`. The Paste assistant gets an *Attachments on <screen>* step with the exact steps and a Copy button; it comes back whenever the screen is re-pasted (a re-paste deletes hand-added controls, so the screen step says to keep a Notepad copy). *Report a paste error* recognises "frmAttach… isn't recognized". The provisioning script adds `Set-PnPList -EnableAttachments $true`. Toggling on in an existing app adds the box below the form; when there is no room it offers to rebuild that screen in place (same id and name). Play shows the files and lets you attach and remove them. The form names carry the list (`frmAttachPolicies`) because names must be unique app-wide.
+
+**Approval-chain extras** (wizard chain editor, Claude plans and *Ask for a change* `setApprovalStages`; each one opt-in):
+- *Deadline* per stage (days). Adds a `StageSince` date the app sets when an item reaches a stage; the queue shows an Overdue badge, details say "overdue", and a daily reminder flow per stage emails whoever the stage waits on (`CurrentStage eq n and StageSince lt today − days`).
+- *Approvers can reassign.* Adds a `<Stage>Delegate` Person column per stage. The approver (or an admin) picks someone in the details screen's *Options* overlay; that person can then decide the stage (queue and permission checks include the stand-in; the approver column is kept) and the history records "Reassigned to …".
+- *Admins can override* (needs the admin group). Admins approve or reject the waiting stage from the same overlay with a required reason; the history line says "(admin override)".
+With none of them on, chain output is unchanged.
+
+**Polish.** The lint report has one-click size actions: *Mark List large* on PS035 and *List stays small* on PS059. Version history compares any two versions (or one with the app now) and shows a line diff of each changed screen's YAML. Versions now live in IndexedDB (or their own localStorage key where IndexedDB is unavailable), not inside the saved project; old projects migrate on first load, and the project only drops its in-project copy after the versions are stored. Project files and bundles still carry them. Opening a bundle offers *Add to my app*: its lists, screens and flows join the open app, a same-named list with different columns and every clashing screen or control name get a number, and the formulas that name them follow.
+
+**Deliberate output changes.** Details-screen section titles (and the chain's History title) now hide with their cards; before, they floated over the "nothing selected" state. Edit forms on phones too long for the screen shorten their multi-line boxes instead of running under the Save bar (no shipped scenario before round 6 was affected). Everything else is byte-identical to round 5 when the new features are off.
+
+**Needs a tenant test:** the attachments form pattern end to end with these names, the reassign Patch of a Person column from a people-picker variable, the `With({sla: …})` overdue formulas in a gallery, and the reminder flow's OData filter on `StageSince`.

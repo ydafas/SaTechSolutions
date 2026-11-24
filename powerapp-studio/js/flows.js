@@ -194,11 +194,17 @@ export function flowDefinition(project, flow) {
     triggers.Recurrence = { recurrence: { frequency: 'Day', interval: 1, schedule: { hours: [String(Number(flow.hour) || 8)], minutes: [0] }, timeZone: flow.timeZone || 'UTC' }, type: 'Recurrence' };
     const days = Math.max(0, Number(flow.days) || 0);
     const filters = [];
-    if (flow.statusField && flow.reminderValue !== '') {
-      const col = list?.columns.find((c) => c.name === flow.statusField);
-      filters.push(`${internalName(flow.statusField)} eq ${odataValue(col, flow.reminderValue)}`);
+    if (flow.chainStage) {
+      // approval-chain deadline: items waiting at this stage since before the deadline
+      filters.push(`CurrentStage eq ${Number(flow.chainStage)}`);
+      if (days) filters.push(`StageSince lt '@{addDays(utcNow(), -${days}, 'yyyy-MM-dd')}'`);
+    } else {
+      if (flow.statusField && flow.reminderValue !== '') {
+        const col = list?.columns.find((c) => c.name === flow.statusField);
+        filters.push(`${internalName(flow.statusField)} eq ${odataValue(col, flow.reminderValue)}`);
+      }
+      if (days) filters.push(`Created le '@{addDays(utcNow(), -${days}, 'yyyy-MM-ddTHH:mm:ssZ')}'`);
     }
-    if (days) filters.push(`Created le '@{addDays(utcNow(), -${days}, 'yyyy-MM-ddTHH:mm:ssZ')}'`);
     actions.Get_items = {
       runAfter: {}, type: 'OpenApiConnection',
       inputs: { host: host(SP, 'GetItems'), parameters: spParams(project, flow, { ...(filters.length ? { $filter: filters.join(' and ') } : {}), $top: 500 }), authentication: "@parameters('$authentication')" },

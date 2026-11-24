@@ -9,11 +9,12 @@ import { initTableUI, importTableDialog } from './tableui.js';
 import { initDriftUI, driftDialog } from './driftui.js';
 import { listToCsv } from './tabular.js';
 import { CONTRAST_PAIRS, contrast, fixContrast, AA } from './a11y.js';
-import { renameListIn, renameColumnIn } from './edit.js';
+import { renameListIn, renameColumnIn, attachNoRoom, syncAttachSlots } from './edit.js';
 import { initAssistUI, setupDialog, setupCardHtml, bindSetupCard, openSetupCount, deployView, exportGuide, startTour, tourDone, conditionalCount } from './assistui.js';
 import { SETUP_CODES } from './setup.js';
 import { initFlowsUI, panelFlows, addFlowDialog, flowDialog, downloadFlow, duplicateFlow, deleteFlow, loadFlowSample, flowZipBlob } from './flowsui.js';
 import { renderControl, renderScreen, createRuntime, svgIcon, FONT_CSS, tryFx } from './render.js';
+import { buildScenario, scenarioIncludes, addScenarioFlows } from './scenarios.js';
 import { SCENARIOS, generateApp, SCREEN_TEMPLATES, genBlank, genHome, genBrowse, genDetail, genEdit, genApprovals, genLoading, BLOCKS, insertBlock, galleryRows, buildDemo } from './templates.js';
 import { importYaml } from './import.js';
 import { MAX_STAGES, isGuid, stageCols } from './chain.js';
@@ -22,10 +23,11 @@ import { encodeShare, decodeShare, isShareHash, WARN_CHARS, MAX_CHARS } from './
 import { loadBlocks, saveBlocks, makeBlock, insertSavedBlock, exportBlocksJson, importBlocksJson } from './blocks.js';
 import { ICONS, ICON_NAMES } from './icons.js';
 import { SIZES } from './delegation.js';
+import { readVersions, writeVersions, versionsSig } from './versionstore.js';
 import { initFeedbackUI, feedbackDialog } from './feedbackui.js';
 import { initHistoryUI, historyDialog } from './historyui.js';
 import { takeSnapshot, mergeSnapshots } from './history.js';
-import { bundleZip, readBundle } from './bundle.js';
+import { bundleZip, readBundle, mergeProjects } from './bundle.js';
 
 // ------------------------------------------------------------------ small helpers
 const $ = (s, r = document) => r.querySelector(s);
@@ -66,9 +68,34 @@ let P = null;
 const S = { tab: 'insert', screenId: null, sel: [], zoom: 'fit', undo: [], redo: [], last: '', clip: null, actEvent: 'OnSelect', blockList: '', codeTab: 'deploy', showCond: false };
 function loadSaved() { try { const t = localStorage.getItem(KEY); return t ? JSON.parse(t) : null; } catch { return null; } }
 /** Save to this browser. Returns false (and says so once) when storage is full, e.g. after many saved versions. */
+// Version history is stored apart from the project (versionstore.js). Until the first successful write of the
+// versions, the project keeps them inside (the old format), so nothing is lost if this tab closes mid-migration.
+const VS = { ready: false, sig: null, chain: Promise.resolve(), warned: false };
+function syncVersions() {
+  const sig = versionsSig(P.snapshots);
+  if (sig === VS.sig) return;
+  VS.sig = sig;
+  const list = P.snapshots || [];
+  VS.chain = VS.chain.then(() => writeVersions(list)).then((where) => {
+    if (!where && !VS.warned) { VS.warned = true; toast('Versions could not be saved in this browser. Save a project file to keep them.', true); }
+  });
+}
+/** After loading the saved project: bring in the stored versions (and move old in-project ones out of it). */
+function attachVersions(hadSaved = true) {
+  VS.ready = false;
+  // no saved project (first run, or storage cleared): versions left in IndexedDB belong to nothing, so drop them
+  return (hadSaved ? readVersions() : Promise.resolve([])).then(async (stored) => {
+    const merged = mergeSnapshots(P.snapshots || [], stored);
+    if (merged.length) P.snapshots = merged; else delete P.snapshots;
+    const where = await writeVersions(merged);
+    if (where) { VS.ready = true; VS.sig = versionsSig(P.snapshots); persist(); }
+  });
+}
 function persist() {
+  if (S.previewing) return;
   if (S.viewer) return true;
-  try { localStorage.setItem(KEY, JSON.stringify(P)); S.storeWarned = false; return true; }
+  if (VS.ready) syncVersions();
+  try { localStorage.setItem(KEY, VS.ready ? JSON.stringify({ ...P, snapshots: undefined }) : JSON.stringify(P)); S.storeWarned = false; return true; }
   catch {
     if (!S.storeWarned) toast('This browser\'s storage is full: changes are not being kept. Delete old versions (Project → Version history) or save a project file.', true);
     S.storeWarned = true; return false;
@@ -99,6 +126,7 @@ function migrate(p) {
 let commitTimer = null;
 function commit() {
   clearTimeout(commitTimer);
+  if (S.previewing) return;
   const cur = ser(P);
   if (cur !== S.last) { S.undo.push(S.last); if (S.undo.length > 120) S.undo.shift(); S.redo = []; S.last = cur; }
   persist();
@@ -460,8 +488,8 @@ async function openShared(hash) {
 function leaveViewer(copy = null) {
   S.viewer = false; document.body.classList.remove('viewer');
   try { history.replaceState(null, '', location.pathname + location.search); } catch { /* sandboxed */ }
-  if (copy) { copy.app.name = (copy.app.name || 'App') + ' (copy)'; setProject(copy); toast('Opened a copy. It is saved in this browser.'); return; }
-  const saved = loadSaved(); setProject(saved || core.newProject()); if (!saved) wizard(true);
+  if (copy) { copy.app.name = (copy.app.name || 'App') + ' (copy)'; VS.ready = true; VS.sig = null; setProject(copy); toast('Opened a copy. It is saved in this browser.'); return; }
+  const saved = loadSaved(); setProject(saved || core.newProject()); attachVersions(!!saved); if (!saved) wizard(true);
 }
 
 // ------------------------------------------------------------------ my blocks (saved in this browser; export/import as .json)
@@ -609,6 +637,7 @@ function dataEditorHtml(lists) {
   return lists.map((l, li) => `<div class="listcard" data-li="${li}">
     <div class="listcard-h"><i style="width:16px;height:16px;color:var(--cyan)">${ui('data')}</i><input value="${esc(l.name)}" data-dl="name" aria-label="List name"><button class="mini danger" data-dcmd="delList" title="Delete list">${ui('trash')}</button></div>
     <div class="lsize"><label for="lsz${li}">Expected size</label><select class="inp" id="lsz${li}" data-dl="size" title="${esc(SIZES[l.size]?.note || 'Not set: formulas are generated for lists under 500 items.')}"><option value="">Not set</option>${Object.entries(SIZES).map(([k, v]) => `<option value="${k}" ${k === l.size ? 'selected' : ''}>${v.label}</option>`).join('')}</select></div>
+    <label class="lattach" title="Each item can carry files. Attachments cannot be pasted: the screens get a dashed box where you insert one Edit form by hand (the Paste assistant has the exact steps)."><input type="checkbox" data-dl="attachments" ${l.attachments ? 'checked' : ''}>Attachments <small>(form added by hand after the paste)</small></label>
     ${l.columns.map((c, ci) => `<div class="col" data-ci="${ci}">
       <div class="col-top"><input class="inp" value="${esc(c.name)}" data-dc="name" ${c.builtin ? 'disabled' : ''} aria-label="Column name" title="${esc(c.name)}">
         ${c.builtin ? '' : `<button class="mini" data-dcmd="colUp" title="Move up" aria-label="Move ${esc(c.name)} up">${ui('up')}</button><button class="mini danger" data-dcmd="delCol" title="Delete column" aria-label="Delete ${esc(c.name)}">${ui('trash')}</button>`}</div>
@@ -631,6 +660,21 @@ function bindDataEditor(root, lists, onChange, rerender) {
       t.title = SIZES[l.size]?.note || '';
       onChange();
       if (lists === P.lists && l.size) toast(SIZES[l.size].note);
+      return;
+    }
+    if (t.dataset.dl === 'attachments') {
+      if (e.type !== 'change') return;
+      if (t.checked) l.attachments = true; else delete l.attachments;
+      if (lists !== P.lists) return;
+      (async () => {
+        const tight = t.checked ? attachNoRoom(P, l.name) : [];
+        const rebuild = tight.length ? await ask('Make room for attachments', `${tight.join(' and ')} ${tight.length > 1 ? 'have' : 'has'} no free space for the attachments box. Rebuild ${tight.length > 1 ? 'them' : 'it'} from the data model (same names, so links keep working)? Changes you made by hand on ${tight.length > 1 ? 'those screens' : 'that screen'} are replaced. Cancel puts the box below the form for you to move.`, 'Rebuild') : false;
+        const r = syncAttachSlots(P, l.name, { rebuild });
+        onChange();
+        const n = r.added.length + r.rebuilt.length;
+        if (t.checked) toast(n ? `Attachments box on ${[...r.added, ...r.rebuilt].join(', ')}. After pasting, follow the Paste assistant's Attachments step.` : `Attachments on for ${l.name}. Its edit and details screens get the box when you add them.`);
+        else toast(r.removed.length ? `Attachments box removed from ${r.removed.join(', ')}. Delete the hand-added form in Studio too.` : `Attachments off for ${l.name}.`);
+      })();
       return;
     }
     if (t.dataset.dl === 'name') {
@@ -932,6 +976,16 @@ function inspActions(f) {
         break;
       }
       case 'resubmit': body = `${F('List', S2('list', lists, a.list))}<p class="note">Sends a rejected item back to stage 1 with every stage reset to Pending.</p>`; break;
+      case 'reassign': {
+        const pk = [['', '(people picker)'], ...[...walk(f.screen.controls)].map(([x]) => x).filter((x) => x.type === 'person' && !x.field).map((x) => x.name)];
+        body = `${F('List', S2('list', lists, a.list))}${F('People picker', S2('picker', pk, a.picker))}<p class="note">${P.app.chain?.reassign ? 'Hands the waiting stage to the picked person (a stand-in; the stage\'s approver column is kept) and adds a history line.' : 'Turn on "Approvers can reassign" for the approval chain first (wizard or Ask for a change).'}</p>`;
+        break;
+      }
+      case 'override': {
+        const boxes = [['', '(reason box)'], ...[...walk(f.screen.controls)].map(([x]) => x).filter((x) => x.type === 'textinput').map((x) => x.name)];
+        body = `<div class="grid2">${F('List', S2('list', lists, a.list))}${F('Decision', S2('decision', ['Approved', 'Rejected'], a.decision || 'Approved'))}</div>${F('Reason box', S2('commentCtl', boxes, a.commentCtl))}<p class="note">${P.app.chain?.override ? 'Decides the waiting stage for an admin, whoever the approver is. The reason is required and goes into the history.' : 'Turn on "Admins can override" for the approval chain first.'}</p>`;
+        break;
+      }
       case 'custom': body = F('Power Fx', T2('fx', a.fx, 'Set(varX, true); Notify("Hi")')); break;
     }
     return `<div class="act"><div class="act-h"><span class="act-n">${i + 1}</span><select ${pth('type')} data-re="1">${sel(typeOpts, a.type)}</select>
@@ -1175,6 +1229,47 @@ function newScreenDialog() {
   };
 }
 
+// scenario gallery: thumbnails of each scenario's home screen, cached per theme
+const THUMBS = new Map(), INCLUDES = new Map();
+function galleryIncludes(k) { if (!INCLUDES.has(k)) { try { INCLUDES.set(k, scenarioIncludes(k)); } catch { INCLUDES.set(k, ''); } } return INCLUDES.get(k); }
+function envFor(p) {
+  const sample = {}; for (const l of p.lists) sample[l.name] = sampleRows(l, p.lists, 6);
+  const vars = { varIsAdmin: true, locInited: true, locStep: 2 }; for (const l of p.lists) vars[varSel(l.name)] = sample[l.name]?.[0] || {};
+  const noop = () => {};
+  return { project: p, theme: p.theme, mode: 'design', sample, rt: { db: sample, vars, inputs: {}, galSel: {}, ctlValues: {}, api: { navigate: noop, back: noop, toast: noop, launch: noop } } };
+}
+function scenarioThumb(k, theme) {
+  const key = k + '|' + theme;
+  if (THUMBS.has(key)) return THUMBS.get(key).cloneNode(true);
+  const p = buildScenario(k, { theme, flows: false });
+  const scr = p.screens.find((s) => s.name === 'scrHome') || p.screens.find((s) => !/^scrLoading/.test(s.name)) || p.screens[0];
+  const host = document.createElement('div'); host.className = 'screen g-screen';
+  renderScreen(host, scr, envFor(p));
+  THUMBS.set(key, host);
+  return host.cloneNode(true);
+}
+function fillThumbs(root, wz) {
+  const slots = [...root.querySelectorAll('[data-thumb]')].filter((s) => s.dataset.thumb !== 'blank');
+  const theme = wz.theme || THEME_PRESETS[0].name;
+  const next = () => {
+    const slot = slots.shift();
+    if (!slot || !root.isConnected) return;
+    try {
+      const el = scenarioThumb(slot.dataset.thumb, theme);
+      el.style.transform = `scale(${(slot.clientWidth || 280) / 1366})`;
+      slot.innerHTML = ''; slot.appendChild(el);
+    } catch (e) { slot.innerHTML = '<span class="g-err">Preview unavailable</span>'; }
+    requestAnimationFrame(next);
+  };
+  requestAnimationFrame(next);
+}
+/** Open Play on a scenario's finished app without touching the current project. */
+function previewScenario(k, wz) {
+  let p;
+  try { p = buildScenario(k, { formFactor: wz?.ff, theme: wz?.theme }); } catch (e) { toast('Could not build the preview: ' + e.message, true); return; }
+  play({ project: p, preview: true });
+}
+
 // requirements wizard
 function wizard(first = false) {
   const wz = { step: 1, scen: 'requests', name: SCENARIOS.requests.app, ff: P?.app.formFactor || 'tablet', lists: SCENARIOS.requests.lists(), screens: new Set(['home', 'browse', 'detail', 'edit']), approvals: true, theme: P?.theme?.name || THEME_PRESETS[0].name, chain: { on: false, stages: [{ name: 'Manager', approver: 'column', column: '', groupId: '', notify: '' }, { name: 'Finance', approver: 'group', column: '', groupId: '', notify: '' }] }, ft: { loading: true, confirm: true, stepper: true, scope: 'all', usage: false, adminGroup: '' } };
@@ -1189,9 +1284,30 @@ function wizard(first = false) {
     if (wz.step === 1) {
       body.innerHTML = `<button class="describe-cta" id="wzDescribe"><i>${svgIcon('edit', '#fff', 2)}</i><span><b>Describe it in your own words</b><small>Write the requirements in plain English. Claude plans the lists, screens and flows, and you review the plan before anything is built. Needs your Anthropic API key.</small></span><em>Describe →</em></button>
         <div class="sub" style="margin-top:16px">Or start from a scenario</div>
-        <div class="scen">${Object.entries(SCENARIOS).map(([k, s]) => `<button data-scen="${k}" class="${k === wz.scen ? 'on' : ''}"><i>${svgIcon(s.icon, '#fff', 2)}</i><b>${esc(s.label)}</b><small>${esc(s.blurb)}</small></button>`).join('')}</div>
+        <div class="gallery">${Object.entries(SCENARIOS).map(([k, s]) => `<div class="g-card ${k === wz.scen ? 'on' : ''}" data-scen="${k}" tabindex="0" role="button" aria-pressed="${k === wz.scen}" aria-label="${esc(s.label)}">
+          <div class="g-thumb" data-thumb="${k}">${k === 'blank' ? `<i class="g-blank">${svgIcon(s.icon, 'currentColor', 1.6)}</i>` : '<span class="g-load"></span>'}</div>
+          <div class="g-txt"><b>${esc(s.label)}</b><small>${esc(s.blurb)}</small>${k === 'blank' ? '' : `<em>${esc(galleryIncludes(k))}</em>`}</div>
+          <div class="g-acts">${k === 'blank' ? '' : `<button class="btn sm" data-gprev="${k}">${ui('eye')}Preview</button>`}<button class="btn sm pri" data-guse="${k}">Use this</button></div></div>`).join('')}</div>
         <div class="grid2" style="margin-top:18px">${F('App name', `<input id="wzName" value="${esc(wz.name)}">`)}${F('Format', `<select id="wzFF">${Object.entries(FORM_FACTORS).map(([k, v]) => `<option value="${k}" ${k === wz.ff ? 'selected' : ''}>${v.label}</option>`).join('')}</select>`)}</div>`;
-      body.querySelectorAll('[data-scen]').forEach((b) => b.onclick = () => { wz.scen = b.dataset.scen; wz.name = SCENARIOS[wz.scen].app; wz.lists = SCENARIOS[wz.scen].lists(); wz.approvals = !!SCENARIOS[wz.scen].approvals; draw(); });
+      const pickScen = (k) => {
+        const sc = SCENARIOS[k];
+        wz.scen = k; wz.name = sc.app; wz.lists = sc.lists(); wz.approvals = !!sc.approvals;
+        wz.ft = { loading: true, confirm: true, stepper: true, scope: 'all', usage: false, adminGroup: wz.ft.adminGroup || '', ...(sc.features || {}) };
+        wz.chain = sc.chain ? { on: true, stages: clone(sc.chain.stages), reassign: !!sc.chain.reassign, override: !!sc.chain.override } : { on: false, stages: wz.chain.on ? [{ name: 'Manager', approver: 'column', column: '', groupId: '', notify: '' }, { name: 'Finance', approver: 'group', column: '', groupId: '', notify: '' }] : wz.chain.stages };
+        wz.flows = true;
+      };
+      body.querySelectorAll('[data-scen]').forEach((b) => {
+        b.onclick = (e) => {
+          const k = b.dataset.scen;
+          if (e.target.closest('[data-gprev]')) { previewScenario(k, wz); return; }
+          pickScen(k);
+          if (e.target.closest('[data-guse]')) { wz.step = 2; draw(); return; }
+          body.querySelectorAll('.g-card').forEach((x) => { x.classList.toggle('on', x === b); x.setAttribute('aria-pressed', x === b); });
+          body.querySelector('#wzName').value = wz.name;
+        };
+        b.onkeydown = (e) => { if ((e.key === 'Enter' || e.key === ' ') && e.target === b) { e.preventDefault(); b.click(); } };
+      });
+      fillThumbs(body, wz);
       body.querySelector('#wzName').oninput = (e) => (wz.name = e.target.value);
       body.querySelector('#wzDescribe').onclick = () => { m.close(); describeDialog(); };
       body.querySelector('#wzFF').onchange = (e) => (wz.ff = e.target.value);
@@ -1208,8 +1324,8 @@ function wizard(first = false) {
       body.innerHTML = `<div class="wiz-grid"><div><div class="sub" style="margin-top:0">Screens for each list</div><div class="picks">
         ${pk('home', 'Home dashboard', 'Welcome, status counts and tiles to every screen.')}
         ${pk('browse', 'Browse', 'Search plus a gallery of items.')}${pk('detail', 'Details', 'Every column of one item, with Edit and Delete.')}${pk('edit', 'New / edit form', 'Validated inputs for every column, with Save.')}
-        ${appr.length ? `<label><input type="checkbox" id="wzAppr" ${wz.approvals ? 'checked' : ''}><span><b>Approvals queue</b><small>Approve / reject items in <select id="wzApprList">${appr.map((l) => `<option>${esc(l.name)}</option>`).join('')}</select></small></span></label>` : ''}
-      </div><div id="wzChain"></div></div><div><div class="sub" style="margin-top:0">Look</div><div class="presets">${THEME_PRESETS.map((p) => `<button class="preset ${p.name === wz.theme ? 'on' : ''}" data-wtheme="${esc(p.name)}"><div class="bar">${['HeaderBg', 'Primary', 'Accent', 'Bg', 'Surface'].map((k) => `<i style="background:${p.colors[k]}"></i>`).join('')}</div><span>${esc(p.name)}</span></button>`).join('')}</div>
+        ${appr.length ? `<label><input type="checkbox" id="wzAppr" ${wz.approvals ? 'checked' : ''}><span><b>Approvals queue</b><small>Approve / reject items in <select id="wzApprList">${appr.map((l) => `<option ${l.name === SCENARIOS[wz.scen]?.approvals?.list ? 'selected' : ''}>${esc(l.name)}</option>`).join('')}</select></small></span></label>` : ''}
+      </div><div id="wzChain"></div>${(SCENARIOS[wz.scen]?.flows || []).length ? `<div class="picks"><label><input type="checkbox" id="wzFlows" ${wz.flows !== false ? 'checked' : ''}><span><b>Include the scenario's ${SCENARIOS[wz.scen].flows.length} email flows</b><small>${esc(SCENARIOS[wz.scen].flows.map((f) => f.name).join(' · '))}. Edit or remove them on the Flows tab.</small></span></label></div>` : ''}</div><div><div class="sub" style="margin-top:0">Look</div><div class="presets">${THEME_PRESETS.map((p) => `<button class="preset ${p.name === wz.theme ? 'on' : ''}" data-wtheme="${esc(p.name)}"><div class="bar">${['HeaderBg', 'Primary', 'Accent', 'Bg', 'Surface'].map((k) => `<i style="background:${p.colors[k]}"></i>`).join('')}</div><span>${esc(p.name)}</span></button>`).join('')}</div>
       <p class="note">Fine-tune colors, font and corners on the Theme tab later.</p>
       <div class="sub">Extras</div><div class="picks">
         ${[['loading', 'Animated loading screen', 'Your app\'s monogram flies in while lists load. Opens the home screen when ready.'], ['confirm', 'Confirmation page', 'A "submitted" page after a new item is saved, with Add another and Done.'], ['stepper', 'Status stepper', 'Details show the item\'s progress through its status values.'], ['mine', 'Show "Mine" first', 'Lists open filtered to items the signed-in person created.'], ['usage', 'Track app usage', 'One row per user in an AppUsage list: first and last visit, visit count.']].map(([k, t, d]) => `<label><input type="checkbox" data-ft="${k}" ${k === 'mine' ? (wz.ft.scope === 'mine' ? 'checked' : '') : wz.ft[k] ? 'checked' : ''}><span><b>${t}</b><small>${d}</small></span></label>`).join('')}
@@ -1222,6 +1338,7 @@ function wizard(first = false) {
       body.querySelectorAll('[data-wtheme]').forEach((b) => b.onclick = () => { wz.theme = b.dataset.wtheme; draw(); });
       body.querySelectorAll('[data-ft]').forEach((x) => x.onchange = () => { if (x.dataset.ft === 'mine') wz.ft.scope = x.checked ? 'mine' : 'all'; else wz.ft[x.dataset.ft] = x.checked; });
       body.querySelector('#wzAdmin').oninput = (e) => (wz.ft.adminGroup = e.target.value.trim());
+      body.querySelector('#wzFlows')?.addEventListener('change', (e) => (wz.flows = e.target.checked));
     }
   };
   // approval chain editor (step 3, under the approvals queue)
@@ -1240,9 +1357,14 @@ function wizard(first = false) {
         <select data-k="who" aria-label="Stage ${i + 1} approver">${people.map((pc) => `<option value="col:${esc(pc.name)}" ${st.approver === 'column' && st.column === pc.name ? 'selected' : ''}>Person column: ${esc(pc.name)}</option>`).join('')}<option value="new" ${st.approver === 'column' && !people.some((pc) => pc.name === st.column) ? 'selected' : ''}>New column ${esc(stageCols(st).K)}Approver</option><option value="group" ${st.approver === 'group' ? 'selected' : ''}>Microsoft 365 group</option></select>
         ${c.stages.length > 1 ? `<button class="mini" data-del="${i}" title="Remove stage" aria-label="Remove stage ${i + 1}">${ui('close')}</button>` : ''}</div>
         ${st.approver === 'group' ? `<div class="row2"><input data-k="groupId" value="${esc(st.groupId)}" placeholder="Group object ID (can be added later in Finish setup)" aria-label="Stage ${i + 1} group ID"><input data-k="notify" value="${esc(st.notify)}" placeholder="Group mailbox for emails (optional)" aria-label="Stage ${i + 1} group mailbox"></div>` : ''}
+        <label class="sla">Deadline <input data-k="slaDays" type="number" min="0" max="90" step="1" value="${st.slaDays > 0 ? st.slaDays : ''}" placeholder="none" aria-label="Stage ${i + 1} deadline in days"> days <small>overdue badge and a daily reminder</small></label>
       </div></div>`).join('')}</div>
-      ${c.stages.length < MAX_STAGES ? `<button class="btn sm" id="wzAddStage">${ui('plus')}Add stage</button>` : ''}<p class="note">The requester can never approve their own item. Flows email each approver in turn and the requester at the end.</p>` : ''}</div>`;
+      ${c.stages.length < MAX_STAGES ? `<button class="btn sm" id="wzAddStage">${ui('plus')}Add stage</button>` : ''}<p class="note">The requester can never approve their own item. Flows email each approver in turn and the requester at the end.</p>
+      <label class="chk"><input type="checkbox" id="wzChainReassign" ${c.reassign ? 'checked' : ''}><span><b>Approvers can reassign</b><small>The approver (or an admin) hands a waiting stage to someone else, who can then decide it. The history records it.</small></span></label>
+      <label class="chk"><input type="checkbox" id="wzChainOverride" ${c.override ? 'checked' : ''}><span><b>Admins can override</b><small>Members of the admin group approve or reject a waiting stage with a required reason, written to the history.${wz.ft.adminGroup ? '' : ' Needs the admin group (Screens and look step, or App tab later).'}</small></span></label>` : ''}</div>`;
     host.querySelector('#wzChainOn').onchange = (e) => { c.on = e.target.checked; drawChain(); };
+    host.querySelector('#wzChainReassign')?.addEventListener('change', (e) => { c.reassign = e.target.checked; });
+    host.querySelector('#wzChainOverride')?.addEventListener('change', (e) => { c.override = e.target.checked; });
     host.querySelector('#wzAddStage')?.addEventListener('click', () => { c.stages.push({ name: ['Manager', 'Finance', 'Director', 'Legal'].find((n) => !c.stages.some((x) => x.name === n)) || 'Stage ' + (c.stages.length + 1), approver: 'column', column: '', groupId: '', notify: '' }); drawChain(); });
     host.querySelectorAll('[data-del]').forEach((b) => b.onclick = () => { c.stages.splice(+b.dataset.del, 1); drawChain(); });
     host.querySelectorAll('[data-st]').forEach((row) => {
@@ -1279,10 +1401,11 @@ function wizard(first = false) {
       if (new Set(st.map((x) => stageCols(x).K)).size !== st.length) { toast('Two approval stages share a name', true); return; }
       const bad = st.find((x) => x.approver === 'group' && x.groupId && !isGuid(x.groupId));
       if (bad) { toast(`The ${bad.name} group ID should look like 00000000-0000-0000-0000-000000000000 (Entra → Groups → Object ID)`, true); return; }
-      chain = { list: approvals.list, stages: st.map((x) => ({ ...x })) };
+      chain = { list: approvals.list, stages: st.map((x) => ({ ...x })), reassign: !!wz.chain.reassign, override: !!wz.chain.override };
     }
     generateApp(p, { screens: [...wz.screens], approvals, chain });
     if (p.app.chain) addChainFlows(p);
+    if (wz.flows !== false && sc.flows) addScenarioFlows(p, sc);
     if (!p.screens.length) p.screens.push(newScreen(p, 'scrHome'));
     m.close();
     setProject(p, true); commit();
@@ -1295,7 +1418,8 @@ function wizard(first = false) {
 // code / export
 function codeDialog(tab) {
   if (tab) S.codeTab = tab;
-  const F2 = lint(P), errs = F2.filter((x) => x.level === 'error').length, warns = F2.filter((x) => x.level === 'warn').length;
+  let F2 = lint(P);
+  const errs = F2.filter((x) => x.level === 'error').length, warns = F2.filter((x) => x.level === 'warn').length;
   const items = [
     ['grp', 'Paste into Power Apps'], ['deploy', 'Paste assistant'], ['steps', 'All steps as text'], ['formulas', 'App.Formulas'], ...(onStartFx(P) ? [['onstart', 'App.OnStart']] : []), ['startscreen', 'App.StartScreen'],
     ...P.screens.map((s) => ['scr:' + s.id, s.name]),
@@ -1318,10 +1442,17 @@ function codeDialog(tab) {
       return;
     }
     if (k === 'lint') {
-      main.innerHTML = `<div class="bar"><h3>Lint report</h3><button class="btn sm" id="cReport" title="Paste the error Studio showed; see the control, cause and fix">Studio showed an error?</button></div>${F2.length ? F2.map((x, i) => `<div class="finding" data-fi="${i}"><span class="lv ${x.level}">${x.level.toUpperCase()}</span><div><b>${esc(x.where)} · ${esc(x.code)}</b>${esc(x.msg)}</div>${SETUP_CODES.has(x.code) && (x.code !== 'PS041' || /varIsAdmin/.test(x.msg)) ? '<button class="btn sm" data-fix="1">Fix in Finish setup</button>' : ''}</div>`).join('') : '<p>No problems found. Every rule the generator knows about passes.</p>'}
+      main.innerHTML = `<div class="bar"><h3>Lint report</h3><button class="btn sm" id="cReport" title="Paste the error Studio showed; see the control, cause and fix">Studio showed an error?</button></div>${F2.length ? F2.map((x, i) => `<div class="finding" data-fi="${i}"><span class="lv ${x.level}">${x.level.toUpperCase()}</span><div><b>${esc(x.where)} · ${esc(x.code)}</b>${esc(x.msg)}</div>${SETUP_CODES.has(x.code) && (x.code !== 'PS041' || /varIsAdmin/.test(x.msg)) ? '<button class="btn sm" data-fix="1">Fix in Finish setup</button>' : ''}${x.list && x.code === 'PS035' && P.lists.some((l) => l.name === x.list && l.size !== 'large') ? `<button class="btn sm" data-size="large" data-list="${esc(x.list)}" title="Counts show 2000+ and lint flags formulas that need reshaping">Mark ${esc(x.list)} large</button>` : ''}${x.list && x.code === 'PS059' && P.lists.some((l) => l.name === x.list && l.size === 'large') ? `<button class="btn sm" data-size="small" data-list="${esc(x.list)}" title="Use this when the list will stay under 2,000 items">${esc(x.list)} stays small</button>` : ''}</div>`).join('') : '<p>No problems found. Every rule the generator knows about passes.</p>'}
         <p class="note">Lint checks the paste rules learned from real tenants: unique names app-wide, no Navigate in OnStart/OnVisible, ThisItem only in galleries, valid bindings and targets, required columns covered by Save, clickable controls not covered. To silence one rule on one control, add a comment such as <code>// lint-ok PS040</code> to any of its formulas.</p>`;
       main.querySelector('#cReport').onclick = () => { m.close(); feedbackDialog(); };
       main.querySelectorAll('[data-fix]').forEach((b) => b.onclick = (e) => { e.stopPropagation(); m.close(); setupDialog(); });
+      main.querySelectorAll('[data-size]').forEach((b) => b.onclick = (e) => {
+        e.stopPropagation();
+        const l = P.lists.find((x) => x.name === b.dataset.list); if (!l) return;
+        if (b.dataset.size === 'large') l.size = 'large'; else delete l.size;
+        commit(); renderAll(); toast(b.dataset.size === 'large' ? `${l.name} marked large. ${SIZES.large.note}` : `${l.name} is no longer marked large.`);
+        F2 = lint(P); show('lint');
+      });
       main.querySelectorAll('[data-fi]').forEach((d) => d.onclick = () => { const x = F2[+d.dataset.fi]; const nm = x.where.split(' › ')[1]; for (const s of P.screens) for (const [c] of walk(s.controls)) if (c.name === nm) { S.screenId = s.id; S.sel = [c.id]; m.close(); renderAll(); return; } });
       return;
     }
@@ -1413,11 +1544,12 @@ function helpDialog() {
 
 // ------------------------------------------------------------------ play mode
 function play(opts = {}) {
-  commit();
-  if (!P.screens.length) return;
-  const bg = document.createElement('div'); bg.className = 'play-bg';
+  const savedP = opts.project ? P : null;
+  if (opts.project) { S.previewing = true; P = opts.project; } else commit();
+  if (!P.screens.length) { if (savedP) { P = savedP; S.previewing = false; } return; }
+  const bg = document.createElement('div'); bg.className = 'play-bg' + (opts.preview ? ' play-over' : '');
   const viewer = !!opts.viewer;
-  bg.innerHTML = `${viewer ? `<div class="viewer-banner" role="status"><b>Preview of ${esc(P.app.name)}</b><span>sample data · nothing you do here is saved or sent</span><span class="grow"></span><button class="tb primary" id="plCopy">Open in Studio as a copy</button></div>` : ''}<div class="play-bar"><b>▶ ${esc(P.app.name)}</b><select id="plScr" aria-label="Jump to screen"></select><button class="tb" id="plRestart">Restart</button>${P.app.features?.adminGroup ? '<label class="pl-admin"><input type="checkbox" id="plAdmin" checked>Signed in as an admin</label>' : ''}${(P.app.chain?.stages || []).some((st) => st.approver === 'group') ? '<label class="pl-admin"><input type="checkbox" id="plGroups" checked>In the approver groups</label>' : ''}<span class="grow">${viewer ? '' : 'Sample data · changes are not saved · Esc to close'}</span>${viewer ? '' : '<button class="tb primary" id="plClose">Close</button>'}</div><div class="play-stage"><div class="play-frame" id="plFrame"><div class="screen" id="plScreen"></div></div></div>`;
+  bg.innerHTML = `${viewer ? `<div class="viewer-banner" role="status"><b>Preview of ${esc(P.app.name)}</b><span>sample data · nothing you do here is saved or sent</span><span class="grow"></span><button class="tb primary" id="plCopy">Open in Studio as a copy</button></div>` : ''}<div class="play-bar"><b>▶ ${esc(P.app.name)}</b><select id="plScr" aria-label="Jump to screen"></select><button class="tb" id="plRestart">Restart</button>${P.app.features?.adminGroup ? '<label class="pl-admin"><input type="checkbox" id="plAdmin" checked>Signed in as an admin</label>' : ''}${(P.app.chain?.stages || []).some((st) => st.approver === 'group') ? '<label class="pl-admin"><input type="checkbox" id="plGroups" checked>In the approver groups</label>' : ''}<span class="grow">${viewer ? '' : opts.preview ? 'Scenario preview · sample data · nothing here changes your app · Esc to close' : 'Sample data · changes are not saved · Esc to close'}</span>${viewer ? '' : '<button class="tb primary" id="plClose">Close</button>'}</div><div class="play-stage"><div class="play-frame" id="plFrame"><div class="screen" id="plScreen"></div></div></div>`;
   document.body.appendChild(bg);
   let rt, toastTimer, focusSave = null;
   const hooks = {
@@ -1465,7 +1597,7 @@ function play(opts = {}) {
   start();
   bg.querySelector('#plScr').onchange = (e) => { rt.api.navigate(e.target.value); draw(); };
   bg.querySelector('#plRestart').onclick = start;
-  const close = () => { stopTimers(); bg.remove(); window.removeEventListener('resize', fit); document.removeEventListener('keydown', onKey, true); };
+  const close = () => { stopTimers(); bg.remove(); window.removeEventListener('resize', fit); document.removeEventListener('keydown', onKey, true); if (savedP) { P = savedP; S.previewing = false; } };
   const onKey = (e) => { if (e.key === 'Escape' && !viewer) { e.stopPropagation(); close(); } };
   bg.querySelector('#plClose')?.addEventListener('click', close);
   bg.querySelector('#plCopy')?.addEventListener('click', async () => {
@@ -1572,8 +1704,20 @@ async function importBundle(file) {
   let r;
   try { r = await readBundle(new Uint8Array(await file.arrayBuffer()), window.JSZip, core.newProject); }
   catch (e) { toast('Not an app bundle: ' + e.message, true); return; }
-  const ok = await ask('Open this app bundle?', `${file.name} holds "${r.project.app.name}" (${r.project.screens.length} screens, ${r.project.lists.length} lists) and replaces the app you have open. The current app is saved as a version first, and Undo brings it back.${r.notes.length ? ' ' + r.notes.join(' ') : ''}`, 'Open bundle');
-  if (!ok) return;
+  const choice = isBlank(P) ? 'replace' : await new Promise((res) => {
+    const m = modal(`<div class="modal-h"><h2>Open this app bundle?</h2></div><div class="modal-b"><p style="margin:0">${esc(file.name)} holds "${esc(r.project.app.name)}" (${r.project.screens.length} screens, ${r.project.lists.length} lists, ${(r.project.flows || []).length} flows).${r.notes.length ? ' ' + esc(r.notes.join(' ')) : ''}</p>
+      <p class="note">Replace: the bundle becomes the open app. Add: its lists, screens and flows join the app you have open; clashing names get a number. Either way the current app is saved as a version first, and Undo brings it back.</p></div>
+      <div class="modal-f"><button class="btn" data-c="">Cancel</button><span class="grow"></span><button class="btn" data-c="merge">Add to my app</button><button class="btn pri" data-c="replace">Replace my app</button></div>`, 'sm');
+    m.el.querySelectorAll('[data-c]').forEach((b) => b.onclick = () => { m.close(); res(b.dataset.c); });
+  });
+  if (!choice) return;
+  if (choice === 'merge') {
+    const next = clone(P), res = mergeProjects(next, r.project);
+    replaceProject(next, 'Before adding a bundle');
+    renderAll();
+    toast(`Added ${res.screens.length} screens, ${res.lists.length} lists and ${res.flows.length} flows.${res.renamed.length ? ` Renamed: ${res.renamed.slice(0, 3).join(', ')}${res.renamed.length > 3 ? '…' : ''}.` : ''} ${res.notes.join(' ')}`);
+    return;
+  }
   replaceProject(r.project, 'Before importing a bundle', { mergeVersions: true });
   S.screenId = P.screens.find((s) => s.id === P.app.startScreen)?.id || P.screens[0]?.id; S.sel = []; renderAll(); zoomFit();
   toast(r.source === 'embedded' ? 'Bundle opened' : 'Bundle opened: rebuilt from the canonical screens and schema');
@@ -1600,6 +1744,7 @@ function init() {
   else {
     const saved = loadSaved();
     setProject(saved || core.newProject());
+    attachVersions(!!saved);
     if (!saved) wizard(true);
   }
 

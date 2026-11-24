@@ -267,6 +267,7 @@ export function normalizeChain(c) {
     groupId: String(st?.groupId || '').trim().slice(0, 40),
     groupLabel: String(st?.groupLabel || '').replace(/[<>&"']/g, '').trim().slice(0, 40),
     notify: String(st?.notify || '').trim().slice(0, 120),
+    ...(Math.round(Number(st?.slaDays)) > 0 ? { slaDays: Math.min(90, Math.round(Number(st.slaDays))) } : {}),
   }));
   if (!stages.length) return null;
   const seen = new Set();
@@ -277,6 +278,9 @@ export function normalizeChain(c) {
     list: String(c.list).trim(), field: String(c.field || 'Status').replace(/[^A-Za-z0-9_]/g, '') || 'Status',
     values: { pending: val(v.pending, 'Submitted'), review: val(v.review, 'In review'), approved: val(v.approved, 'Approved'), rejected: val(v.rejected, 'Rejected') },
     stages, resubmit: c.resubmit !== false,
+    // round 6 extras, each opt-in (absent = the chain is generated exactly as before)
+    ...(c.reassign === true ? { reassign: true } : {}),
+    ...(c.override === true ? { override: true } : {}),
   };
 }
 
@@ -341,6 +345,7 @@ export function normalizeProject(p) {
     f.statusValues = Array.isArray(f.statusValues) ? f.statusValues.map(String) : [];
     f.days = clamp(Number(f.days) || 0, 0, 365); f.hour = clamp(Number(f.hour) || 0, 0, 23); f.enabled = f.enabled !== false;
     if (f.chain) f.chain = true; else delete f.chain;
+    if (f.chain && Number(f.chainStage) >= 1) f.chainStage = clamp(Math.round(Number(f.chainStage)), 1, 4); else delete f.chainStage;
   }
   const base = defaultTheme();
   p.theme = { ...base, ...(p.theme || {}) };
@@ -370,6 +375,7 @@ export function normalizeProject(p) {
       });
     } else delete l.rows;
     if (!['small', 'medium', 'large'].includes(l.size)) delete l.size;
+    if (l.attachments !== true) delete l.attachments;
   }
   p.screens = Array.isArray(p.screens) ? p.screens : [];
   const screenMap = {};
@@ -392,6 +398,11 @@ export function normalizeProject(p) {
     c.fx = c.fx && typeof c.fx === 'object' ? c.fx : {};
     c.actions = c.actions && typeof c.actions === 'object' ? c.actions : {};
     for (const acts of Object.values(c.actions)) for (const a of acts || []) if (screenMap[a.screen]) a.screen = screenMap[a.screen];
+    if (c.attachSlot) {
+      const a = c.attachSlot;
+      if (a && typeof a === 'object' && typeof a.list === 'string' && ['edit', 'view'].includes(a.mode)) c.attachSlot = { list: a.list, mode: a.mode };
+      else delete c.attachSlot;
+    }
     if (c.type === 'gallery') { c.children = Array.isArray(c.children) ? c.children : []; c.data = c.data || {}; }
     (c.children || []).forEach(fixCtl);
   };
@@ -457,6 +468,7 @@ export function sampleRows(list, lists, n = 8) {
       const v = imported[i][c.name];
       r[c.name] = v === undefined || v === null ? (c.type === 'YesNo' ? false : c.type === 'Number' || c.type === 'Currency' ? null : '') : c.type === 'Person' ? personFromEmail(v) : v;
     }
+    if (list.attachments) r.Attachments = i % 3 === 1 ? [] : ['scan.pdf', 'photo.jpg', 'quote.xlsx', 'notes.docx'].slice(i % 4, (i % 4) + 1 + (i % 2)).map((n) => ({ DisplayName: n }));
     seedChainRow(list, r, i);
     rows.push(r);
   }
@@ -491,6 +503,8 @@ function seedChainRow(list, r, i) {
     if (d !== 'Pending') lines.unshift(`${displayValue({ type: 'DateTime' }, date(n - k + 1))} 09:${String(10 + k).padStart(2, '0')}  ${PEOPLE[(k + 2) % PEOPLE.length].DisplayName}  ·  ${name}  ·  ${d}${d === 'Rejected' ? '  ·  Over budget for this quarter.' : ''}`);
   }
   const cs = role('stage')[0]; if (cs) r[cs.name] = sc < n ? sc + 1 : 0;
+  // deadlines: waiting rows reached their stage 1 to 9 days ago, so some are overdue
+  const since = role('since')[0]; if (since) r[since.name] = sc < n ? date(1 + ((i * 3) % 9)) : '';
   const hist = role('history')[0]; if (hist) r[hist.name] = lines.join('\n');
   if (st) r[st.name] = sc === n + 1 ? v.rejected : sc === n ? v.approved : sc === 0 ? v.pending : v.review;
 }
