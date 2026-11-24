@@ -41,6 +41,13 @@ export function setupItems(p) {
       help: 'Object ID of the Microsoft 365 group whose members see approve, reject and delete (Entra admin center → Groups → the group → Object ID).',
       hint: v && !GUID.test(v) ? 'It should look like 00000000-0000-0000-0000-000000000000.' : '' });
   }
+  for (const [i, st] of (p.app.chain?.stages || []).entries()) {
+    if (st.approver !== 'group') continue;
+    const v = st.groupId || '';
+    items.push({ id: 'chainGroup:' + i, kind: 'guid', label: `${st.name} approver group ID`, value: v, done: GUID.test(v), codes: ['PS054'],
+      help: `Object ID of the Microsoft 365 group whose members approve the ${st.name} stage (Entra admin center → Groups → the group → Object ID). Members are checked with Office 365 Groups when the app starts.`,
+      hint: v && !GUID.test(v) ? 'It should look like 00000000-0000-0000-0000-000000000000.' : '' });
+  }
   if (p.app.features?.usage) {
     const v = !!p.app.setup?.usageConfirmed;
     items.push({ id: 'usageList', kind: 'confirm', label: 'AppUsage list exists', value: v, done: v, codes: [],
@@ -53,6 +60,13 @@ export const openSetupItems = (p) => setupItems(p).filter((i) => !i.done);
 /** Apply one checklist field to the project. Returns true when the value was accepted. */
 export function applySetup(p, id, value) {
   p.app.setup = p.app.setup && typeof p.app.setup === 'object' ? p.app.setup : {};
+  const cg = /^chainGroup:(\d)$/.exec(id);
+  if (cg) {
+    const st = p.app.chain?.stages?.[+cg[1]];
+    if (!st) return false;
+    st.groupId = String(value || '').trim().slice(0, 40);
+    return !st.groupId || GUID.test(st.groupId);
+  }
   switch (id) {
     case 'siteUrl': p.app.siteUrl = String(value || '').trim(); return true;
     case 'appLink': p.app.appLink = String(value || '').trim(); return true;
@@ -78,4 +92,4 @@ export function applySetup(p, id, value) {
   return false;
 }
 /** Lint codes the checklist can fix, for "Fix in Finish setup" links in the lint report. */
-export const SETUP_CODES = new Set(['PS041', 'PS045', 'PS047']);
+export const SETUP_CODES = new Set(['PS041', 'PS045', 'PS047', 'PS054']);

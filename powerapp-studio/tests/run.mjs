@@ -26,6 +26,7 @@ const FIXTURE = JSON.parse(fs.readFileSync(new URL('./fixture-plan.json', import
 const CHANGE_FIXTURE = JSON.parse(fs.readFileSync(new URL('./fixture-change.json', import.meta.url), 'utf8'));
 const CH = await import('../js/change.js');
 const ED = await import('../js/edit.js');
+const SH = await import('../js/share.js');
 const TB = await import('../js/tabular.js');
 const A11 = await import('../js/a11y.js');
 const JSZip = require(path.join(here, '../vendor/jszip.min.js'));
@@ -990,6 +991,288 @@ test('drift check: reads a solution zip with a nested .msapp, finds Studio-only 
   eq(after.screens.filter((s) => s.studioOnly.length).length + after.newScreens.length, 0, 'no drift left');
   const none = await DR.readStudioExport([{ name: 'old.msapp', data: await new JSZip().file('Header.json', '{}').generateAsync({ type: 'uint8array' }) }], JSZip);
   assert(/no YAML source/.test(none.notes[0] || ''), 'explains an .msapp without Src');
+});
+
+
+// ---------------------------------------------------------------- round 4: contrast, approval chains
+const CHN = await import('../js/chain.js');
+const R4 = await import('../js/render.js');
+const tryFxBool = (p, rt, src) => !!R4.tryFx(src, { project: p, rt }, false);
+const { createHash } = await import('node:crypto');
+test('every theme preset passes WCAG AA for its text pairs', () => {
+  for (const t of core.THEME_PRESETS) { const bad = A11.contrastIssues(t.colors); assert(!bad.length, `${t.name}: ${JSON.stringify(bad)}`); }
+  eq(core.THEME_PRESETS.find((t) => t.name === 'SaTech Cyan').colors.Primary, '#0E7490', 'SaTech Cyan primary');
+  eq(core.THEME_PRESETS.find((t) => t.name === 'Sunset').colors.Primary, '#C4451C', 'Sunset primary');
+});
+const STAGES = [
+  { name: 'Manager', approver: 'column' },
+  { name: 'Finance', approver: 'group', groupId: '11111111-2222-3333-4444-555555555555', groupLabel: 'Finance team', notify: 'finance@contoso.com' },
+  { name: 'Director', approver: 'column' },
+  { name: 'Legal', approver: 'column' },
+];
+function buildChain(n, ff = 'tablet', stages = STAGES) {
+  const p = core.newProject(); p.app.name = 'Requests'; p.app.formFactor = ff; p.lists = SCENARIOS.requests.lists();
+  p.app.siteUrl = 'https://contoso.sharepoint.us/sites/ops'; p.app.appLink = 'https://apps.gov.powerapps.us/play/e/x/a/y';
+  generateApp(p, { screens: ['home', 'browse', 'detail', 'edit'], approvals: SCENARIOS.requests.approvals, chain: { list: 'Requests', stages: stages.slice(0, n) } });
+  AI.addChainFlows(p);
+  return p;
+}
+const ctlIn = (p, scrName, re) => [...core.walk(p.screens.find((s) => s.name === scrName).controls)].map(([c]) => c).find((c) => re.test(c.name));
+for (const n of [1, 2, 3, 4]) for (const ff of ['tablet', 'phone']) {
+  test(`approval chain: ${n} stage${n > 1 ? 's' : ''} (${ff}) is lint-clean and paste-safe`, () => {
+    const p = buildChain(n, ff);
+    const bad = E.lint(p).filter((f) => f.level !== 'info');
+    assert(!bad.length, bad.map((x) => `${x.code} ${x.where} ${x.msg}`).join('; '));
+    const yamls = checkApp(p);
+    assert(yamls.scrApprovalsRequests, 'approvals screen');
+    const l = p.lists[0];
+    for (const st of STAGES.slice(0, n)) {
+      const k = CHN.stageCols(st);
+      for (const c of [k.decision, k.date, k.by, k.comments]) assert(l.columns.some((x) => x.name === c), 'column ' + c);
+      eq(l.columns.find((x) => x.name === k.decision).choices.join('/'), 'Pending/Approved/Rejected', 'decision choices');
+    }
+    assert(l.columns.some((c) => c.name === 'CurrentStage' && c.type === 'Number'), 'CurrentStage');
+    assert(l.columns.some((c) => c.name === 'ApprovalHistory' && c.type === 'Note'), 'ApprovalHistory');
+    assert(E.provisioningScript(p).includes('CurrentStage') && /<Default>1<\/Default>/.test(E.provisioningScript(p)), 'provisioning adds CurrentStage with default 1');
+    // stepper: one coloured step per stage, each read from its own decision column
+    const html = ctlIn(p, 'scrDetailRequests', /^htmlChain/);
+    for (const st of STAGES.slice(0, n)) assert(html.fx.HtmlText.includes(`varSelRequests.${CHN.stageCols(st).K}Decision.Value`), 'stepper reads ' + st.name);
+    eq((html.fx.HtmlText.match(/appTheme\.Success/g) || []).length >= n, true, 'a green state per stage');
+    // home shows what is waiting on me; save sets CurrentStage on new items
+    const editY = E.screenYaml(p, p.screens.find((s) => s.name === 'scrEditRequests'));
+    assert(/CurrentStage: Coalesce\(LookUp\(Requests, ID = varSelRequests\.ID\)\.CurrentStage, 1\)/.test(editY), 'save starts new items at stage 1');
+    eq(p.flows.length, n + 2, 'flows: stage 1 new + resubmit, one per hand-off, outcome');
+  });
+}
+test('approval chain: decision Patch is rebased, guarded and appends history', () => {
+  const p = buildChain(2);
+  const det = p.screens.find((s) => s.name === 'scrDetailRequests');
+  const ap = ctlIn(p, 'scrDetailRequests', /^btnChainApprove/), rj = ctlIn(p, 'scrDetailRequests', /^btnChainReject/);
+  const fx = E.actionFx(p, det, ap.actions.OnSelect[0]);
+  assert(/^With\(\{cur: LookUp\(Requests, ID = varSelRequests\.ID\)\}/.test(fx), 'rebased on a fresh LookUp');
+  assert(/Switch\(cur\.CurrentStage,\s*1,/.test(fx) && /\n\s*2,/.test(fx), 'switch per stage');
+  assert(/ManagerDecision: \{Value: "Approved"\}/.test(fx) && /ManagerDecidedOn: Today\(\)/.test(fx), 'decision + date');
+  assert(/ManagerDecidedBy: \{\s*'@odata\.type'/.test(fx) || /ManagerDecidedBy: \{/.test(fx), 'decided-by person record');
+  assert(/CurrentStage: 2/.test(fx) && /CurrentStage: 0/.test(fx), 'advance, then finish');
+  assert(/Status: \{Value: "Approved"\}/.test(fx) && /Status: \{Value: "Submitted"\}/.test(E.actionFx(p, det, { type: 'resubmit', list: 'Requests' })), 'overall status');
+  assert(/ApprovalHistory: .*If\(IsBlank\(cur\.ApprovalHistory\), "", Char\(10\) & cur\.ApprovalHistory\)/.test(fx), 'history line prepended, never replaced');
+  const ifErr = fx.match(/IfError\(/g).length; eq(ifErr, 2, 'one IfError per stage');
+  assert(/Notify\("Approval failed\. " & FirstError\.Message, NotificationType\.Error\)/.test(fx) || /FirstError\.Message/.test(fx), 'failure branch');
+  const rfx = E.actionFx(p, det, rj.actions.OnSelect[0]);
+  assert(/\{Value: "Rejected"\}/.test(rfx) && /Status: \{Value: "Rejected"\}/.test(rfx), 'reject sets both');
+  assert(/IsBlank\(Trim\(txtDecisionComment\w*\.Text\)\)/.test(rj.fx.DisplayMode || ''), 'reject disabled until there is a comment');
+  const can = ap.fx.Visible;
+  assert(/Lower\(varSelRequests\.'Created By'\.Email\) <> Lower\(User\(\)\.Email\)/.test(can), 'never your own request');
+  assert(/varSelRequests\.CurrentStage = 2 && varIsApproverFinance/.test(can), 'group stage uses the group check');
+  const on = E.onStartFx(p);
+  assert(/Set\(varIsApproverFinance, IfError\(!IsBlank\(LookUp\(Office365Groups\.ListGroupMembers\("11111111-2222-3333-4444-555555555555"\)\.value, Lower\(mail\) = Lower\(User\(\)\.Email\)\)\), false\)\)/.test(on), 'group check wrapped in IfError');
+  assert(E.checklist(p).some((s) => /Office 365 Groups/.test(JSON.stringify(s))), 'checklist adds Office 365 Groups');
+  const q = ctlIn(p, 'scrApprovalsRequests', /^gal/);
+  assert(/Filter\(\s*Filter\(Requests, /.test(q.fx.Items) && /'Created By'\.Email <> User\(\)\.Email/.test(q.fx.Items), 'queue: delegable inner filter, own items removed in the outer one');
+});
+test('approval chain: Play walks approve → next stage → final, reject needs a comment, history and resubmit', () => {
+  const p = buildChain(2);
+  const toasts = [];
+  const rt = createRuntime(p, { toast: (t, k) => toasts.push(`${k}: ${t}`), rerender() {} });
+  const ch = p.app.chain, rows = rt.db.Requests;
+  const queue = rows.filter((r) => CHN.playCanDecide(ch, r, rt.vars));
+  assert(queue.length >= 2, 'sample data leaves work in the queue');
+  assert(!queue.some((r) => r.Author.DisplayName === 'Alex Rivera'), 'own items never queued');
+  const det = p.screens.find((s) => s.name === 'scrDetailRequests');
+  const ap = ctlIn(p, 'scrDetailRequests', /^btnChainApprove/), rj = ctlIn(p, 'scrDetailRequests', /^btnChainReject/), rs = ctlIn(p, 'scrDetailRequests', /^btnResubmit/);
+  const row = rows.find((r) => r.CurrentStage === 1 && r.Author.DisplayName !== 'Alex Rivera');
+  rt.vars.varSelRequests = row; rt.screen = det.id;
+  rt.run(det, ap.actions.OnSelect);
+  eq(row.CurrentStage, 2, 'moved to stage 2'); eq(row.ManagerDecision, 'Approved', 'stage 1 approved'); eq(row.Status, 'In review', 'in review');
+  assert(toasts.some((t) => /Notify Finance after Manager/.test(t)), 'hand-off email simulated');
+  toasts.length = 0;
+  rt.run(det, rj.actions.OnSelect);
+  eq(row.CurrentStage, 2, 'reject without comment is refused'); assert(toasts.some((t) => /comment/.test(t)), 'asks for a comment');
+  rt.inputs[rj.actions.OnSelect[0].commentCtl] = 'Over budget';
+  rt.run(det, rj.actions.OnSelect);
+  eq(row.Status, 'Rejected', 'rejected'); eq(row.FinanceDecision, 'Rejected', 'stage 2 rejected'); eq(row.CurrentStage, 0, 'chain ended');
+  assert(toasts.some((t) => /Tell requester the outcome/.test(t)), 'outcome email simulated');
+  const lines = row.ApprovalHistory.split('\n');
+  assert(/Finance · Rejected · Over budget$/.test(lines[0].replace(/\s+/g, ' ')) && /Manager · Approved/.test(lines[1].replace(/\s+/g, ' ')), 'history newest first: ' + lines.join(' | '));
+  // the requester resubmits their own rejected item
+  const own = rows.find((r) => r.Author.DisplayName === 'Alex Rivera' && r.Status === 'Rejected');
+  rt.vars.varSelRequests = own;
+  eq(tryFxBool(p, rt, ap.fx.Visible), false, 'cannot approve own request');
+  eq(tryFxBool(p, rt, rs.fx.Visible), true, 'can resubmit own rejected request');
+  rt.run(det, rs.actions.OnSelect);
+  eq(own.CurrentStage, 1, 'back to stage 1'); eq(own.Status, 'Submitted', 'pending again'); assert(/Resubmitted/.test(own.ApprovalHistory.split('\n')[0]), 'resubmit logged');
+  assert(toasts.some((t) => /Notify Manager of resubmitted item/.test(t)), 'stage 1 re-notified');
+  // the full chain: approve stage 1 and stage 2 of another item
+  const r2 = rows.find((r) => r.CurrentStage === 1 && r !== row && r.Author.DisplayName !== 'Alex Rivera') || rows.find((r) => r.CurrentStage === 2);
+  rt.vars.varSelRequests = r2; while (r2.CurrentStage) rt.run(det, ap.actions.OnSelect);
+  eq(r2.Status, 'Approved', 'final approval');
+});
+test('approval chain: default output is byte-identical to round 3', () => {
+  const out = [];
+  const dump = (p) => { out.push(E.themeFormulas(p), E.onStartFx(p), E.provisioningScript(p), JSON.stringify(E.checklist(p))); for (const s of p.screens) out.push(E.screenYaml(p, s)); for (const f of p.flows || []) out.push(JSON.stringify(FL.flowDefinition(p, f))); };
+  const navy = () => core.clone(core.THEME_PRESETS.find((t) => t.name === 'Federal Navy'));
+  for (const [, sc] of Object.entries(SCENARIOS)) for (const ff of ['tablet', 'phone']) {
+    const p = core.newProject(); p.app.name = sc.app; p.app.formFactor = ff; p.lists = sc.lists(); p.theme = navy(); p.app.siteUrl = 'https://x.sharepoint.us/sites/a';
+    generateApp(p, { screens: ['home', 'browse', 'detail', 'edit'], approvals: sc.approvals || null }); dump(p);
+  }
+  const r = AI.specToProject(FIXTURE); r.project.theme = navy(); dump(r.project);
+  // sha256 of the same output on origin/main 308cbb9 (round 3)
+  eq(createHash('sha256').update(out.join('\n')).digest('hex'), 'b9b9ec87f1ba70053febf80704bb907b5dcb17e1432d6c07a3daba3940c4660f', 'output hash');
+  assert(!r.project.app.chain, 'the round-3 plan fixture (no stages) stays a single approvals queue');
+});
+test('approval chain: lint catches bad group IDs, wrong approver columns and missing columns', () => {
+  const p = buildChain(2, 'tablet', [STAGES[0], { ...STAGES[1], groupId: 'finance' }]);
+  assert(codes(p).has('PS054'), 'PS054 bad group id');
+  const q = buildChain(2);
+  q.lists[0].columns = q.lists[0].columns.filter((c) => c.name !== 'FinanceDecidedOn');
+  assert(codes(q).has('PS056'), 'PS056 missing column');
+  q.app.chain.stages[0].column = 'Title';
+  assert(codes(q).has('PS055'), 'PS055 approver not a Person column');
+  const r = buildChain(1);
+  delete r.app.chain;
+  assert(codes(r).has('PS057'), 'PS057 decide without a chain');
+});
+test('approval chain: survives save/load, rename, and Claude plans with stages', () => {
+  const p = buildChain(3);
+  const back = core.normalizeProject(JSON.parse(JSON.stringify(p)));
+  eq(JSON.stringify(back.app.chain), JSON.stringify(p.app.chain), 'chain kept');
+  const junk = core.normalizeProject({ ...JSON.parse(JSON.stringify(p)), app: { ...p.app, chain: { list: '', stages: 'x' } } });
+  assert(!junk.app.chain, 'unusable chain dropped');
+  eq(ED.renameColumnIn(p, 'Requests', 'ManagerApprover', 'LineManager'), null, 'rename approver');
+  eq(p.app.chain.stages[0].column, 'LineManager', 'chain follows the rename');
+  assert(/LineManager\.Email/.test(ctlIn(p, 'scrApprovalsRequests', /^gal/).fx.Items), 'queue formula renamed');
+  assert(/approval chain/.test(ED.renameColumnIn(p, 'Requests', 'ManagerDecision', 'X') || ''), 'chain columns are not renamed by hand');
+  assert(ED.removeColumnIn(p, 'Requests', 'CurrentStage').error, 'chain columns are not removed by hand');
+  ED.renameListIn(p, 'Requests', 'Purchases'); eq(p.app.chain.list, 'Purchases', 'list rename');
+  const plan = JSON.parse(JSON.stringify(FIXTURE));
+  const apl = plan.lists.find((l) => l.name === plan.screens.approvals.list) || plan.lists[0];
+  plan.screens.approvals.enabled = true; plan.screens.approvals.list = apl.name;
+  plan.screens.approvals.stages = [{ name: 'Supervisor', approverKind: 'personColumn', approverColumn: 'Supervisor', groupId: '', notifyEmail: '' }, { name: 'Finance', approverKind: 'group', approverColumn: '', groupId: 'not-a-guid', notifyEmail: 'fin@contoso.com' }];
+  const r = AI.specToProject(plan, { siteUrl: 'https://contoso.sharepoint.us/sites/ops' });
+  const ch = r.project.app.chain;
+  assert(ch && ch.stages.length === 2, 'plan stages become a chain');
+  eq(ch.stages[0].column, 'Supervisor', 'existing Person column reused');
+  eq(ch.stages[1].groupId, '', 'bad group id dropped'); assert(r.notes.some((n) => /not a group ID/.test(n)), 'note about the bad id');
+  assert(r.project.flows.some((f) => f.chain && /Notify Finance/.test(f.name)), 'chain flows added');
+  assert(!errors(r.project).filter((f) => f.code !== 'PS054').length, errors(r.project).map((f) => f.code + f.msg).join('; '));
+});
+test('ask for a change: setApprovalStages rebuilds details/approvals in place', () => {
+  const p = build('requests');
+  const ids = Object.fromEntries(p.screens.map((s) => [s.name, s.id]));
+  const browseY = E.screenYaml(p, p.screens.find((s) => s.name === 'scrBrowseRequests'));
+  const ops = [{ op: 'setApprovalStages', list: 'Requests', column: 'Status', stages: [{ name: 'Manager', approverKind: 'personColumn', approverColumn: '', groupId: '', notifyEmail: '' }, { name: 'Director', approverKind: 'personColumn', approverColumn: '', groupId: '', notifyEmail: '' }] }];
+  const rv = CH.reviewOps(p, ops);
+  assert(!rv[0].error && rv[0].destructive, 'valid, flagged destructive');
+  const res = CH.applyOps(p, ops);
+  eq(res.applied.length, 1, 'applied: ' + JSON.stringify(res.skipped));
+  for (const n of ['scrDetailRequests', 'scrApprovalsRequests']) eq(p.screens.find((s) => s.name === n)?.id, ids[n], n + ' keeps its id');
+  eq(E.screenYaml(p, p.screens.find((s) => s.name === 'scrBrowseRequests')), browseY, 'other screens untouched');
+  assert(ctlIn(p, 'scrDetailRequests', /^htmlChain/), 'stepper on details');
+  assert([...core.walk(p.screens.find((s) => s.name === 'scrEditRequests').controls)].some(([c]) => c.field?.column === 'ManagerApprover'), 'approver on the form');
+  p.app.siteUrl = 'https://contoso.sharepoint.us/sites/ops';
+  const errs = errors(p); assert(!errs.length, errs.map((x) => `${x.code} ${x.where} ${x.msg}`).join('; '));
+  checkApp(p);
+  assert(CH.CHANGE_SCHEMA.properties.ops.items.properties.op.enum.includes('setApprovalStages'), 'op in schema');
+});
+
+
+// ---------------------------------------------------------------- round 4: saved blocks
+const BL = await import('../js/blocks.js');
+const memStore = () => { const m = new Map(); return { getItem: (k) => (m.has(k) ? m.get(k) : null), setItem: (k, v) => m.set(k, String(v)), m }; };
+test('blocks: save a selection, insert it elsewhere with fresh names and remapped formulas', () => {
+  const p = build('requests');
+  const browse = p.screens.find((s) => s.name === 'scrBrowseRequests');
+  const gal = browse.controls.find((c) => c.type === 'gallery');
+  const search = browse.controls.find((c) => c.name === gal.data.searchCtl);
+  assert(search, 'browse has a search box');
+  gal.fx.Visible = `!IsBlank(${search.name}.Text) || true`;
+  const b = BL.makeBlock([search, gal], 'Search + list');
+  eq(Math.min(...b.controls.map((c) => c.x)), 0, 'relative x'); eq(Math.min(...b.controls.map((c) => c.y)), 0, 'relative y');
+  assert(b.lists.includes('Requests'), 'records the lists it uses');
+  // round-trip through storage and an export file
+  const store = memStore();
+  assert(BL.saveBlocks([b], store), 'saved'); const [loaded] = BL.loadBlocks(store);
+  eq(loaded.name, 'Search + list', 'name kept');
+  const { blocks } = BL.importBlocksJson(BL.exportBlocksJson([loaded]));
+  const home = p.screens.find((s) => s.name === 'scrHome');
+  const before = core.allNames(p);
+  const r = BL.insertSavedBlock(p, home, blocks[0], { x: 40, y: 400 });
+  eq(r.added.length, 2, 'two top-level controls');
+  for (const [c] of core.walk(r.added)) assert(!before.has(c.name), 'fresh name ' + c.name);
+  const g2 = r.added.find((c) => c.type === 'gallery'), s2 = r.added.find((c) => c.type === 'textinput');
+  eq(g2.data.searchCtl, s2.name, 'search link follows the rename');
+  assert(g2.fx.Visible.includes(s2.name + '.Text') && !g2.fx.Visible.includes(search.name + '.Text'), 'formula remapped: ' + g2.fx.Visible);
+  eq(Math.min(...r.added.map((c) => c.y)), 400, 'placed at the drop point');
+  eq(r.warnings.length, 0, 'no warnings in the same app');
+  checkApp(p);
+  assert(!errors(p).length, errors(p).map((x) => x.code + ' ' + x.msg).join('; '));
+  // into an app without that list
+  const q = build('tasks');
+  const r2 = BL.insertSavedBlock(q, q.screens[0], blocks[0]);
+  assert(r2.warnings.some((w) => /Requests/.test(w)), 'warns about the missing list');
+});
+test('blocks: imports are sanitized and bad files explain themselves', () => {
+  const evil = { format: BL.FORMAT, version: 1, blocks: [
+    { name: '<img src=x onerror=alert(1)>', controls: [{ id: '"><script>', type: 'label', name: 'lbl: x\n  Bad', x: '5', y: 'NaN', w: 100, h: 30, props: { text: 'hi', fill: 'url(javascript:alert(1))' } }] },
+    { name: 'raw', controls: [{ type: 'definitelyNot', name: 'x' }] },
+    { name: 'empty', controls: [] },
+  ] };
+  const { blocks, skipped } = BL.importBlocksJson(JSON.stringify(evil));
+  eq(blocks.length, 1, 'one usable'); eq(skipped, 2, 'two skipped');
+  const c = blocks[0].controls[0];
+  assert(/^[A-Za-z_]\w*$/.test(c.name), 'name made safe: ' + c.name);
+  assert(/^[A-Za-z0-9_-]+$/.test(c.id), 'id made safe');
+  eq(c.props.fill, 'transparent', 'bad color dropped');
+  assert(!/[<>]/.test(blocks[0].name), 'block name escaped');
+  for (const bad of ['not json', '{"x":1}', 'x'.repeat(BL.MAX_BYTES + 1)]) { let msg = ''; try { BL.importBlocksJson(bad); } catch (e) { msg = e.message; } assert(msg, 'rejects ' + bad.slice(0, 10)); }
+  const broken = { getItem: () => { throw new Error('denied'); }, setItem: () => { throw new Error('quota'); } };
+  eq(BL.loadBlocks(broken).length, 0, 'storage errors read as no blocks'); eq(BL.saveBlocks([], broken), false, 'storage errors reported');
+});
+
+// ---------------------------------------------------------------- share a Play preview
+test('share link: compressed round trip keeps the app and drops secrets', async () => {
+  const p = buildDemo(core.newProject);
+  p.app.siteUrl = 'https://contoso.sharepoint.com/sites/Team';
+  p.app.appLink = 'https://apps.powerapps.com/play/e/x/a/y?tenantId=t';
+  p.flows[0].recipients = [{ kind: 'address', value: 'boss@agency.mil' }];
+  p.app.onStart = 'Set(varKey, "sk-ant-api03-SECRETSECRETSECRET")';
+  const r = await SH.encodeShare(p);
+  assert(r.compressed && r.hash.startsWith('#play=z'), 'compressed link');
+  assert(!r.tooLong, 'demo fits in a link: ' + r.chars);
+  const back = await SH.decodeShare(r.hash);
+  eq(back.screens.length, p.screens.length, 'screens survive');
+  eq(back.lists.map((l) => l.name).join(), p.lists.map((l) => l.name).join(), 'lists survive');
+  const text = JSON.stringify(back);
+  assert(!text.includes('sk-ant-api03'), 'API key removed');
+  assert(!text.includes('contoso.sharepoint.com') && !text.includes('tenantId=t'), 'site URL and app link left out by default');
+  assert(!text.includes('boss@agency.mil'), 'fixed email addresses hidden');
+  eq(errors(back).filter((x) => !['PS045', 'PS047'].includes(x.code)).length, 0, 'shared copy is still lint-clean apart from the removed setup values');
+  const withLinks = await SH.decodeShare((await SH.encodeShare(p, { includeLinks: true })).hash);
+  eq(withLinks.app.siteUrl, p.app.siteUrl, 'links included when ticked');
+});
+
+test('share link: plain fallback, caps, and damaged or oversized links explain themselves', async () => {
+  const p = build('assets');
+  p.lists[0].rows = Array.from({ length: 120 }, (_, i) => ({ ID: i + 1, Title: 'Row ' + i }));
+  const r = await SH.encodeShare(p, { compress: false });
+  assert(r.hash.startsWith('#play=j'), 'plain JSON fallback');
+  const back = await SH.decodeShare(r.hash);
+  eq(back.lists[0].rows.length, SH.MAX_ROWS, 'sample rows capped');
+  const msg = async (h) => { try { await SH.decodeShare(h); return ''; } catch (e) { return e.message; } };
+  assert(/damaged/.test(await msg(r.hash.slice(0, 200))), 'cut-off link');
+  assert(/not a preview/.test(await msg('#other')), 'wrong hash');
+  assert(/newer version/.test(await msg('#play=x' + 'A'.repeat(10))), 'unknown format');
+  const big = build('requests');
+  big.screens[0].controls.push(core.newControl(big, 'image', { props: { src: 'data:image/png;base64,' + Array.from({ length: 200000 }, () => 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'[Math.floor(Math.random() * 26)]).join('') } }));
+  assert((await SH.encodeShare(big)).tooLong, 'huge projects are refused');
+});
+
+test('share link: hostile payload is normalized like any untrusted project', async () => {
+  const evil = { v: 1, p: { app: { name: '<img src=x onerror=alert(1)>' }, screens: [{ id: '"><script>', name: 'scrHome', controls: [{ id: 'x"y', type: 'label', name: 'lbl1', props: { color: 'url(javascript:alert(1))' } }] }], lists: [] } };
+  const h = '#play=j' + Buffer.from(JSON.stringify(evil)).toString('base64url');
+  const p = await SH.decodeShare(h);
+  assert(/^[A-Za-z0-9_-]+$/.test(p.screens[0].id) && /^[A-Za-z0-9_-]+$/.test(p.screens[0].controls[0].id), 'ids made safe');
+  assert(!/javascript/.test(JSON.stringify(p.screens[0].controls[0].props)), 'bad color refused');
 });
 
 await Promise.all(pending);

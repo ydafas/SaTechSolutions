@@ -6,6 +6,7 @@
 import { newProject, newList, newColumn, clone, COLTYPES, THEME_PRESETS, SP_RESERVED_COLS, slug, newControl } from './core.js';
 import { generateApp } from './templates.js';
 import { newFlow, FLOW_KINDS, flowFxName, internalName } from './flows.js';
+import { chainFlowSpecs, guessChainValues } from './chain.js';
 
 export const API_URL = 'https://api.anthropic.com/v1/messages';
 export const API_VERSION = '2026-10-21';
@@ -19,6 +20,14 @@ export const MODELS = [
 const obj = (properties) => ({ type: 'object', additionalProperties: false, required: Object.keys(properties), properties });
 const str = (description) => ({ type: 'string', ...(description ? { description } : {}) });
 const arr = (items, description) => ({ type: 'array', items, ...(description ? { description } : {}) });
+/** One approval-chain stage as Claude describes it (plan and change schemas share it). */
+export const STAGE_SPEC = obj({
+  name: str('Stage name, 1-3 words, e.g. Manager, Finance, Director'),
+  approverKind: { type: 'string', enum: ['personColumn', 'group'] },
+  approverColumn: str('personColumn: a Person column of the approvals list that names this stage\'s approver. Empty for group.'),
+  groupId: str('group: the Microsoft 365 group object ID if the requirements give one; else empty'),
+  notifyEmail: str('group: the group\'s shared mailbox if the requirements give one; else empty'),
+});
 export const PLAN_SCHEMA = obj({
   appName: str('Short app name, 2-4 words'),
   formFactor: { type: 'string', enum: ['tablet', 'phone'] },
@@ -36,7 +45,9 @@ export const PLAN_SCHEMA = obj({
   })),
   screens: obj({
     home: { type: 'boolean' }, browse: { type: 'boolean' }, detail: { type: 'boolean' }, edit: { type: 'boolean' },
-    approvals: obj({ enabled: { type: 'boolean' }, list: str(), field: str('A Choice column'), pending: str(), approve: str(), reject: str() }),
+    approvals: obj({ enabled: { type: 'boolean' }, list: str(), field: str('A Choice column'), pending: str(), approve: str(), reject: str(),
+      stages: arr(STAGE_SPEC, 'Only for 2-4 sequential approval steps (e.g. manager then finance). Empty for a single approve/reject step.'),
+    }),
   }),
   flows: arr(obj({
     kind: { type: 'string', enum: Object.keys(FLOW_KINDS) },
@@ -69,7 +80,7 @@ What the generator can build:
 - 1 to 4 SharePoint lists. Every list already has a Title column (single line of text, required): use it for each item's main name and never add Title, ID, Created, Modified, Author (Created By) or Editor (Modified By) yourself; flows can still read {Title}, {ID}, {Created} and {Author}.
 - Column types: Text (single line), Note (multi-line), Number, Currency, DateTime (date only), Choice (single choice, list the choices; the first is the starting value), YesNo, Person (one person), Lookup (to another list in this plan; it shows that list's Title).
 - Column names: PascalCase, letters and digits only, no spaces, and not names SharePoint already uses such as Status0, StartDate, EndDate, Location, Order, Type, Name, Path, ContentType, Attachments. A workflow state column called Status is fine.
-- Screens per list: browse (search + gallery), detail (all columns, Edit, Delete) and edit (form for new and existing items, required columns validated); a home dashboard with counts of the first list's Status-like Choice column and tiles to every screen. Turn on approvals only when the requirements describe someone approving or rejecting items: name the list, the Choice column, the waiting value, the approve value and the reject value, all exactly as you defined them.
+- Screens per list: browse (search + gallery), detail (all columns, Edit, Delete) and edit (form for new and existing items, required columns validated); a home dashboard with counts of the first list's Status-like Choice column and tiles to every screen. Turn on approvals only when the requirements describe someone approving or rejecting items: name the list, the Choice column, the waiting value, the approve value and the reject value, all exactly as you defined them. When the requirements describe 2 to 4 approvals in sequence (for example the manager, then finance, then a director), also list them in order as approvals.stages: a stage approved by a named person needs its own Person column in that list (e.g. ManagerApprover) given as approverColumn; a stage approved by anyone in a team uses approverKind group. The generator then adds the per-stage decision, date, approver and comment columns, a CurrentStage number and an ApprovalHistory note itself, so do not define those, and do not add flows for the stage hand-offs or the final outcome email: the generator adds them too. The person who created an item can never approve it. The creator's manager cannot be looked up automatically: use a Person column.
 - Flows (kinds): created = email when a new item is added; statusChanged = email when a Choice column changes to one of statusValues; reminder = every day at "hour", email for each item whose statusField equals reminderValue and that is at least "days" old; button = a button on the item's detail screen runs the flow for that item.
 - Flow recipients: column (a Person column of that list), author (who created the item), editor (who last changed it), me (button flows only: whoever pressed the button), address (a fixed email address the requirements give; never invent addresses).
 - Email tokens in subject and body: {ColumnName} for any column of the flow's list, {Title}, {ID}, {Created}, {Author}, {PersonColumn.Email}, and {Link}, a link that opens the item in the app. Keep emails short and plain.
@@ -196,10 +207,18 @@ export function specToProject(plan, { siteUrl = '' } = {}) {
   const isGuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(gid);
   if (gid && !isGuid) notes.push(`"${gid}" is not a group ID (it should look like 00000000-0000-0000-0000-000000000000), so admin-only gating was left off.`);
   p.app.features = { loading: op.loadingScreen !== false, confirm: op.confirmationPage !== false, stepper: op.statusStepper !== false, scope: op.showMineFirst ? 'mine' : 'all', usage: !!op.trackUsage, adminGroup: isGuid ? gid : '' };
-  generateApp(p, { screens, approvals });
+  // 2-4 sequential stages → an approval chain (one stage stays the classic approvals queue)
+  let chain = null;
+  const rs = Array.isArray(ap?.stages) ? ap.stages.slice(0, 4) : [];
+  if (approvals && rs.length >= 2) {
+    const stages = stagesFromSpec(findList(approvals.list), rs, findCol, notes);
+    chain = { list: approvals.list, field: approvals.field, values: { ...guessChainValues(findList(approvals.list), approvals.field), pending: approvals.pending, approved: approvals.yes, rejected: approvals.no }, stages };
+  }
+  generateApp(p, { screens, approvals, chain });
+  if (p.app.chain) addChainFlows(p);
 
   // flows
-  const usedNames = new Set();
+  const usedNames = new Set((p.flows || []).map((f) => flowFxName(f.name)));
   for (const rf of (plan?.flows || []).slice(0, 12)) {
     const f = flowFromSpec(p, rf, { findList, findCol, usedNames, notes });
     if (!f) continue;
@@ -263,6 +282,42 @@ export function applyFlowFields(p, f, rf, l, { findCol, notes = [] }) {
     }
   }
   return f;
+}
+
+/** Approval stages from Claude's STAGE_SPEC objects → chain stages (cleaned; bad IDs and columns become notes). */
+export function stagesFromSpec(l, rs, findCol, notes = []) {
+  return (rs || []).slice(0, 4).map((st, i) => {
+    const name = String(st?.name || `Stage ${i + 1}`).trim();
+    if (st?.approverKind === 'group') {
+      const g = String(st.groupId || '').trim(), ok = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(g);
+      if (g && !ok) notes.push(`Stage "${name}": "${g}" is not a group ID; add it in Finish setup.`);
+      const em = String(st.notifyEmail || '').trim();
+      return { name, approver: 'group', groupId: ok ? g : '', notify: isEmail(em) ? em : '' };
+    }
+    const c = findCol(l, st?.approverColumn);
+    if (st?.approverColumn && c?.type !== 'Person') notes.push(`Stage "${name}": "${st.approverColumn}" is not a Person column of ${l.name}, so a new approver column was added.`);
+    return { name, approver: 'column', column: c?.type === 'Person' ? c.name : '' };
+  });
+}
+/** Add the approval chain's flows (one per stage hand-off, a resubmit notice and the final outcome email). Replaces earlier chain flows for the list. */
+export function addChainFlows(project) {
+  const ch = project.app.chain;
+  if (!ch) return [];
+  const l = project.lists.find((x) => x.name === ch.list);
+  if (!l) return [];
+  project.flows = (project.flows || []).filter((f) => !(f.chain && f.list === ch.list));
+  const findList = () => l, findCol = (list, n) => list.columns.find((c) => c.name === n);
+  const out = [];
+  for (const spec of chainFlowSpecs(ch)) {
+    const f = flowFromSpec(project, { ...spec, list: l.name }, { findList, findCol });
+    if (!f) continue;
+    f.chain = true;
+    project.flows.push(f); out.push(f);
+  }
+  // the emails' {Link} opens the item's details
+  const det = project.screens.find((s) => s.name === 'scrDetail' + slug(ch.list));
+  if (det && !project.app.deepLink?.screen) project.app.deepLink = { screen: det.id, list: ch.list };
+  return out;
 }
 
 /** Put a "Run a flow" button on the flow's detail screen: in the header beside Edit (tablet), above the action bar (phone). */

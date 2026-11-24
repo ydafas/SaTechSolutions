@@ -13,6 +13,7 @@ import { iconSvg } from './icons.js';
 import { contrastIssues } from './a11y.js';
 import { notifyFx, navigateFx, rebaseFx, upsertBaseFx, ifErrorFx, spUserFx, meUserFx, recordFx, equalsFx } from './fx.js';
 import { flowFxName, deepLinkInfo, flowLint, internalName as flowInternalName } from './flows.js';
+import { chainFor, decideFx, resubmitFx, newItemStageFx, groupChecksFx, chainLint } from './chain.js';
 
 // ---------------------------------------------------------------- color helpers
 export function colorFx(v) {
@@ -153,7 +154,8 @@ export const ACTION_TYPES = {
   navigate: 'Go to screen', back: 'Go back', newItem: 'Start a new item', openItem: 'Open this row (gallery)',
   save: 'Save form to list', delete: 'Delete selected item', setField: 'Set a column on selected item',
   setVar: 'Set variable', toggleVar: 'Toggle variable', notify: 'Show message', launch: 'Open a link',
-  refresh: 'Refresh list', reset: 'Clear inputs on screen', runFlow: 'Run a flow', custom: 'Custom Power Fx',
+  refresh: 'Refresh list', reset: 'Clear inputs on screen', runFlow: 'Run a flow',
+  decide: 'Approve or reject (approval chain)', resubmit: 'Resubmit (approval chain)', custom: 'Custom Power Fx',
 };
 const scrName = (project, id) => project.screens.find((x) => x.id === id || x.name === id)?.name;
 
@@ -170,6 +172,9 @@ export function actionFx(project, screen, a, ctx = {}) {
     case 'save': {
       const inputs = screenInputs(screen, a.list);
       const fields = inputs.map((c) => [c.field.column, patchValueFx(project, c)]).filter((x) => x[1]);
+      // approval chain: a new item starts at stage 1 (an existing one keeps the stage it is at)
+      const ch = chainFor(project, a.list);
+      if (ch && !fields.some(([k]) => k === 'CurrentStage')) fields.push(['CurrentStage', newItemStageFx(ch)]);
       const rec = recordFx(fields.map(([k, v]) => [q(k), v]));
       const tried = 'varTriedSave' + slug(a.list), doneVar = 'varDone' + slug(a.list);
       let done = [notifyFx(a.message || 'Saved', 'Success')];
@@ -218,6 +223,11 @@ export function actionFx(project, screen, a, ctx = {}) {
       if (a.then === 'navigate') done.push(nav(a.screen)); else if (a.then === 'back') done.push('Back()');
       return ifErrorFx(`${flowFxName(f.name)}.Run(${V2}.ID)`, 'Flow', done.filter(Boolean));
     }
+    case 'decide': {
+      const ch = chainFor(project, a.list);
+      return ch && a.commentCtl ? decideFx(ch, a.decision === 'Rejected' ? 'Rejected' : 'Approved', a.commentCtl) : '';
+    }
+    case 'resubmit': { const ch = chainFor(project, a.list); return ch ? resubmitFx(ch) : ''; }
     case 'custom': return (a.fx || '').replace(/^=/, '');
   }
   return '';
@@ -633,6 +643,7 @@ export function onStartFx(project) {
   }
   const ft = project.app.features || {};
   if (ft.adminGroup) parts.push(adminCheckFx(ft.adminGroup));
+  if (project.app.chain) parts.push(...groupChecksFx(project.app.chain));
   if (ft.usage && !project.screens.some((sc) => sc.role === 'loading')) parts.push(usageFx(project));
   if (project.app.onStart?.trim()) parts.push(project.app.onStart.trim().replace(/^=/, ''));
   return parts.join(';\n');
@@ -672,9 +683,11 @@ export function checklist(project) {
   const lists = usedLists(project), steps = [];
   const ff = FORM_FACTORS[project.app.formFactor || 'tablet'];
   steps.push(`Create a blank canvas app (${project.app.formFactor === 'phone' ? 'Phone' : 'Tablet'} format, ${ff.w} × ${ff.h}).`);
-  const groups = !!project.app.features?.adminGroup;
+  const chainGroups = (project.app.chain?.stages || []).filter((st) => st.approver === 'group');
+  const groups = !!project.app.features?.adminGroup || chainGroups.length > 0;
   if (lists.length || usesPeople(project) || groups) steps.push('Data → Add data: ' + [...lists.map((l) => `SharePoint list "${l}"`), ...(usesPeople(project) ? ['Office 365 Users'] : []), ...(groups ? ['Office 365 Groups'] : [])].join(', ') + '. Names must match exactly.');
-  if (groups) steps.push(`Admins: the app checks membership of the Microsoft 365 group ${project.app.features.adminGroup} (Office365Groups.ListGroupMembers, field "mail"). If admins see no admin buttons, check the member field name with intellisense on First(Office365Groups.ListGroupMembers("<id>").value).`);
+  if (chainGroups.length) steps.push(`Approval groups: ${chainGroups.map((st) => `${st.name} = group ${st.groupId || '(ID missing)'}`).join('; ')}. OnStart sets one flag per group with Office365Groups.ListGroupMembers wrapped in IfError, so a wrong ID only hides that stage's queue.`);
+  if (project.app.features?.adminGroup) steps.push(`Admins: the app checks membership of the Microsoft 365 group ${project.app.features.adminGroup} (Office365Groups.ListGroupMembers, field "mail"). If admins see no admin buttons, check the member field name with intellisense on First(Office365Groups.ListGroupMembers("<id>").value).`);
   if (project.app.features?.usage) steps.push('App usage: create the AppUsage list (in the provisioning script) and give users Contribute on it. One row per user per app records first and last visit and a visit count.');
   steps.push('App → Formulas: paste the App.Formulas text (it holds the theme).');
   if (onStartFx(project)) steps.push('App → OnStart: expand the formula bar first, paste the OnStart text, then App → Run OnStart.');
@@ -745,7 +758,7 @@ export function provisioningScript(project) {
       let xml;
       switch (c.type) {
         case 'Note': xml = `<Field Type='Note' ${base} NumLines='6' RichText='FALSE' />`; break;
-        case 'Number': xml = `<Field Type='Number' ${base} />`; break;
+        case 'Number': xml = c.defaultValue != null ? `<Field Type='Number' ${base}><Default>${Number(c.defaultValue)}</Default></Field>` : `<Field Type='Number' ${base} />`; break;
         case 'Currency': xml = `<Field Type='Currency' ${base} LCID='1033' />`; break;
         case 'DateTime': xml = `<Field Type='DateTime' ${base} Format='${c.withTime ? 'DateTime' : 'DateOnly'}' />`; break;
         case 'Choice': xml = `<Field Type='Choice' ${base} Format='Dropdown'><CHOICES>${c.choices.map((x) => `<CHOICE>${xmlEsc(x)}</CHOICE>`).join('')}</CHOICES>${c.choices[0] ? `<Default>${xmlEsc(c.choices[0])}</Default>` : ''}</Field>`; break;
@@ -788,7 +801,10 @@ export const LINT_RULES = {
   PS046: 'Flow watch column missing or not Choice', PS047: 'Email link needs the app link and a deep-link screen',
   PS048: 'Unknown {token} in a flow email', PS049: 'Run a flow action without a button flow', PS050: 'Two flows with the same Power Apps name', PS051: 'HTML box taller than its control allows',
   PS052: 'Theme text color below WCAG AA contrast',
+  PS053: 'Approval chain list or stage count invalid', PS054: 'Approval group stage without a valid group ID', PS055: 'Approval stage approver is not a Person column',
+  PS056: 'Approval chain column missing', PS057: 'Approve/reject action without a chain or comment box',
 };
+const screenHas = (scr, name) => !!name && [...walk(scr.controls)].some(([c]) => c.name === name);
 const overlap = (a, b) => Math.max(0, Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x)) * Math.max(0, Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y));
 const PASSIVE_COVER = new Set(['label', 'card', 'rect', 'html', 'image', 'icon', 'badge']);
 
@@ -876,6 +892,8 @@ export function lint(project) {
         }
         if ((a.type === 'setVar' || a.type === 'toggleVar') && a.name && !IDENT.test(a.name)) add('error', 'PS025', where, `Variable name "${a.name}" is not valid.`);
         if (a.type === 'custom' && /\bNavigate\(/.test(a.fx || '') && ev === 'OnVisible') add('error', 'PS042', where, 'Navigate() is not allowed in OnVisible.');
+        if ((a.type === 'decide' || a.type === 'resubmit') && !chainFor(project, a.list)) add('error', 'PS057', where, `${ev}: "${ACTION_TYPES[a.type]}" needs an approval chain on ${a.list || 'its list'} (wizard or App tab).`);
+        if (a.type === 'decide' && chainFor(project, a.list) && !screenHas(scr, a.commentCtl)) add('error', 'PS057', where, `${ev}: the comment box "${a.commentCtl || '(none)'}" is not on this screen.`);
         if (a.type === 'runFlow' && !(project.flows || []).some((f) => f.id === a.flow && f.kind === 'button')) add('error', 'PS049', where, `${ev}: "Run a flow" needs a flow of the "Run from a button" kind (Flows tab).`);
       }
     }
@@ -910,6 +928,7 @@ export function lint(project) {
     }
   }
   flowLint(project, addG);
+  chainLint(project, addG);
   if (project.app.deepLink?.screen && !deepLinkInfo(project)) addG('warn', 'PS047', 'App', 'The email-link screen or its list no longer exists; pick them again on the App tab.');
   // HtmlViewer pads 5px on every side: the first box's height plus its vertical margins must fit in Height - 10 or a scrollbar appears
   for (const scr of project.screens) for (const [c] of walk(scr.controls)) {

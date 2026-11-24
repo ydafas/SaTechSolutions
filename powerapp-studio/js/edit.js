@@ -68,6 +68,7 @@ export function renameListIn(project, oldN, newN) {
   for (const f of project.flows || []) if (f.list === oldN) f.list = newN;
   if (project.app.deepLink?.list === oldN) project.app.deepLink.list = newN;
   if (project.app.approvalsCfg?.list === oldN) project.app.approvalsCfg.list = newN;
+  if (project.app.chain?.list === oldN) project.app.chain.list = newN;
   // generated formulas: the table name, [@List], 'List' and the per-list variables (varSelRequests, varScopeRequests…)
   const so = slug(oldN), sn = slug(newN);
   const bare = IDENT.test(oldN) ? new RegExp(`(^|[^.\\w'])${escRe(oldN)}(?![\\w'])`, 'g') : null;
@@ -81,11 +82,14 @@ export function renameListIn(project, oldN, newN) {
   return null;
 }
 /** Rename a column everywhere: model, bindings, flows, approvals and the generated formulas (ThisItem.Old, varSel.Old, Old.Value). */
+/** Columns the approval chain generates (per-stage decision/date/by/comments, CurrentStage, ApprovalHistory): renamed only through the stage. */
+const chainManaged = (project, list, col) => project.app.chain?.list === list && !!col.chain;
 export function renameColumnIn(project, list, oldN, newN) {
   newN = String(newN || '').trim();
   const l = project.lists.find((x) => x.name === list); if (!l) return `No list called ${list}.`;
   const col = l.columns.find((c) => c.name === oldN); if (!col) return `No column ${oldN} in ${list}.`;
   if (col.builtin) return 'The Title column cannot be renamed.';
+  if (chainManaged(project, list, col)) return `${oldN} belongs to the approval chain; its name follows the stage name.`;
   if (!newN || newN === oldN) return 'Same name.';
   if (l.columns.some((c) => c.name === newN)) return 'That column exists.';
   col.name = newN;
@@ -112,6 +116,8 @@ export function renameColumnIn(project, list, oldN, newN) {
     f.subject = f.subject.replace(tok, (m, e) => `{${newN}${e || ''}}`); f.body = f.body.replace(tok, (m, e) => `{${newN}${e || ''}}`);
   }
   if (project.app.approvalsCfg?.list === list && project.app.approvalsCfg.field === oldN) project.app.approvalsCfg.field = newN;
+  const ch = project.app.chain;
+  if (ch?.list === list) { if (ch.field === oldN) ch.field = newN; for (const st of ch.stages) if (st.approver === 'column' && st.column === oldN) st.column = newN; }
   // formulas on screens that work with this list: member access (.Old) and bare column names inside Filter predicates
   if (IDENT.test(oldN)) {
     const member = new RegExp(`\\.${escRe(oldN)}\\b`, 'g'), bare = new RegExp(`(^|[^.\\w])${escRe(oldN)}\\b(?=\\s*(?:\\.|=|<>|,|\\)|&&|\\|\\|))`, 'g');
@@ -355,6 +361,7 @@ export function removeColumnIn(project, listName, colName) {
   const l = project.lists.find((x) => x.name === listName), col = l?.columns.find((c) => c.name === colName);
   if (!col) return { error: `No column ${colName} in ${listName}.` };
   if (col.builtin) return { error: 'The Title column cannot be removed.' };
+  if (chainManaged(project, listName, col) || (project.app.chain?.list === listName && (project.app.chain.field === colName || project.app.chain.stages.some((st) => st.column === colName)))) return { error: `${colName} is used by the approval chain.` };
   l.columns.splice(l.columns.indexOf(col), 1);
   const removed = [], warnings = [], s0 = slug(colName);
   for (const s of project.screens) {

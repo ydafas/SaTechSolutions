@@ -70,6 +70,16 @@ export function guideCases(project) {
       button: `Run it from its button in the app.` }[f.kind];
     add('Flow', `Flow "${f.name}" sends its email`, [when, 'Wait about a minute, then check the flow\'s run history in Power Automate.'], `One email to ${recipientsText(f)} with the subject "${f.subject}".${/\{Link\}/.test(f.body) ? ' Its link opens the item in the app.' : ''}`);
   }
+  const ch = project.app.chain;
+  if (ch && project.lists.some((l) => l.name === ch.list)) {
+    const one = single(ch.list), names = ch.stages.map((s) => s.name), who = (s) => (s.approver === 'group' ? `a member of the ${s.groupLabel || s.name} group` : `the person in ${pretty(s.column)}`);
+    add('Approval chain', `${one} goes through ${names.join(' → ')}`, [`As a requester, add a ${one} and name a different person in each approver field.`, ...ch.stages.map((s, i) => `Sign in as ${who(s)}, open Approvals, pick the ${one} and press Approve${i ? '' : ' (a comment is optional)'}.`)],
+      `After each approval the stepper on the details screen colours that stage green and moves to the next; the ${one} is in only the next approver's queue. After ${names[names.length - 1]}, ${pretty(ch.field)} is ${ch.values.approved}.`);
+    add('Approval chain', `Rejecting needs a comment and ends the chain`, [`Sign in as the stage ${names.length > 1 ? 2 : 1} approver of a waiting ${one}.`, 'Press Reject with the comment empty, then type a comment and press Reject.'],
+      `Reject stays disabled until there is a comment. Then ${pretty(ch.field)} is ${ch.values.rejected}, the stage turns red, later stages stay grey and the history shows who rejected, when, and the comment. The requester gets the outcome email.`);
+    add('Approval chain', 'Nobody approves their own request', ['Sign in as someone who is an approver, and create a ' + one + ' naming yourself as the stage 1 approver.', 'Open Approvals and the details screen.'], `The ${one} is not in your queue and the details show "Waiting on…" instead of Approve and Reject.`);
+    if (ch.resubmit) add('Approval chain', 'A rejected request can be resubmitted', [`As the requester, open your rejected ${one}.`, 'Edit it if needed, then press Resubmit.'], `Every stage is Pending again, ${pretty(ch.field)} is ${ch.values.pending}, the history keeps the earlier decisions with a "Resubmitted" line on top, and the stage 1 approver gets a new email.`);
+  }
   const dl = deepLinkInfo(project);
   if (dl) add('Link', 'An email link opens the right item', ['Open a link from one of the app\'s emails (it ends in &ID= and a number).'], `The app opens ${screenName(dl.screen)} with that ${single(dl.list)} selected, not the home screen.`);
   if (project.app.features?.adminGroup) add('Access', 'Admin-only buttons stay hidden for others', ['Sign in as someone who is not in the admin group.', 'Open an item.'], 'Approve, reject and delete are not shown. Members of the admin group see them.');

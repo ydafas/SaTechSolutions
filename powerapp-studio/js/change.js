@@ -4,8 +4,9 @@
 // through the same helpers the designer uses. Screens an operation does not touch are left alone.
 import { COLTYPES, THEME_PRESETS, newList, newColumn, clone, walk } from './core.js';
 import { FLOW_KINDS, flowFxName } from './flows.js';
-import { MODELS, flowFromSpec, applyFlowFields, addRunFlowButton } from './ai.js';
-import { genBlank, genHome, genBrowse, genDetail, genEdit, genApprovals, genLoading, statusCol } from './templates.js';
+import { MODELS, flowFromSpec, applyFlowFields, addRunFlowButton, STAGE_SPEC, stagesFromSpec, addChainFlows } from './ai.js';
+import { ensureChainColumns, normalizeChain, guessChainValues, MAX_STAGES } from './chain.js';
+import { genBlank, genHome, genBrowse, genDetail, genEdit, genApprovals, genChainApprovals, genLoading, statusCol } from './templates.js';
 import { cleanName, makeColumn, renameListIn, renameColumnIn, removeColumnIn, addFieldToForm, addFieldToDetail, addFieldToGallery,
   refreshStatusVisuals, setAdminGating, screensFor, screenKind } from './edit.js';
 
@@ -15,8 +16,9 @@ export const OPS = {
   addColumn: 'Add a column', renameColumn: 'Rename a column', removeColumn: 'Remove a column', setChoices: 'Change the choices of a column',
   addFieldToForm: 'Show a column on the form', addFieldToDetail: 'Show a column on the details screen', addFieldToGallery: 'Show a column in the list rows',
   addScreenFromTemplate: 'Add a screen', addFlow: 'Add a flow', editFlow: 'Change a flow', removeFlow: 'Remove a flow',
+  setApprovalStages: 'Set up a multi-stage approval chain',
 };
-const DESTRUCTIVE = new Set(['removeColumn', 'removeFlow', 'renameColumn', 'renameList', 'setChoices']);
+const DESTRUCTIVE = new Set(['removeColumn', 'removeFlow', 'renameColumn', 'renameList', 'setChoices', 'setApprovalStages']);
 const OPTIONS = ['loadingScreen', 'confirmationPage', 'statusStepper', 'showMineFirst', 'trackUsage', 'adminGroupId'];
 const TEMPLATES = ['browse', 'detail', 'edit', 'approvals', 'home', 'blank', 'loading'];
 
@@ -53,6 +55,7 @@ export const CHANGE_SCHEMA = obj({
     reminderValue: str(),
     days: { type: 'integer' },
     hour: { type: 'integer' },
+    stages: arr(STAGE_SPEC, 'setApprovalStages: the 1-4 stages in order; else empty'),
   })),
   notes: arr(str(), 'Anything you could not do with these operations, or questions for the person'),
 });
@@ -65,6 +68,7 @@ Operations (use the fewest that do the job, in the order they must run):
 - renameList (list, newName). addColumn (list, column, type, required, choices, lookupList). renameColumn (list, column, newName). removeColumn (list, column). setChoices (list, column, choices) for Choice columns: send the complete new list.
 - addFieldToForm / addFieldToDetail / addFieldToGallery (list, column, screen optional): show an existing or just-added column on the list's form, details screen or gallery rows. When the person adds a column they almost always want it on the form and details screen too; add it to the gallery only if they ask or it is a key value.
 - addScreenFromTemplate (template, list): browse, detail, edit, approvals (list needs a Choice status column), home, blank, loading.
+- setApprovalStages (list, column = the Choice status column, stages): turn the list's approvals into a chain of 1 to 4 sequential stages, or change its stages. Each stage: name, approverKind personColumn (approverColumn = an existing Person column, or empty to add one) or group (groupId, notifyEmail if given). It adds the per-stage columns, rebuilds that list's details and approvals screens and adds the hand-off and outcome emails itself: do not add those columns or flows separately. The requester can never approve their own item; the creator's manager cannot be looked up, so use a Person column.
 - addFlow (flowKind, flowName, list, recipients, subject, body, statusField, statusValues, reminderValue, days, hour). editFlow (flowName, then only the fields to change; newName to rename). removeFlow (flowName).
 
 Rules:
@@ -80,7 +84,7 @@ export function projectSummary(project) {
   return {
     app: { name: project.app.name, formFactor: project.app.formFactor, theme: project.theme.name,
       options: { loadingScreen: !!ft.loading, confirmationPage: ft.confirm !== false, statusStepper: ft.stepper !== false, showMineFirst: ft.scope === 'mine', trackUsage: !!ft.usage, adminGroupId: ft.adminGroup || '' },
-      approvals: project.app.approvalsCfg || null },
+      approvals: project.app.approvalsCfg || null, ...(project.app.chain ? { approvalChain: { list: project.app.chain.list, column: project.app.chain.field, stages: project.app.chain.stages.map((s) => ({ name: s.name, approver: s.approver === 'group' ? 'group' : s.column })) } } : {}) },
     lists: project.lists.filter((l) => !l.system).map((l) => ({ name: l.name, columns: l.columns.map((c) => ({ name: c.name, type: c.type, required: !!c.required, ...(c.type === 'Choice' ? { choices: c.choices } : {}), ...(c.type === 'Lookup' ? { lookupList: c.lookupList } : {}) })), ...(l.rows?.length ? { sampleRows: l.rows.length } : {}) })),
     screens: project.screens.map((s) => {
       const cs = [...walk(s.controls)].map(([c]) => c);
@@ -129,6 +133,7 @@ export function describeOp(o) {
     case 'addFlow': return `Add flow "${o.flowName}" (${FLOW_KINDS[o.flowKind]?.label || o.flowKind}) on ${L}`;
     case 'editFlow': return `Change flow "${o.flowName}"${o.newName ? ` (rename to ${o.newName})` : ''}`;
     case 'removeFlow': return `Remove flow "${o.flowName}"`;
+    case 'setApprovalStages': return `Approve ${L} in ${(o.stages || []).length} stage${(o.stages || []).length === 1 ? '' : 's'}: ${(o.stages || []).map((s) => s.name).join(' → ')} (rebuilds its details and approvals screens)`;
   }
   return o.op;
 }
@@ -166,6 +171,7 @@ export function reviewOps(project, ops) {
         break;
       case 'addFlow': if (!FLOW_KINDS[o.flowKind]) error = `Unknown flow kind "${o.flowKind}".`; else if (!has(o.list)) error = `No list ${o.list}.`; else sim.flows.add(o.flowName); break;
       case 'editFlow': case 'removeFlow': if (!sim.flows.has(o.flowName)) error = `No flow "${o.flowName}".`; else if (o.op === 'removeFlow') sim.flows.delete(o.flowName); else if (o.newName) { sim.flows.delete(o.flowName); sim.flows.add(o.newName); } break;
+      case 'setApprovalStages': if (!has(o.list)) error = `No list ${o.list}.`; else if (!(o.stages || []).length || o.stages.length > MAX_STAGES) error = `An approval chain needs 1 to ${MAX_STAGES} stages.`; else for (const st of o.stages) if (st.approverKind === 'personColumn') sim.lists.get(o.list).add(st.approverColumn || ''); break;
       default: error = `Unknown operation "${o?.op}".`;
     }
     out.push({ op: o, desc: o?.op ? describeOp(o) : 'Unknown operation', destructive: DESTRUCTIVE.has(o?.op), error });
@@ -316,6 +322,15 @@ export function applyOps(project, ops) {
           applyFlowFields(project, f, { recipients: o.recipients, subject: o.subject, body: o.body, statusField: o.statusField, statusValues: o.statusValues, reminderValue: o.reminderValue, days: o.days || undefined, hour: o.hour || undefined }, l, { findCol, notes });
           break;
         }
+        case 'setApprovalStages': {
+          const l = findList(o.list);
+          const col = findCol(l, o.column);
+          const field = col?.type === 'Choice' ? col.name : (statusCol(l)?.name || 'Status');
+          const stages = stagesFromSpec(l, o.stages, findCol, notes);
+          const r = setApprovalChain(project, { list: l.name, field, values: guessChainValues(l, field), stages });
+          notes.push(...r.notes); touch(r.screens);
+          break;
+        }
         case 'removeFlow': {
           const f = project.flows.find((x) => x.name === o.flowName);
           project.flows.splice(project.flows.indexOf(f), 1);
@@ -328,4 +343,43 @@ export function applyOps(project, ops) {
   }
   for (const o of ops) delete o.__name;
   return { applied, skipped, notes, touched };
+}
+
+/**
+ * Turn a list's approvals into a chain (or change its stages): add the chain columns, put any new approver column on the form,
+ * rebuild that list's details and approvals screens in place (same ids and names, so links keep working) and replace the chain's flows.
+ * Returns {screens, notes}. Screens of other lists are left alone.
+ */
+export function setApprovalChain(project, spec) {
+  const notes = [], screens = [];
+  const ch = normalizeChain(spec);
+  const l = ch && project.lists.find((x) => x.name === ch.list);
+  if (!l) return { screens, notes: ['No list for the approval chain.'] };
+  if (project.app.chain && project.app.chain.list !== ch.list) notes.push(`The app's approval chain moved from ${project.app.chain.list} to ${ch.list}; its old screens keep their controls until you rebuild them.`);
+  const before = new Set(l.columns.map((c) => c.name));
+  ensureChainColumns(project, ch);
+  project.app.chain = ch;
+  if (project.app.approvalsCfg?.list === ch.list) project.app.approvalsCfg = null;
+  // new approver columns go on the form so new items name their approvers
+  for (const st of ch.stages) if (st.approver === 'column' && !before.has(st.column)) {
+    const r = addFieldToForm(project, l.name, st.column);
+    if (r.screen) screens.push(r.screen); else if (r.error) notes.push(r.error);
+  }
+  const replace = (old, make) => {
+    const at = old ? project.screens.indexOf(old) : -1;
+    if (old) project.screens.splice(at, 1);
+    const scr = make();
+    if (old) { project.screens.splice(project.screens.indexOf(scr), 1); scr.id = old.id; scr.name = old.name; project.screens.splice(at, 0, scr); }
+    screens.push(scr);
+    return scr;
+  };
+  const edit = screensFor(project, l.name, 'edit')[0];
+  const det = replace(screensFor(project, l.name, 'detail')[0], () => genDetail(project, l, { editScreen: edit }));
+  const apOld = screensFor(project, l.name, 'approvals')[0];
+  replace(apOld, () => genChainApprovals(project, l, ch, { back: project.screens.some((s) => /^scrHome/.test(s.name)), detailScreen: det }));
+  if (!apOld) notes.push('A new approvals screen was added; add a tile or button that goes to it.');
+  if (project.screens.some((s) => /^scrHome/.test(s.name))) notes.push('The home screen keeps its current tiles and counters; add the home screen again for a "Waiting on me" list.');
+  const flows = addChainFlows(project);
+  if (flows.length) notes.push(`Added ${flows.length} approval emails: ${flows.map((f) => f.name).join(', ')}.`);
+  return { screens, notes };
 }

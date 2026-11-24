@@ -20,6 +20,9 @@ A browser-only Power Apps canvas app designer for satechitsolutions.com. There i
 14. **Import from CSV or Excel**: the Data tab turns a `.csv` or `.xlsx` file into a SharePoint list with guessed column types, keeps up to 200 rows as Play sample data, and can add list, details and form screens for it.
 15. **Contrast check and accessibility labels**: the Theme tab checks the theme's text colors against WCAG AA and fixes a failing pair in one click. An opt-in App setting adds `AccessibleLabel` to inputs and tap buttons.
 16. **Check against a Studio export**: read an `.msapp`, a solution `.zip` or `Src/*.pa.yaml` files, list the controls and screens that exist only in Studio, and bring them in exactly as Studio wrote them.
+17. **Multi-stage approval chains**: 1 to 4 ordered stages, each with its own approver (a Person column on the item or a Microsoft 365 group), decision, date and comment, plus an append-only history. Flows email each approver in turn and the requester at the end.
+18. **My blocks**: save a selection of controls as a reusable block, insert it in any app with fresh names, and export or import blocks as a file.
+19. **Share a Play preview**: a link that carries the app inside its `#play=` fragment and opens a Play-only viewer for stakeholders.
 
 ## What the generator builds
 
@@ -62,6 +65,9 @@ These templates passed the harness and the skill's `screen_tool.py check`, but h
 | `js/ai.js` | Describe-your-app: plan JSON schema, system prompt, browser call to the Claude API, `specToProject` (cleans the plan and builds the project, wiring button flows and deep links) |
 | `js/describeui.js` | The Describe dialog: requirements, key, model, review, refine, build |
 | `js/keystore.js` | Where the visitor's API key and model choice live (tab or browser storage, never in project files) |
+| `js/chain.js` | Multi-stage approvals: stage columns, decision and resubmit Patches, queue filter, stepper template, group checks, chain flows, lint, Play simulation |
+| `js/blocks.js` | My blocks: make, sanitize, insert (fresh names, remapped formulas), store, export and import |
+| `js/share.js` | Play preview links: trim and sanitize a copy, deflate-raw and base64url into `#play=`, decode safely |
 | `js/edit.js` | Edits to an existing project that keep untouched screens byte-identical: list and column renames that rewrite the generator's baked formulas, add a column to a form, details screen or gallery rows (grows the section, reflows to three columns when it no longer fits), remove a column, admin gating, rebuild status visuals |
 | `js/change.js` | Ask for a change: `CHANGE_SCHEMA` (structured outputs), `CHANGE_PROMPT`, `projectSummary()` (names and types only, no rows or setup values), `reviewOps()`, `applyOps()` |
 | `js/changeui.js` | The Ask-for-a-change dialog: request, review with per-edit checkboxes and a dry run, apply as one undo step, new lint findings |
@@ -127,7 +133,12 @@ Every finding has a stable code. To silence one rule on one control, put `lint-o
 | PS049 | error | "Run a flow" action without a flow of the button kind |
 | PS050 | error | Two flows with the same Power Apps name once spaces are removed |
 | PS051 | warn | An HTML box (first fixed `height:`, plus its margins) is taller than the HtmlViewer's Height − 10, so Power Apps shows a scrollbar |
-| PS052 | info | A theme text/background pair (Text on Bg or Surface, TextMuted on Surface, OnPrimary on Primary, OnHeader on HeaderBg) is below WCAG AA 4.5:1. The default SaTech Cyan and Sunset presets trip it for button text. |
+| PS052 | info | A theme text/background pair (Text on Bg or Surface, TextMuted on Surface, OnPrimary on Primary, OnHeader on HeaderBg) is below WCAG AA 4.5:1. Since round 4 every preset passes. |
+| PS053 | error | Approval chain list missing or stage count outside 1–4 |
+| PS054 | error | Group-approved stage without a valid group object ID |
+| PS055 | error | Stage approver column is not a Person column |
+| PS056 | error | A chain column (stage decision, date, comment, history, current stage) is missing from the list |
+| PS057 | error | Approve/Reject action without a chain, or Reject without a comment box |
 
 To add a rule, give it the next code in `LINT_RULES`, implement it in `lint()` in `js/emit.js`, and add a failing case to the "lint rules fire" test in `tests/run.mjs`.
 
@@ -299,3 +310,47 @@ Ticked items are imported as raw controls with every property exactly as Studio 
 **Designer polish**: on the Data tab the left panel widens to 380px, and column names get their own row, so long names are never cut off. The per-control orange "conditional" dots now show only on hover or selection; the "N conditional" chip in the stage bar marks them all.
 
 None of this changes screen YAML: generated screens, formulas and flow definitions are byte-identical to before for every scenario and the fixture plan.
+
+## Round 4: approval chains, My blocks, preview links, contrast
+
+**Approval chains.** Turn the chain on in the wizard (step 3), in a Claude plan, or with *Ask for a change*. Each stage `K` adds its own columns to the list:
+
+| Column | Type |
+|---|---|
+| `KDecision` | Choice: Pending, Approved, Rejected |
+| `KDecidedOn` | Date |
+| `KDecidedBy` | Person |
+| `KComments` | Note |
+| `KApprover` | Person, for column-approved stages only |
+
+The chain itself adds `CurrentStage` (Number) and `ApprovalHistory` (Note, appended with one line per decision). Patterns follow the WAL lessons in the skill:
+
+- Each stepper step is colored from that stage's own decision column, never from the overall status.
+- Decisions rebase with `LookUp(List, ID = …)` inside the 3-argument `IfError`.
+- Requesters never decide their own item.
+- Group stages check membership with `Office365Groups.ListGroupMembers` wrapped in `IfError(…, false)`.
+- Reject needs a comment.
+- A rejected item can be resubmitted, which resets every stage to Pending and logs the reset in the history.
+
+Flows email the next stage's approver whenever `CurrentStage` changes, and email the requester the final outcome. Projects without a chain emit byte-identical YAML.
+
+**My blocks.** Select controls, then choose *Save as block* (inspector or multi-select). Blocks live in this browser's storage and can be exported or imported as `my-blocks.json`. Inserting one renames every control and remaps references in formulas and actions. Imported files are sanitized like any untrusted project.
+
+**Share a Play preview.** Project → *Share a Play preview link*. The project is trimmed and sanitized:
+
+- Removed: API keys, flow samples and setup drafts.
+- Replaced: group IDs and fixed addresses.
+- Left out unless ticked: the site URL and app link.
+- Capped: imported sample rows, at 25.
+
+It is then compressed with `deflate-raw` and base64url-encoded into `#play=…`. Browsers never send the fragment to a server. Links over about 16 KB get a warning, and links over about 100 KB are refused in favour of the project file. Opening a link shows a Play-only viewer with *Open in Studio as a copy*.
+
+**Contrast.** The SaTech Cyan primary is now `#0E7490` and the Sunset primary `#C4451C`, so every preset passes WCAG AA. This changes App.Formulas for new projects that use those presets. Saved projects keep their stored colors.
+
+**Deferred: Teams notifications in flows.** Whether the Microsoft Teams connector is available and allowed in GCC High tenants is not verified, and an untested connector in an imported package fails at import time. The Outlook email flows already cover notifications.
+
+**Test in a tenant before relying on these:**
+- A chain with a group stage: `Office365Groups` must be added as a data source.
+- The decision Patch on a list with the generated chain columns.
+- The stepper HtmlText.
+- A resubmit after a rejection.

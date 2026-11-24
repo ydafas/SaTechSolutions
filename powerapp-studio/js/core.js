@@ -89,12 +89,12 @@ export const FONTS = ['Segoe UI', 'Open Sans', 'Lato', 'Arial', 'Verdana', 'Geor
 
 const T = (name, c, o = {}) => ({ name, colors: c, font: 'Segoe UI', radius: 8, header: 'gradient', dark: false, ...o });
 export const THEME_PRESETS = [
-  T('SaTech Cyan', { Primary: '#0891B2', OnPrimary: '#FFFFFF', Accent: '#22D3EE', Bg: '#F1F5F9', Surface: '#FFFFFF', SurfaceAlt: '#F8FAFC', Border: '#E2E8F0', Text: '#0F172A', TextMuted: '#64748B', InputFill: '#FFFFFF', InputBorder: '#CBD5E1', HeaderBg: '#0B1220', OnHeader: '#FFFFFF', Success: '#10B981', Warning: '#F59E0B', Danger: '#DC2626' }),
+  T('SaTech Cyan', { Primary: '#0E7490', OnPrimary: '#FFFFFF', Accent: '#22D3EE', Bg: '#F1F5F9', Surface: '#FFFFFF', SurfaceAlt: '#F8FAFC', Border: '#E2E8F0', Text: '#0F172A', TextMuted: '#64748B', InputFill: '#FFFFFF', InputBorder: '#CBD5E1', HeaderBg: '#0B1220', OnHeader: '#FFFFFF', Success: '#10B981', Warning: '#F59E0B', Danger: '#DC2626' }),
   T('Fluent Blue', { Primary: '#0F6CBD', OnPrimary: '#FFFFFF', Accent: '#4F9FE8', Bg: '#F5F5F5', Surface: '#FFFFFF', SurfaceAlt: '#FAFAFA', Border: '#E0E0E0', Text: '#242424', TextMuted: '#616161', InputFill: '#FFFFFF', InputBorder: '#C7C7C7', HeaderBg: '#0F6CBD', OnHeader: '#FFFFFF', Success: '#107C10', Warning: '#C47F00', Danger: '#C50F1F' }, { font: 'Segoe UI', radius: 4, header: 'solid' }),
   T('Midnight', { Primary: '#38BDF8', OnPrimary: '#04121F', Accent: '#A78BFA', Bg: '#0B1120', Surface: '#131C2E', SurfaceAlt: '#1B2740', Border: '#26344F', Text: '#E5EDF7', TextMuted: '#94A3B8', InputFill: '#0F1729', InputBorder: '#334463', HeaderBg: '#070C17', OnHeader: '#E5EDF7', Success: '#34D399', Warning: '#FBBF24', Danger: '#F87171' }, { dark: true, radius: 10 }),
   T('Federal Navy', { Primary: '#1C3966', OnPrimary: '#FFFFFF', Accent: '#B22234', Bg: '#F3F5F8', Surface: '#FFFFFF', SurfaceAlt: '#EEF2F8', Border: '#D5DCE6', Text: '#14213D', TextMuted: '#5B6B82', InputFill: '#FFFFFF', InputBorder: '#B9C4D4', HeaderBg: '#1C3966', OnHeader: '#FFFFFF', Success: '#2E7D32', Warning: '#B26A00', Danger: '#B22234' }, { radius: 6 }),
   T('Forest', { Primary: '#2F6B4F', OnPrimary: '#FFFFFF', Accent: '#8DBF6A', Bg: '#F3F5F0', Surface: '#FFFFFF', SurfaceAlt: '#F7F9F4', Border: '#DCE3D5', Text: '#1E2A22', TextMuted: '#5E6E62', InputFill: '#FFFFFF', InputBorder: '#C3CEBB', HeaderBg: '#1F3D2E', OnHeader: '#FFFFFF', Success: '#2F855A', Warning: '#B7791F', Danger: '#C53030' }, { font: 'Lato', radius: 12 }),
-  T('Sunset', { Primary: '#E4572E', OnPrimary: '#FFFFFF', Accent: '#F3A712', Bg: '#FFF8F3', Surface: '#FFFFFF', SurfaceAlt: '#FFF1E8', Border: '#F2DED0', Text: '#2B1A12', TextMuted: '#7A5B4C', InputFill: '#FFFFFF', InputBorder: '#E7C9B6', HeaderBg: '#2B1A12', OnHeader: '#FFFFFF', Success: '#3C8D5A', Warning: '#D98A00', Danger: '#C8241B' }, { font: 'Open Sans', radius: 14 }),
+  T('Sunset', { Primary: '#C4451C', OnPrimary: '#FFFFFF', Accent: '#F3A712', Bg: '#FFF8F3', Surface: '#FFFFFF', SurfaceAlt: '#FFF1E8', Border: '#F2DED0', Text: '#2B1A12', TextMuted: '#7A5B4C', InputFill: '#FFFFFF', InputBorder: '#E7C9B6', HeaderBg: '#2B1A12', OnHeader: '#FFFFFF', Success: '#3C8D5A', Warning: '#D98A00', Danger: '#C8241B' }, { font: 'Open Sans', radius: 14 }),
   T('Graphite', { Primary: '#111827', OnPrimary: '#FFFFFF', Accent: '#6B7280', Bg: '#FFFFFF', Surface: '#FFFFFF', SurfaceAlt: '#F9FAFB', Border: '#E5E7EB', Text: '#111827', TextMuted: '#6B7280', InputFill: '#FFFFFF', InputBorder: '#D1D5DB', HeaderBg: '#FFFFFF', OnHeader: '#111827', Success: '#15803D', Warning: '#A16207', Danger: '#B91C1C' }, { radius: 6, header: 'solid' }),
 ];
 export const defaultTheme = () => clone(THEME_PRESETS[0]);
@@ -253,6 +253,33 @@ export function renameCopy(project, ctl, used) {
   return ctl;
 }
 
+// ---------------------------------------------------------------- approval chains (config shape; formulas live in chain.js)
+const CHAIN_ROLES = new Set(['status', 'approver', 'decision', 'date', 'by', 'comments', 'stage', 'history']);
+/** Column-name key of a stage: its name in PascalCase letters and digits. */
+export const stageKey = (stage) => slug(stage?.name || 'Stage').replace(/[^A-Za-z0-9]/g, '') || 'Stage';
+/** Clean a chain config (wizard, Claude plan, change op, saved file). Returns null when unusable. */
+export function normalizeChain(c) {
+  if (!c || typeof c !== 'object' || !String(c.list || '').trim()) return null;
+  const stages = (Array.isArray(c.stages) ? c.stages : []).slice(0, 4).map((st, i) => ({
+    name: String(st?.name || `Stage ${i + 1}`).replace(/[^A-Za-z0-9 ]/g, '').trim().slice(0, 30) || `Stage ${i + 1}`,
+    approver: st?.approver === 'group' ? 'group' : 'column',
+    column: String(st?.column || '').replace(/[^A-Za-z0-9_]/g, ''),
+    groupId: String(st?.groupId || '').trim().slice(0, 40),
+    groupLabel: String(st?.groupLabel || '').replace(/[<>&"']/g, '').trim().slice(0, 40),
+    notify: String(st?.notify || '').trim().slice(0, 120),
+  }));
+  if (!stages.length) return null;
+  const seen = new Set();
+  for (const st of stages) { let n = st.name, i = 2; while (seen.has(stageKey({ name: n }))) n = `${st.name} ${i++}`; st.name = n; seen.add(stageKey(st)); }
+  const v = c.values && typeof c.values === 'object' ? c.values : {};
+  const val = (x, d) => String(x || d).replace(/["<>]/g, '').trim().slice(0, 40) || d;
+  return {
+    list: String(c.list).trim(), field: String(c.field || 'Status').replace(/[^A-Za-z0-9_]/g, '') || 'Status',
+    values: { pending: val(v.pending, 'Submitted'), review: val(v.review, 'In review'), approved: val(v.approved, 'Approved'), rejected: val(v.rejected, 'Rejected') },
+    stages, resubmit: c.resubmit !== false,
+  };
+}
+
 // ---------------------------------------------------------------- loading untrusted project files
 const SAFE_ID = /^[A-Za-z0-9_-]{1,40}$/;
 /**
@@ -278,6 +305,7 @@ export function normalizeProject(p) {
     if (!/^(lists|app|datasources|formulas|onstart|startscreen|test|scr:[A-Za-z0-9_-]{1,40}|flow:[A-Za-z0-9_-]{1,40})$/.test(k) || !v || typeof v !== 'object') continue;
     p.deployed[k] = { hash: /^[0-9a-f]{0,8}$/.test(String(v.hash ?? '')) ? String(v.hash ?? '') : '', at: String(v.at || '').slice(0, 40), name: String(v.name || '').slice(0, 120) };
   }
+  if (p.app.chain) { const ch = normalizeChain(p.app.chain); if (ch) p.app.chain = ch; else delete p.app.chain; }
   p.flows = Array.isArray(p.flows) ? p.flows : [];
   const KINDS = ['created', 'statusChanged', 'reminder', 'button'];
   for (const f of p.flows) {
@@ -287,6 +315,7 @@ export function normalizeProject(p) {
     f.recipients = Array.isArray(f.recipients) ? f.recipients.filter((r) => r && typeof r === 'object').map((r) => ({ kind: String(r.kind || 'address'), value: String(r.value ?? '') })) : [];
     f.statusValues = Array.isArray(f.statusValues) ? f.statusValues.map(String) : [];
     f.days = clamp(Number(f.days) || 0, 0, 365); f.hour = clamp(Number(f.hour) || 0, 0, 23); f.enabled = f.enabled !== false;
+    if (f.chain) f.chain = true; else delete f.chain;
   }
   const base = defaultTheme();
   p.theme = { ...base, ...(p.theme || {}) };
@@ -298,7 +327,14 @@ export function normalizeProject(p) {
   for (const l of p.lists) {
     if (!SAFE_ID.test(l.id || '')) l.id = uid();
     l.name = String(l.name || 'List'); l.columns = Array.isArray(l.columns) ? l.columns : [];
-    for (const c of l.columns) { if (!SAFE_ID.test(c.id || '')) c.id = uid(); c.name = String(c.name || 'Column'); if (!COLTYPES[c.type]) c.type = 'Text'; c.choices = Array.isArray(c.choices) ? c.choices.map(String) : []; c.lookupList = String(c.lookupList || ''); c.required = !!c.required; }
+    for (const c of l.columns) {
+      if (!SAFE_ID.test(c.id || '')) c.id = uid(); c.name = String(c.name || 'Column'); if (!COLTYPES[c.type]) c.type = 'Text'; c.choices = Array.isArray(c.choices) ? c.choices.map(String) : []; c.lookupList = String(c.lookupList || ''); c.required = !!c.required;
+      if ('chain' in c) c.chain = !!c.chain;
+      if ('chainRole' in c && !CHAIN_ROLES.has(c.chainRole)) delete c.chainRole;
+      if ('chainStage' in c) c.chainStage = clamp(Math.round(Number(c.chainStage) || 0), 0, 4);
+      if ('defaultValue' in c) { if (typeof c.defaultValue !== 'number' || !Number.isFinite(c.defaultValue)) delete c.defaultValue; }
+      if (c.chainValues) c.chainValues = Object.fromEntries(['pending', 'review', 'approved', 'rejected'].map((k) => [k, String(c.chainValues[k] || '')]));
+    }
     // imported sample rows (CSV/Excel): plain values only, capped
     if (Array.isArray(l.rows) && l.rows.length) {
       const names = new Set(l.columns.map((c) => c.name));
@@ -349,7 +385,7 @@ const FIRST = ['Alex', 'Jordan', 'Morgan', 'Taylor', 'Casey', 'Riley', 'Jamie', 
 const LAST = ['Rivera', 'Chen', 'Patel', 'Brooks', 'Nguyen', 'Carter', 'Diaz', 'Foster', 'Hayes', 'Kim'];
 const WORDS = ['Laptop refresh', 'Badge access', 'Conference room', 'Training seat', 'Software license', 'Travel request',
   'Monitor upgrade', 'Shared drive', 'Parking pass', 'Desk move', 'Phone line', 'Printer repair'];
-export const PEOPLE = FIRST.map((f, i) => ({ DisplayName: `${f} ${LAST[i]}`, Mail: `${f}.${LAST[i]}@contoso.com`.toLowerCase() }));
+export const PEOPLE = FIRST.map((f, i) => { const m = `${f}.${LAST[i]}@contoso.com`.toLowerCase(); return { DisplayName: `${f} ${LAST[i]}`, Mail: m, Email: m }; });
 
 export function sampleValue(col, i, lists) {
   switch (col.type) {
@@ -377,7 +413,7 @@ export function personFromEmail(v) {
   const known = PEOPLE.find((p) => p.Mail === m);
   if (known) return known;
   const name = m.split('@')[0].split(/[._-]+/).filter(Boolean).map((w) => w[0].toUpperCase() + w.slice(1)).join(' ');
-  return { DisplayName: name || m, Mail: m };
+  return { DisplayName: name || m, Mail: m, Email: m };
 }
 export function sampleRows(list, lists, n = 8) {
   const rows = [];
@@ -393,9 +429,42 @@ export function sampleRows(list, lists, n = 8) {
       const v = imported[i][c.name];
       r[c.name] = v === undefined || v === null ? (c.type === 'YesNo' ? false : c.type === 'Number' || c.type === 'Currency' ? null : '') : c.type === 'Person' ? personFromEmail(v) : v;
     }
+    seedChainRow(list, r, i);
     rows.push(r);
   }
   return rows;
+}
+/**
+ * Approval-chain sample state (only for lists with chain columns): rows cycle through "waiting at stage 1..n",
+ * "approved" and "rejected at stage 1", with matching decisions and history, newest line first. Approver columns
+ * point at the signed-in Play user (Alex Rivera) unless Alex created the row, so the approval queue has work in it.
+ */
+function seedChainRow(list, r, i) {
+  const role = (x) => list.columns.filter((c) => c.chainRole === x);
+  const dec = role('decision');
+  if (!dec.length) return;
+  const n = Math.max(...dec.map((c) => c.chainStage || 0));
+  const st = role('status')[0], v = st?.chainValues || { pending: 'Submitted', review: 'In review', approved: 'Approved', rejected: 'Rejected' };
+  const byStage = (k, x) => list.columns.find((c) => c.chainStage === k && c.chainRole === x);
+  // Play signs you in as Alex (PEOPLE[0]): Alex approves everyone else's rows, so the queue has work in it
+  for (const ap of role('approver')) r[ap.name] = r.Author === PEOPLE[0] ? PEOPLE[3] : PEOPLE[0];
+  const sc = i % (n + 2), lines = [];
+  const date = (d) => { const x = new Date(Date.now() - d * 864e5); return x.toISOString().slice(0, 10); };
+  for (let k = 1; k <= n; k++) {
+    const name = (byStage(k, 'decision')?.name || 'Stage').replace(/Decision$/, '');
+    let d = 'Pending';
+    if (sc === n + 1) d = k === 1 ? 'Rejected' : 'Pending';
+    else if (k <= sc) d = 'Approved';
+    const set = (x, val) => { const c = byStage(k, x); if (c) r[c.name] = val; };
+    set('decision', d);
+    set('date', d === 'Pending' ? '' : date(n - k + 1));
+    set('by', d === 'Pending' ? '' : PEOPLE[(k + 2) % PEOPLE.length]);
+    set('comments', d === 'Rejected' ? 'Over budget for this quarter.' : '');
+    if (d !== 'Pending') lines.unshift(`${displayValue({ type: 'DateTime' }, date(n - k + 1))} 09:${String(10 + k).padStart(2, '0')}  ${PEOPLE[(k + 2) % PEOPLE.length].DisplayName}  ·  ${name}  ·  ${d}${d === 'Rejected' ? '  ·  Over budget for this quarter.' : ''}`);
+  }
+  const cs = role('stage')[0]; if (cs) r[cs.name] = sc < n ? sc + 1 : 0;
+  const hist = role('history')[0]; if (hist) r[hist.name] = lines.join('\n');
+  if (st) r[st.name] = sc === n + 1 ? v.rejected : sc === n ? v.approved : sc === 0 ? v.pending : v.review;
 }
 
 /** Display text of a column value the way the generated app shows it. */
