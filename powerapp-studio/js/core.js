@@ -295,6 +295,7 @@ export function normalizeProject(p) {
   p.app = { name: 'My App', formFactor: 'tablet', startScreen: '', onStart: '', formulas: '', ...(p.app || {}) };
   if (!FORM_FACTORS[p.app.formFactor]) p.app.formFactor = 'tablet';
   for (const k of ['name', 'startScreen', 'onStart', 'formulas', 'siteUrl', 'appLink']) p.app[k] = String(p.app[k] ?? '');
+  if (!['pnp', 'gcc'].includes(p.app.scriptKind)) delete p.app.scriptKind;   // provisioning script flavour; unset = detect from siteUrl
   const ft = p.app.features && typeof p.app.features === 'object' ? p.app.features : {};
   p.app.features = { loading: !!ft.loading, usage: !!ft.usage, ...(ft.a11y ? { a11y: true } : {}), confirm: ft.confirm !== false, stepper: ft.stepper !== false, scope: ft.scope === 'mine' ? 'mine' : 'all',
     adminGroup: /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(ft.adminGroup || '').trim()) ? String(ft.adminGroup).trim() : '' };

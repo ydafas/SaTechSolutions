@@ -1,7 +1,7 @@
 // ui.js — Power App Studio: the designer shell.
 import * as core from './core.js';
 import { CATALOG, CATS, COLTYPES, THEME_COLORS, THEME_PRESETS, FONTS, FORM_FACTORS, clone, uid, walk, findCtl, newControl, newScreen, newList, newColumn, allNames, IDENT, RESERVED, sampleRows, varSel, companions, INPUT_TYPES, colOf, cssColor, isHex, s as fxString, renameCopy, normalizeProject } from './core.js';
-import { screenYaml, themeFormulas, onStartFx, startScreenName, startScreenFx, checklist, provisioningScript, lint, ACTION_TYPES, controlYaml, usedLists } from './emit.js';
+import { screenYaml, themeFormulas, onStartFx, startScreenName, startScreenFx, checklist, provisioningScript, scriptKind, scriptFileName, lint, ACTION_TYPES, controlYaml, usedLists } from './emit.js';
 import { flowDefinition, flowFileName, flowFxName, FLOW_KINDS } from './flows.js';
 import { initDescribeUI, describeDialog } from './describeui.js';
 import { initChangeUI, changeDialog } from './changeui.js';
@@ -1459,7 +1459,19 @@ function codeDialog(tab) {
     if (k === 'formulas') { title = 'App.Formulas'; text = themeFormulas(P); fname = 'App.Formulas.txt'; extra = 'In Studio: Tree view → App → choose Formulas in the property list → paste.'; }
     if (k === 'onstart') { title = 'App.OnStart'; text = onStartFx(P); fname = 'App.OnStart.txt'; extra = 'Expand the formula bar before pasting, then App → Run OnStart.'; }
     if (k === 'startscreen') { title = 'App.StartScreen'; text = '=' + startScreenFx(P); fname = 'App.StartScreen.txt'; extra = 'Paste into App → StartScreen after the screens exist.'; }
-    if (k === 'script') { title = 'Provisioning script (PnP PowerShell)'; text = provisioningScript(P); fname = core.slug(P.app.name) + '-Provision-Lists.ps1'; extra = 'Creates the lists and columns. Fill in the EDIT ME block. Safe to run again.'; }
+    if (k === 'script') {
+      const kind = scriptKind(P);
+      title = kind === 'gcc' ? 'Provisioning script (GCC High / DoD)' : 'Provisioning script (PnP PowerShell)';
+      text = provisioningScript(P, kind); fname = core.slug(P.app.name) + '-' + scriptFileName(P, kind);
+      extra = kind === 'gcc'
+        ? 'No PnP needed. Signs in with MSAL.PS (CAC/PIV) against login.microsoftonline.us and creates the lists through SharePoint REST. Open in Notepad, fill in the EDIT ME block (tenant ID, client ID, site URL), paste into PowerShell. Safe to run again.'
+        : 'Creates the lists and columns. Fill in the EDIT ME block. Safe to run again.';
+      main.innerHTML = `<div class="bar"><h3>${esc(title)}</h3><span role="group" aria-label="Script flavour" style="display:flex;gap:4px;margin-right:auto"><button class="btn sm${kind === 'pnp' ? ' pri' : ''}" data-sk="pnp" title="PnP.PowerShell, commercial or GCC tenants">PnP PowerShell</button><button class="btn sm${kind === 'gcc' ? ' pri' : ''}" data-sk="gcc" title="MSAL.PS + SharePoint REST, for GCC High / DoD tenants where PnP sign-in is blocked">GCC High / DoD</button></span><button class="btn sm" id="cDl">${ui('download')}Download</button><button class="btn sm pri" id="cCopy">${ui('copy')}Copy</button></div><p class="note" style="margin:0">${esc(extra)}</p><pre class="code">${esc(text)}</pre>`;
+      main.querySelectorAll('[data-sk]').forEach((b) => b.onclick = () => { P.app.scriptKind = b.dataset.sk; commit(); show('script'); });
+      main.querySelector('#cCopy').onclick = () => copyText(text);
+      main.querySelector('#cDl').onclick = () => download(fname, text);
+      return;
+    }
     if (k === 'project') { title = 'Project file'; text = JSON.stringify(P, null, 2); fname = core.slug(P.app.name) + '.pastudio.json'; extra = 'Save this to continue later, or share it. Open it with Project → Open project file.'; }
     if (k.startsWith('flow:')) {
       const f = P.flows.find((x) => x.id === k.slice(5));
@@ -1487,7 +1499,7 @@ function codeDialog(tab) {
     root.file('App.StartScreen.txt', '=' + startScreenFx(P));
     for (const f of (P.flows || []).filter((x) => x.enabled !== false)) root.file('flows/' + flowFileName(f), await flowZipBlob(f));
     P.screens.forEach((s, i) => root.file(`screens/${String(i + 1).padStart(2, '0')}-${s.name}.pa.yaml`, screenYaml(P, s)));
-    root.file('Provision-Lists.ps1', provisioningScript(P));
+    root.file(scriptFileName(P), provisioningScript(P));
     root.file('lint.txt', lint(P).map((x) => `${x.level.toUpperCase()}\t${x.code}\t${x.where}\t${x.msg}`).join('\n') || 'No findings.');
     root.file(core.slug(P.app.name) + '.pastudio.json', JSON.stringify(P, null, 2));
     download(core.slug(P.app.name) + '-powerapp.zip', await z.generateAsync({ type: 'blob' }));
