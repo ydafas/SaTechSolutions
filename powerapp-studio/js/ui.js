@@ -16,6 +16,10 @@ import { initFlowsUI, panelFlows, addFlowDialog, flowDialog, downloadFlow, dupli
 import { renderControl, renderScreen, createRuntime, svgIcon, FONT_CSS, tryFx } from './render.js';
 import { SCENARIOS, generateApp, SCREEN_TEMPLATES, genBlank, genHome, genBrowse, genDetail, genEdit, genApprovals, genLoading, BLOCKS, insertBlock, galleryRows, buildDemo } from './templates.js';
 import { importYaml } from './import.js';
+import { MAX_STAGES, isGuid, stageCols } from './chain.js';
+import { addChainFlows } from './ai.js';
+import { encodeShare, decodeShare, isShareHash, WARN_CHARS, MAX_CHARS } from './share.js';
+import { loadBlocks, saveBlocks, makeBlock, insertSavedBlock, exportBlocksJson, importBlocksJson } from './blocks.js';
 import { ICONS, ICON_NAMES } from './icons.js';
 
 // ------------------------------------------------------------------ small helpers
@@ -56,7 +60,7 @@ const KEY = 'pas.project.v1';
 let P = null;
 const S = { tab: 'insert', screenId: null, sel: [], zoom: 'fit', undo: [], redo: [], last: '', clip: null, actEvent: 'OnSelect', blockList: '', codeTab: 'deploy', showCond: false };
 function loadSaved() { try { const t = localStorage.getItem(KEY); return t ? JSON.parse(t) : null; } catch { return null; } }
-function persist() { try { localStorage.setItem(KEY, JSON.stringify(P)); } catch { /* storage unavailable */ } }
+function persist() { if (S.viewer) return; try { localStorage.setItem(KEY, JSON.stringify(P)); } catch { /* storage unavailable */ } }
 const screen = () => P.screens.find((s) => s.id === S.screenId) || P.screens[0];
 const selCtls = () => S.sel.map((id) => findCtl(P, id)).filter(Boolean);
 const one = () => (S.sel.length === 1 ? findCtl(P, S.sel[0]) : null);
@@ -165,6 +169,7 @@ function afterBuild() { if (openSetupCount()) setTimeout(setupDialog, 350); }
 /** Design view previews formulas against the first sample row of each list. */
 function designEnv() {
   const vars = { varIsAdmin: true, locInited: true, locStep: 2 }; for (const l of P.lists) vars[varSel(l.name)] = SAMPLE[l.name]?.[0] || {};
+  for (const st of P.app.chain?.stages || []) if (st.approver === 'group') vars[stageCols(st).groupVar] = true;
   const noop = () => {};
   return { project: P, theme: P.theme, mode: 'design', sample: SAMPLE, showHidden: S.showHidden, selIds: new Set(S.sel), rt: { db: SAMPLE, vars, inputs: {}, galSel: {}, ctlValues: {}, api: { navigate: noop, back: noop, toast: noop, launch: noop } } };
 }
@@ -375,6 +380,7 @@ function onDrop(e) {
   e.preventDefault();
   const pt = screenPoint(e);
   if (v.startsWith('block:')) return doBlock(v.slice(6), pt);
+  if (v.startsWith('myblock:')) return doMyBlock(v.slice(8), pt);
   insertControl(v, pt);
 }
 function doBlock(key, pt) {
@@ -384,6 +390,96 @@ function doBlock(key, pt) {
   const added = insertBlock(P, screen(), key, list, pt ? { x: Math.max(0, Math.round(pt.x / 8) * 8), y: Math.max(0, Math.round(pt.y / 8) * 8) } : { x: 40, y: 96 });
   S.sel = added.map((c) => c.id);
   renderCanvas(); renderInspector(); renderPanelIf('layers'); commit();
+}
+
+// ------------------------------------------------------------------ Play preview links (read-only, the project rides in the #fragment)
+function shareDialog() {
+  const m = modal(`<div class="modal-h"><h2>Share a Play preview</h2><button class="mini" data-close>${ui('close')}</button></div>
+    <div class="modal-b"><p style="margin-top:0">Anyone with this link can click through <b>${esc(P.app.name)}</b> with sample data in their browser. They cannot change your copy; they can open their own copy in the Studio. The app travels inside the link itself; nothing is uploaded.</p>
+    <label class="chk-line"><input type="checkbox" id="shLinks"> Include the SharePoint site URL and app link</label>
+    <p class="note">Never included: API keys, flow test samples and setup drafts. Group IDs and fixed email addresses are replaced, and imported sample rows are capped.</p>
+    <div id="shOut" class="share-out"><p class="note">Building the link…</p></div></div>
+    <div class="modal-f"><span class="grow" id="shSize"></span><button class="btn" data-close>Close</button><button class="btn pri" id="shCopy" disabled>${ui('copy')}Copy link</button></div>`, 'md');
+  let url = '';
+  const build = async () => {
+    const r = await encodeShare(P, { includeLinks: m.el.querySelector('#shLinks').checked });
+    const out = m.el.querySelector('#shOut'), btn = m.el.querySelector('#shCopy');
+    const kb = (r.chars / 1024).toFixed(1);
+    if (r.tooLong) {
+      url = ''; btn.disabled = true;
+      out.innerHTML = `<p class="err-box">This app is too big for a link (${kb} KB; the limit is about ${Math.round(MAX_CHARS / 1000)} KB). Large embedded images are the usual cause: remove them or add them as app media, or send the project file instead.</p>`;
+    } else {
+      url = location.origin + location.pathname + r.hash; btn.disabled = false;
+      out.innerHTML = `<textarea class="inp" rows="4" readonly id="shUrl" aria-label="Preview link">${esc(url)}</textarea>${r.warn ? `<p class="warn-box">This link is long (${kb} KB). Some mail and chat apps cut links this long; if it does not open, send the project file instead.</p>` : ''}`;
+    }
+    m.el.querySelector('#shSize').textContent = `${kb} KB${r.compressed ? ', compressed' : ''}`;
+  };
+  m.el.querySelector('#shLinks').onchange = build;
+  m.el.querySelector('#shCopy').onclick = () => url && copyText(url);
+  build().catch((e) => { m.el.querySelector('#shOut').innerHTML = `<p class="err-box">${esc(e.message)}</p>`; });
+}
+/** Opened from a #play=… link: Play only, nothing saved over the visitor's own project. */
+async function openShared(hash) {
+  S.viewer = true; document.body.classList.add('viewer');
+  let p;
+  try { p = await decodeShare(hash); } catch (e) {
+    const m = modal(`<div class="modal-h"><h2>Cannot open this preview</h2></div><div class="modal-b"><p style="margin:0">${esc(e.message)}</p></div><div class="modal-f"><button class="btn pri" data-x>Open the Studio</button></div>`, 'sm');
+    m.el.querySelector('[data-x]').onclick = () => { m.close(); leaveViewer(); };
+    return;
+  }
+  P = p; migrate(P); S.screenId = P.screens[0]?.id; S.last = JSON.stringify(P); renderAll();
+  play({ viewer: true });
+}
+function leaveViewer(copy = null) {
+  S.viewer = false; document.body.classList.remove('viewer');
+  try { history.replaceState(null, '', location.pathname + location.search); } catch { /* sandboxed */ }
+  if (copy) { copy.app.name = (copy.app.name || 'App') + ' (copy)'; setProject(copy); toast('Opened a copy. It is saved in this browser.'); return; }
+  const saved = loadSaved(); setProject(saved || core.newProject()); if (!saved) wizard(true);
+}
+
+// ------------------------------------------------------------------ my blocks (saved in this browser; export/import as .json)
+function myBlocksHtml() {
+  const bl = loadBlocks();
+  return `<div class="sub">My blocks <small class="muted">${bl.length ? 'saved in this browser' : ''}</small></div>
+    ${bl.length ? bl.map((b) => `<div class="myblock"><button class="rowbtn" draggable="true" data-myblock="${esc(b.id)}" title="${esc(`${b.controls.length} control${b.controls.length > 1 ? 's' : ''}, ${b.w}×${b.h}${b.lists.length ? ' · uses ' + b.lists.join(', ') : ''}`)}"><i>${ui('layers')}</i><span>${esc(b.name)}</span></button><button class="mini" data-mbcmd="rename" data-id="${esc(b.id)}" title="Rename" aria-label="Rename ${esc(b.name)}">${ui('edit')}</button><button class="mini danger" data-mbcmd="del" data-id="${esc(b.id)}" title="Delete" aria-label="Delete ${esc(b.name)}">${ui('trash')}</button></div>`).join('')
+    : '<p class="note">Select controls on a screen and choose <b>Save as block</b> to reuse them on any screen or app.</p>'}
+    <div class="btns"><button class="btn sm" data-mbcmd="import">${ui('upload')}Import</button>${bl.length ? `<button class="btn sm" data-mbcmd="export">${ui('download')}Export all</button>` : ''}</div>`;
+}
+async function saveSelAsBlock() {
+  const items = selCtls().filter((f) => !f.parent);
+  if (!items.length) { toast('Select controls on the screen (not inside a gallery row) to save them as a block', true); return; }
+  const name = await askText('Save as block', 'Block name', items.length === 1 ? items[0].ctl.name.replace(/[A-Z][a-z]+$/, '') : 'My block');
+  if (name == null) return;
+  const b = makeBlock(items.map((f) => f.ctl), name);
+  const all = loadBlocks(); all.unshift(b);
+  if (!saveBlocks(all)) { toast('This browser would not keep the block (private window or storage full). Use Export to keep a copy.', true); return; }
+  toast(`Saved "${b.name}" to My blocks`); renderPanelIf('insert');
+}
+function doMyBlock(id, pt) {
+  const b = loadBlocks().find((x) => x.id === id); if (!b) return;
+  const at = pt ? { x: Math.max(0, Math.round(pt.x / 8) * 8), y: Math.max(0, Math.round(pt.y / 8) * 8) } : { x: 40, y: 96 };
+  const r = insertSavedBlock(P, screen(), b, at);
+  S.sel = r.added.map((c) => c.id);
+  renderCanvas(); renderInspector(); renderPanelIf('layers'); commit();
+  r.warnings.forEach((w) => toast(w, true));
+}
+async function myBlockCmd(cmd, id) {
+  const all = loadBlocks(), b = all.find((x) => x.id === id);
+  if (cmd === 'rename' && b) { const n = await askText('Rename block', 'Block name', b.name); if (n == null || !n.trim()) return; b.name = n.trim().slice(0, 60); saveBlocks(all); }
+  if (cmd === 'del' && b) { if (!(await ask('Delete block?', `"${b.name}" is removed from My blocks in this browser. Screens that use it keep their controls.`, 'Delete'))) return; saveBlocks(all.filter((x) => x !== b)); }
+  if (cmd === 'export') download('my-blocks.json', exportBlocksJson(all), 'application/json');
+  if (cmd === 'import') { const fi = $('#fileBlocks'); fi.value = ''; fi.click(); return; }
+  renderPanelIf('insert');
+}
+async function importBlocksFile(f) {
+  try {
+    const { blocks, skipped } = importBlocksJson(await f.text());
+    const all = loadBlocks();
+    for (const b of blocks) { let n = b.name, i = 2; while (all.some((x) => x.name === n)) n = `${b.name} ${i++}`; b.name = n; all.push(b); }
+    if (!saveBlocks(all)) { toast('This browser would not keep the blocks (private window or storage full).', true); return; }
+    toast(`Imported ${blocks.length} block${blocks.length === 1 ? '' : 's'}${skipped ? `; ${skipped} could not be read` : ''}`);
+    renderPanelIf('insert');
+  } catch (err) { toast(err.message, true); }
 }
 
 // ------------------------------------------------------------------ edit ops
@@ -451,6 +547,7 @@ function panelInsert() {
     <div class="sub">Ready-made blocks</div>
     <label class="f"><span>Blocks use this list</span><select data-pcmd="blockList">${listOptions(S.blockList, !P.lists.length, '(add a list on the Data tab)')}</select></label>
     ${blocks}
+    ${myBlocksHtml()}
     <div class="sub">Screens</div>
     <button class="btn block" data-cmd="newScreen">${ui('plus')}New screen from a template</button>
   </div>`;
@@ -541,6 +638,7 @@ function renameColumn(list, oldN, newN) {
   if (err && err !== 'Same name.') toast(err, true);
 }
 /** WCAG AA check for the text/background pairs the generated screens use. */
+function refreshContrast() { const b = $('#cxBox'); if (b) b.innerHTML = contrastHtml(P.theme); }
 function contrastHtml(t) {
   const rows = CONTRAST_PAIRS.map(([f, b, where]) => {
     const r = contrast(t.colors[f], t.colors[b]), ok = r >= AA;
@@ -560,7 +658,7 @@ function panelTheme() {
     <label class="f"><span>Corner radius: <b id="radVal">${t.radius}px</b></span><input type="range" min="0" max="24" value="${t.radius}" data-th="radius"></label>
     <label class="f"><span>Header style for new screens</span><select data-th="header"><option value="gradient" ${t.header === 'gradient' ? 'selected' : ''}>Gradient (HeaderBg → Primary)</option><option value="solid" ${t.header === 'solid' ? 'selected' : ''}>Solid</option></select></label>
     <label class="chk"><input type="checkbox" data-th="dark" ${t.dark ? 'checked' : ''}>Dark theme (hover lightens instead of darkens)</label>
-    ${contrastHtml(t)}
+    <div id="cxBox">${contrastHtml(t)}</div>
     <div class="sub">Colors</div>
     ${THEME_COLORS.map(([k, d]) => `<div class="tokrow"><input type="color" value="${(t.colors[k] || '#000000').slice(0, 7)}" data-tc="${k}" aria-label="${k}"><span class="tn">${k}<small>${d}</small></span><input class="hex" value="${esc(t.colors[k])}" data-tch="${k}" aria-label="${k} hex"></div>`).join('')}
     <p class="note">Every control reads these from one <code>appTheme</code> record in App.Formulas, so you can also restyle the app later in Studio by editing that record.</p></div>`;
@@ -627,7 +725,7 @@ function renderInspector() {
 function inspMulti(items) {
   return `<div class="insp-head"><i>${ui('layers')}</i><div class="t"><b>Selection</b><span style="font-weight:700">${items.length} controls</span></div></div>
   <div class="sec"><h3>Align</h3><div class="btns">${[['left', 'Left'], ['center', 'Center'], ['right', 'Right'], ['top', 'Top'], ['middle', 'Middle'], ['bottom', 'Bottom'], ['hdist', 'Space across'], ['vdist', 'Space down']].map(([k, l]) => `<button class="btn sm" data-align="${k}">${l}</button>`).join('')}</div></div>
-  <div class="sec"><h3>Arrange</h3><div class="btns"><button class="btn sm" data-cmd="z" data-z="front">To front</button><button class="btn sm" data-cmd="z" data-z="back">To back</button><button class="btn sm" data-cmd="dup">Duplicate</button><button class="btn sm danger" data-cmd="del">Delete</button></div></div>`;
+  <div class="sec"><h3>Arrange</h3><div class="btns"><button class="btn sm" data-cmd="z" data-z="front">To front</button><button class="btn sm" data-cmd="z" data-z="back">To back</button><button class="btn sm" data-cmd="dup">Duplicate</button><button class="btn sm" data-cmd="saveBlock">Save as block</button><button class="btn sm danger" data-cmd="del">Delete</button></div></div>`;
 }
 function inspScreen(scr) {
   const start = (P.app.startScreen || P.screens[0]?.id) === scr.id;
@@ -646,7 +744,7 @@ function inspControl(f) {
   const c = f.ctl, p = c.props, d = CATALOG[c.type];
   const parts = [];
   parts.push(`<div class="insp-head"><i>${ui(c.type)}</i><div class="t"><b>${esc(d.label)}${f.parent ? ' · in ' + esc(f.parent.name) : ''}</b><input data-p="name" data-t="name" value="${esc(c.name)}" spellcheck="false" aria-label="Control name"></div>
-    <button class="mini" data-cmd="dup" title="Duplicate (Ctrl+D)">${ui('copy')}</button><button class="mini danger" data-cmd="del" title="Delete">${ui('trash')}</button></div>`);
+    <button class="mini" data-cmd="dup" title="Duplicate (Ctrl+D)">${ui('copy')}</button>${f.parent ? '' : `<button class="mini" data-cmd="saveBlock" title="Save as a reusable block (My blocks)" aria-label="Save as block">${ui('download')}</button>`}<button class="mini danger" data-cmd="del" title="Delete">${ui('trash')}</button></div>`);
   parts.push(`<div class="sec"><h3>Position and size${f.parent ? ' <small>relative to the row</small>' : ''}</h3><div class="grid4">${F('X', inp('x', c.x, 'num'))}${F('Y', inp('y', c.y, 'num'))}${F('W', inp('w', c.w, 'num'))}${F('H', inp('h', c.h, 'num'))}</div>
     <div class="btns"><button class="btn sm" data-cmd="z" data-z="front">To front</button><button class="btn sm" data-cmd="z" data-z="back">To back</button>${!f.parent ? `<button class="btn sm" data-cmd="fullw">Full width</button>` : ''}</div></div>`);
   // content
@@ -792,6 +890,12 @@ function inspActions(f) {
           : '<p class="note">Add a flow of the <b>Run from a button</b> kind on the Flows tab first.</p>';
         break;
       }
+      case 'decide': {
+        const boxes = [['', '(comment box)'], ...[...walk(f.screen.controls)].map(([x]) => x).filter((x) => x.type === 'textinput').map((x) => x.name)];
+        body = `<div class="grid2">${F('List', S2('list', lists, a.list))}${F('Decision', S2('decision', ['Approved', 'Rejected'], a.decision || 'Approved'))}</div>${F('Comment box', S2('commentCtl', boxes, a.commentCtl))}<p class="note">${P.app.chain ? `Records the decision for the item's current stage of the ${esc(P.app.chain.list)} approval chain, moves it to the next stage and adds a history line. Reject needs a comment.` : 'Turn on an approval chain in the wizard first.'}</p>`;
+        break;
+      }
+      case 'resubmit': body = `${F('List', S2('list', lists, a.list))}<p class="note">Sends a rejected item back to stage 1 with every stage reset to Pending.</p>`; break;
       case 'custom': body = F('Power Fx', T2('fx', a.fx, 'Set(varX, true); Notify("Hi")')); break;
     }
     return `<div class="act"><div class="act-h"><span class="act-n">${i + 1}</span><select ${pth('type')} data-re="1">${sel(typeOpts, a.type)}</select>
@@ -929,6 +1033,7 @@ async function onInspectorClick(e) {
   const cmd = b.dataset.cmd;
   if (cmd === 'del') deleteSel();
   if (cmd === 'dup') { copySel(); pasteCtls(S.clip); }
+  if (cmd === 'saveBlock') saveSelAsBlock();
   if (cmd === 'z') zMove(b.dataset.z);
   if (cmd === 'fullw' && f) { f.ctl.x = 0; f.ctl.w = ff().w; renderCanvas(); renderInspector(); commit(); }
   if (cmd === 'makeStart') { P.app.startScreen = screen().id; renderTabs(); renderInspector(); renderPanelIf('screens'); commit(); }
@@ -1036,7 +1141,7 @@ function newScreenDialog() {
 
 // requirements wizard
 function wizard(first = false) {
-  const wz = { step: 1, scen: 'requests', name: SCENARIOS.requests.app, ff: P?.app.formFactor || 'tablet', lists: SCENARIOS.requests.lists(), screens: new Set(['home', 'browse', 'detail', 'edit']), approvals: true, theme: P?.theme?.name || THEME_PRESETS[0].name, ft: { loading: true, confirm: true, stepper: true, scope: 'all', usage: false, adminGroup: '' } };
+  const wz = { step: 1, scen: 'requests', name: SCENARIOS.requests.app, ff: P?.app.formFactor || 'tablet', lists: SCENARIOS.requests.lists(), screens: new Set(['home', 'browse', 'detail', 'edit']), approvals: true, theme: P?.theme?.name || THEME_PRESETS[0].name, chain: { on: false, stages: [{ name: 'Manager', approver: 'column', column: '', groupId: '', notify: '' }, { name: 'Finance', approver: 'group', column: '', groupId: '', notify: '' }] }, ft: { loading: true, confirm: true, stepper: true, scope: 'all', usage: false, adminGroup: '' } };
   const m = modal(`<div class="modal-h"><h2>${first ? 'Build a Power App' : 'New app from requirements'}</h2><div class="steps" id="wzSteps"></div><button class="mini" data-close>${ui('close')}</button></div><div class="modal-b" id="wzBody"></div>
     <div class="modal-f"><span class="grow" id="wzNote"></span>${first ? '<button class="btn" id="wzDemo">Explore a finished demo</button><button class="btn" id="wzBlank">Start with a blank canvas</button>' : ''}<button class="btn" id="wzBack">Back</button><button class="btn pri" id="wzNext">Next</button></div>`);
   const body = m.el.querySelector('#wzBody');
@@ -1068,19 +1173,48 @@ function wizard(first = false) {
         ${pk('home', 'Home dashboard', 'Welcome, status counts and tiles to every screen.')}
         ${pk('browse', 'Browse', 'Search plus a gallery of items.')}${pk('detail', 'Details', 'Every column of one item, with Edit and Delete.')}${pk('edit', 'New / edit form', 'Validated inputs for every column, with Save.')}
         ${appr.length ? `<label><input type="checkbox" id="wzAppr" ${wz.approvals ? 'checked' : ''}><span><b>Approvals queue</b><small>Approve / reject items in <select id="wzApprList">${appr.map((l) => `<option>${esc(l.name)}</option>`).join('')}</select></small></span></label>` : ''}
-      </div></div><div><div class="sub" style="margin-top:0">Look</div><div class="presets">${THEME_PRESETS.map((p) => `<button class="preset ${p.name === wz.theme ? 'on' : ''}" data-wtheme="${esc(p.name)}"><div class="bar">${['HeaderBg', 'Primary', 'Accent', 'Bg', 'Surface'].map((k) => `<i style="background:${p.colors[k]}"></i>`).join('')}</div><span>${esc(p.name)}</span></button>`).join('')}</div>
+      </div><div id="wzChain"></div></div><div><div class="sub" style="margin-top:0">Look</div><div class="presets">${THEME_PRESETS.map((p) => `<button class="preset ${p.name === wz.theme ? 'on' : ''}" data-wtheme="${esc(p.name)}"><div class="bar">${['HeaderBg', 'Primary', 'Accent', 'Bg', 'Surface'].map((k) => `<i style="background:${p.colors[k]}"></i>`).join('')}</div><span>${esc(p.name)}</span></button>`).join('')}</div>
       <p class="note">Fine-tune colors, font and corners on the Theme tab later.</p>
       <div class="sub">Extras</div><div class="picks">
         ${[['loading', 'Animated loading screen', 'Your app\'s monogram flies in while lists load. Opens the home screen when ready.'], ['confirm', 'Confirmation page', 'A "submitted" page after a new item is saved, with Add another and Done.'], ['stepper', 'Status stepper', 'Details show the item\'s progress through its status values.'], ['mine', 'Show "Mine" first', 'Lists open filtered to items the signed-in person created.'], ['usage', 'Track app usage', 'One row per user in an AppUsage list: first and last visit, visit count.']].map(([k, t, d]) => `<label><input type="checkbox" data-ft="${k}" ${k === 'mine' ? (wz.ft.scope === 'mine' ? 'checked' : '') : wz.ft[k] ? 'checked' : ''}><span><b>${t}</b><small>${d}</small></span></label>`).join('')}
       </div>
       <label class="f"><span>Admin group ID <small>(optional: Microsoft 365 group whose members can approve and delete)</small></span><input id="wzAdmin" value="${esc(wz.ft.adminGroup)}" placeholder="00000000-0000-0000-0000-000000000000"></label></div></div>`;
       body.querySelectorAll('[data-scr]').forEach((x) => x.onchange = () => { x.checked ? wz.screens.add(x.dataset.scr) : wz.screens.delete(x.dataset.scr); });
-      body.querySelector('#wzAppr')?.addEventListener('change', (e) => (wz.approvals = e.target.checked));
+      body.querySelector('#wzAppr')?.addEventListener('change', (e) => { wz.approvals = e.target.checked; drawChain(); });
+      body.querySelector('#wzApprList')?.addEventListener('change', drawChain);
+      drawChain();
       body.querySelectorAll('[data-wtheme]').forEach((b) => b.onclick = () => { wz.theme = b.dataset.wtheme; draw(); });
       body.querySelectorAll('[data-ft]').forEach((x) => x.onchange = () => { if (x.dataset.ft === 'mine') wz.ft.scope = x.checked ? 'mine' : 'all'; else wz.ft[x.dataset.ft] = x.checked; });
       body.querySelector('#wzAdmin').oninput = (e) => (wz.ft.adminGroup = e.target.value.trim());
     }
   };
+  // approval chain editor (step 3, under the approvals queue)
+  function drawChain() {
+    const host = body.querySelector('#wzChain');
+    if (!host) return;
+    const list = wz.lists.find((l) => l.name === body.querySelector('#wzApprList')?.value);
+    if (!wz.approvals || !list) { host.innerHTML = ''; return; }
+    const people = list.columns.filter((c) => c.type === 'Person');
+    const c = wz.chain;
+    // stage 1 reuses the list's own approver/manager column when it has one
+    if (c.on && !c.touched && c.stages[0]?.approver === 'column' && !c.stages[0].column) { const pc = people.find((x) => /approv|manag|supervis/i.test(x.name)); if (pc) c.stages[0].column = pc.name; }
+    host.innerHTML = `<div class="chain-ed"><label class="chk"><input type="checkbox" id="wzChainOn" ${c.on ? 'checked' : ''}><span><b>Multi-stage approval chain</b><small>Each stage has its own approver, decision, date and comment, with a history of every decision. Off: one Approve / Reject step for admins (as before).</small></span></label>
+      ${c.on ? `<div class="chain-stages">${c.stages.map((st, i) => `<div class="chain-stage" data-st="${i}"><b class="num">${i + 1}</b><div class="grow">
+        <div class="row2"><input data-k="name" value="${esc(st.name)}" placeholder="Stage name" aria-label="Stage ${i + 1} name" maxlength="40">
+        <select data-k="who" aria-label="Stage ${i + 1} approver">${people.map((pc) => `<option value="col:${esc(pc.name)}" ${st.approver === 'column' && st.column === pc.name ? 'selected' : ''}>Person column: ${esc(pc.name)}</option>`).join('')}<option value="new" ${st.approver === 'column' && !people.some((pc) => pc.name === st.column) ? 'selected' : ''}>New column ${esc(stageCols(st).K)}Approver</option><option value="group" ${st.approver === 'group' ? 'selected' : ''}>Microsoft 365 group</option></select>
+        ${c.stages.length > 1 ? `<button class="mini" data-del="${i}" title="Remove stage" aria-label="Remove stage ${i + 1}">${ui('close')}</button>` : ''}</div>
+        ${st.approver === 'group' ? `<div class="row2"><input data-k="groupId" value="${esc(st.groupId)}" placeholder="Group object ID (can be added later in Finish setup)" aria-label="Stage ${i + 1} group ID"><input data-k="notify" value="${esc(st.notify)}" placeholder="Group mailbox for emails (optional)" aria-label="Stage ${i + 1} group mailbox"></div>` : ''}
+      </div></div>`).join('')}</div>
+      ${c.stages.length < MAX_STAGES ? `<button class="btn sm" id="wzAddStage">${ui('plus')}Add stage</button>` : ''}<p class="note">The requester can never approve their own item. Flows email each approver in turn and the requester at the end.</p>` : ''}</div>`;
+    host.querySelector('#wzChainOn').onchange = (e) => { c.on = e.target.checked; drawChain(); };
+    host.querySelector('#wzAddStage')?.addEventListener('click', () => { c.stages.push({ name: ['Manager', 'Finance', 'Director', 'Legal'].find((n) => !c.stages.some((x) => x.name === n)) || 'Stage ' + (c.stages.length + 1), approver: 'column', column: '', groupId: '', notify: '' }); drawChain(); });
+    host.querySelectorAll('[data-del]').forEach((b) => b.onclick = () => { c.stages.splice(+b.dataset.del, 1); drawChain(); });
+    host.querySelectorAll('[data-st]').forEach((row) => {
+      const st = c.stages[+row.dataset.st];
+      row.querySelectorAll('input[data-k]').forEach((x) => x.oninput = () => { st[x.dataset.k] = x.value.trim(); });
+      row.querySelector('select[data-k=who]').onchange = (e) => { c.touched = true; const v = e.target.value; if (v === 'group') st.approver = 'group'; else { st.approver = 'column'; st.column = v.startsWith('col:') ? v.slice(4) : ''; } drawChain(); };
+    });
+  }
   m.el.querySelector('#wzBack').onclick = () => { wz.step--; draw(); };
   m.el.querySelector('#wzBlank')?.addEventListener('click', () => { m.close(); });
   m.el.querySelector('#wzDemo')?.addEventListener('click', () => { m.close(); openDemo(); });
@@ -1102,7 +1236,17 @@ function wizard(first = false) {
     const approvals = wz.approvals && apprList ? (sc.approvals?.list === apprList ? sc.approvals : { list: apprList }) : null;
     if (wz.ft.adminGroup && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(wz.ft.adminGroup)) { toast('The admin group ID should look like 00000000-0000-0000-0000-000000000000 (Entra → Groups → Object ID)', true); return; }
     p.app.features = { ...wz.ft };
-    generateApp(p, { screens: [...wz.screens], approvals });
+    let chain = null;
+    if (approvals && wz.chain.on) {
+      const st = wz.chain.stages;
+      if (!st.length || st.some((x) => !x.name.trim())) { toast('Give every approval stage a name', true); return; }
+      if (new Set(st.map((x) => stageCols(x).K)).size !== st.length) { toast('Two approval stages share a name', true); return; }
+      const bad = st.find((x) => x.approver === 'group' && x.groupId && !isGuid(x.groupId));
+      if (bad) { toast(`The ${bad.name} group ID should look like 00000000-0000-0000-0000-000000000000 (Entra → Groups → Object ID)`, true); return; }
+      chain = { list: approvals.list, stages: st.map((x) => ({ ...x })) };
+    }
+    generateApp(p, { screens: [...wz.screens], approvals, chain });
+    if (p.app.chain) addChainFlows(p);
     if (!p.screens.length) p.screens.push(newScreen(p, 'scrHome'));
     m.close();
     setProject(p, true); commit();
@@ -1231,11 +1375,12 @@ function helpDialog() {
 }
 
 // ------------------------------------------------------------------ play mode
-function play() {
+function play(opts = {}) {
   commit();
   if (!P.screens.length) return;
   const bg = document.createElement('div'); bg.className = 'play-bg';
-  bg.innerHTML = `<div class="play-bar"><b>▶ ${esc(P.app.name)}</b><select id="plScr" aria-label="Jump to screen"></select><button class="tb" id="plRestart">Restart</button>${P.app.features?.adminGroup ? '<label class="pl-admin"><input type="checkbox" id="plAdmin" checked>Signed in as an admin</label>' : ''}<span class="grow">Sample data · changes are not saved · Esc to close</span><button class="tb primary" id="plClose">Close</button></div><div class="play-stage"><div class="play-frame" id="plFrame"><div class="screen" id="plScreen"></div></div></div>`;
+  const viewer = !!opts.viewer;
+  bg.innerHTML = `${viewer ? `<div class="viewer-banner" role="status"><b>Preview of ${esc(P.app.name)}</b><span>sample data · nothing you do here is saved or sent</span><span class="grow"></span><button class="tb primary" id="plCopy">Open in Studio as a copy</button></div>` : ''}<div class="play-bar"><b>▶ ${esc(P.app.name)}</b><select id="plScr" aria-label="Jump to screen"></select><button class="tb" id="plRestart">Restart</button>${P.app.features?.adminGroup ? '<label class="pl-admin"><input type="checkbox" id="plAdmin" checked>Signed in as an admin</label>' : ''}${(P.app.chain?.stages || []).some((st) => st.approver === 'group') ? '<label class="pl-admin"><input type="checkbox" id="plGroups" checked>In the approver groups</label>' : ''}<span class="grow">${viewer ? '' : 'Sample data · changes are not saved · Esc to close'}</span>${viewer ? '' : '<button class="tb primary" id="plClose">Close</button>'}</div><div class="play-stage"><div class="play-frame" id="plFrame"><div class="screen" id="plScreen"></div></div></div>`;
   document.body.appendChild(bg);
   let rt, toastTimer, focusSave = null;
   const hooks = {
@@ -1276,14 +1421,22 @@ function play() {
     if (focusSave) { const el = host.querySelector(`[data-id="${focusSave.id}"] input, [data-id="${focusSave.id}"] textarea`); if (el) { el.focus(); try { el.setSelectionRange(focusSave.s, focusSave.e); } catch { /* date inputs */ } } }
     fit();
   }
-  const start = () => { stopTimers(); timerScreen = null; rt = createRuntime(P, hooks); rt.hooks = hooks; const ad = bg.querySelector('#plAdmin'); if (ad) rt.vars.varIsAdmin = ad.checked; draw(); };
+  const start = () => { stopTimers(); timerScreen = null; rt = createRuntime(P, hooks); rt.hooks = hooks; const ad = bg.querySelector('#plAdmin'); if (ad) rt.vars.varIsAdmin = ad.checked; setGroups(); draw(); };
+  const setGroups = () => { const g = bg.querySelector('#plGroups'); if (g) for (const st of P.app.chain?.stages || []) if (st.approver === 'group') rt.vars[stageCols(st).groupVar] = g.checked; };
+  bg.querySelector('#plGroups')?.addEventListener('change', () => { setGroups(); draw(); });
   bg.querySelector('#plAdmin')?.addEventListener('change', (e) => { rt.vars.varIsAdmin = e.target.checked; draw(); });
   start();
   bg.querySelector('#plScr').onchange = (e) => { rt.api.navigate(e.target.value); draw(); };
   bg.querySelector('#plRestart').onclick = start;
   const close = () => { stopTimers(); bg.remove(); window.removeEventListener('resize', fit); document.removeEventListener('keydown', onKey, true); };
-  const onKey = (e) => { if (e.key === 'Escape') { e.stopPropagation(); close(); } };
-  bg.querySelector('#plClose').onclick = close;
+  const onKey = (e) => { if (e.key === 'Escape' && !viewer) { e.stopPropagation(); close(); } };
+  bg.querySelector('#plClose')?.addEventListener('click', close);
+  bg.querySelector('#plCopy')?.addEventListener('click', async () => {
+    const saved = loadSaved();
+    if (saved && (saved.screens || []).some((s) => (s.controls || []).length) && !(await ask('Replace your app in this browser?', `Opening a copy of ${P.app.name} replaces the app saved in this browser. Save a project file first if you want to keep it.`, 'Open copy'))) return;
+    const copy = JSON.parse(JSON.stringify(P));
+    close(); leaveViewer(copy);
+  });
   window.addEventListener('resize', fit); document.addEventListener('keydown', onKey, true);
 }
 
@@ -1361,6 +1514,7 @@ function runCmd(cmd, el) {
     case 'save': return download(core.slug(P.app.name) + '.pastudio.json', JSON.stringify(P, null, 2), 'application/json');
     case 'copyProject': return copyText(JSON.stringify(P, null, 2));
     case 'open': { const fi = $('#fileOpen'); fi.value = ''; fi.click(); return; }
+    case 'share': return shareDialog();
     case 'paste': return askText('Paste project JSON', 'Project JSON', '', true).then((t) => { if (!t) return; try { setProject(JSON.parse(t)); toast('Project opened'); } catch (e) { toast('Not a valid project: ' + e.message, true); } });
     case 'reset': return ask('Start over?', 'This clears the current project from this browser. Save a project file first if you want to keep it.', 'Start over').then((ok) => { if (ok) { setProject(core.newProject()); wizard(true); } });
   }
@@ -1378,9 +1532,12 @@ function init() {
   $('#condChip').onclick = () => { S.showCond = !S.showCond; renderCanvas(); };
   // icons in static buttons
   $('#btnUndo').innerHTML = ui('undo'); $('#btnRedo').innerHTML = ui('redo');
-  const saved = loadSaved();
-  setProject(saved || core.newProject());
-  if (!saved) wizard(true);
+  if (isShareHash(location.hash)) { P = core.newProject(); S.viewer = true; openShared(location.hash); }
+  else {
+    const saved = loadSaved();
+    setProject(saved || core.newProject());
+    if (!saved) wizard(true);
+  }
 
   $('#appName').addEventListener('input', (e) => { P.app.name = e.target.value; commitSoon(); renderPanelIf('app'); });
   $('#btnUndo').onclick = undo; $('#btnRedo').onclick = redo;
@@ -1413,11 +1570,13 @@ function init() {
 
   // panel
   const panel = $('#panel');
-  panel.addEventListener('dragstart', (e) => { const b = e.target.closest('[data-ins],[data-block]'); if (!b) return; e.dataTransfer.setData('text/pas', b.dataset.ins || 'block:' + b.dataset.block); e.dataTransfer.effectAllowed = 'copy'; });
+  panel.addEventListener('dragstart', (e) => { const b = e.target.closest('[data-ins],[data-block],[data-myblock]'); if (!b) return; e.dataTransfer.setData('text/pas', b.dataset.ins || (b.dataset.myblock ? 'myblock:' + b.dataset.myblock : 'block:' + b.dataset.block)); e.dataTransfer.effectAllowed = 'copy'; });
   panel.addEventListener('click', (e) => {
     const b = e.target.closest('button, .scrrow, .layer'); if (!b) return;
     if (b.dataset.ins) return insertControl(b.dataset.ins);
     if (b.dataset.block) return doBlock(b.dataset.block);
+    if (b.dataset.myblock) return doMyBlock(b.dataset.myblock);
+    if (b.dataset.mbcmd) return myBlockCmd(b.dataset.mbcmd, b.dataset.id);
     if (b.dataset.preset != null) { P.theme = clone(THEME_PRESETS[+b.dataset.preset]); renderPanel(); renderCanvas(); commit(); return; }
     if (b.dataset.cfix) { const [f, bg] = b.dataset.cfix.split('|'), fx = fixContrast(P.theme.colors, f, bg); const was = P.theme.colors[fx.key]; P.theme.colors[fx.key] = fx.value; P.theme.name = 'Custom'; renderPanel(); renderCanvas(); commit(); toast(`${fx.key} ${was} → ${fx.value}`); return; }
     if (b.dataset.lcmd) { S.sel = [b.dataset.id]; zMove(b.dataset.lcmd); e.stopPropagation(); return; }
@@ -1429,8 +1588,8 @@ function init() {
     const t = e.target;
     if (t.dataset.pcmd === 'blockList') { S.blockList = t.value; return; }
     if (t.dataset.th) { const k = t.dataset.th; P.theme[k] = t.type === 'checkbox' ? t.checked : k === 'radius' ? Number(t.value) : t.value; P.theme.name = 'Custom'; if (k === 'radius') $('#radVal').textContent = t.value + 'px'; renderCanvas(); commitSoon(); return; }
-    if (t.dataset.tc) { P.theme.colors[t.dataset.tc] = t.value.toUpperCase(); P.theme.name = 'Custom'; const hx = panel.querySelector(`[data-tch="${t.dataset.tc}"]`); if (hx) hx.value = t.value.toUpperCase(); renderCanvas(); commitSoon(); return; }
-    if (t.dataset.tch) { if (!isHex(t.value)) return; P.theme.colors[t.dataset.tch] = t.value.toUpperCase(); P.theme.name = 'Custom'; const sw = panel.querySelector(`[data-tc="${t.dataset.tch}"]`); if (sw) sw.value = t.value.slice(0, 7); renderCanvas(); commitSoon(); return; }
+    if (t.dataset.tc) { P.theme.colors[t.dataset.tc] = t.value.toUpperCase(); P.theme.name = 'Custom'; const hx = panel.querySelector(`[data-tch="${t.dataset.tc}"]`); if (hx) hx.value = t.value.toUpperCase(); renderCanvas(); refreshContrast(); commitSoon(); return; }
+    if (t.dataset.tch) { if (!isHex(t.value)) return; P.theme.colors[t.dataset.tch] = t.value.toUpperCase(); P.theme.name = 'Custom'; const sw = panel.querySelector(`[data-tc="${t.dataset.tch}"]`); if (sw) sw.value = t.value.slice(0, 7); renderCanvas(); refreshContrast(); commitSoon(); return; }
     if (t.dataset.appft === 'a11y') { if (t.checked) P.app.features.a11y = true; else delete P.app.features.a11y; commit(); return; }
     if (t.dataset.app) {
       const k = t.dataset.app;
@@ -1456,6 +1615,7 @@ function init() {
   insp.addEventListener('click', onInspectorClick);
 
   // files
+  $('#fileBlocks').onchange = (e) => { const f = e.target.files[0]; if (f) importBlocksFile(f); };
   $('#fileOpen').onchange = async (e) => { const f = e.target.files[0]; if (!f) return; try { setProject(JSON.parse(await f.text())); toast('Opened ' + f.name); } catch (err) { toast('Not a valid project file: ' + err.message, true); } };
   $('#fileImg').onchange = async (e) => {
     const f = e.target.files[0], c = one(); if (!f || !c) return;

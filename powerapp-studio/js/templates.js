@@ -2,6 +2,7 @@
 import { newControl, newScreen, newList, newColumn, FORM_FACTORS, allNames, slug, varSel, uid } from './core.js';
 import { readFx, missingFx, usageFx } from './emit.js';
 import { newFlow } from './flows.js';
+import { guessChainValues, chainFor, canDecideFx, canResubmitFx, queueFx, stepperTpl, ensureChainColumns, normalizeChain, stageCols } from './chain.js';
 
 
 // ---------------------------------------------------------------- scenarios (the requirements wizard)
@@ -72,8 +73,8 @@ function ctx(project, screen) {
 }
 const features = (project) => ({ loading: false, usage: false, confirm: true, stepper: true, scope: 'all', adminGroup: '', ...(project.app.features || {}) });
 export const statusCol = (list) => list.columns.find((c) => c.type === 'Choice' && /status|state|stage/i.test(c.name)) || list.columns.find((c) => c.type === 'Choice');
-const subtitleCol = (list, skip) => list.columns.find((c) => !c.builtin && c !== skip && ['Person', 'Text', 'Lookup'].includes(c.type));
-const dateCol = (list) => list.columns.find((c) => c.type === 'DateTime');
+const subtitleCol = (list, skip) => list.columns.find((c) => !c.builtin && !c.chain && c !== skip && ['Person', 'Text', 'Lookup'].includes(c.type));
+const dateCol = (list) => list.columns.find((c) => c.type === 'DateTime' && !c.chain);
 const tag = (screen) => screen.name.replace(/^scr/, '');
 const pretty = (n) => String(n).replace(/([a-z])([A-Z])/g, '$1 $2');
 const singular = (n) => pretty(n).replace(/ies$/, 'y').replace(/s$/, '');
@@ -208,6 +209,8 @@ export function sectionCard(add, name, x, y, w, title) {
   return card;
 }
 const hideStatus = (project, list) => {
+  const ch = chainFor(project, list.name);
+  if (ch) return ch.field;
   const a = project.app.approvalsCfg;
   return a && a.list === list.name ? a.field : null;
 };
@@ -237,7 +240,7 @@ export function genEdit(project, list, opts = {}) {
   const L1 = lower(list.name);
   headerBlock(project, scr, { title: 'Edit ' + L1, titleFx: `If(IsBlank(${V}.ID), "New ${L1}", "Edit ${L1}")`, back: true });
   const hidden = hideStatus(project, list);
-  const cols = list.columns.filter((c) => c.name !== hidden);
+  const cols = list.columns.filter((c) => c.name !== hidden && !c.chain);
   const groups = sections(cols);
   const BAR = 72, top = HH + 16, bottom = H - BAR - 12;
   const FIELD = 76, NOTE = 124, SEC_HEAD = 48, SEC_GAP = 14;
@@ -362,14 +365,16 @@ export function genDetail(project, list, opts = {}) {
     decide('btnReject', 'Reject', '@Danger', ap.no, pad + 22 + bw + 12, sy + sh + 8, bw);
   }
   let y = sy + sh + (phone && ap ? 60 : 12);
+  const ch = chainFor(project, list.name);
+  if (ch) y = chainDetailBlock(project, scr, list, ch, { x: pad, y, w: sw, T, has });
   // stepper
-  if (ft.stepper && st && st.choices.filter((c) => !NEG.test(c)).length >= 2) {
+  else if (ft.stepper && st && st.choices.filter((c) => !NEG.test(c)).length >= 2) {
     const h = 112;
     add('html', { name: 'htmlStepper' + T, x: pad, y, w: sw, h, props: { html: '' }, fx: { ...vis, HtmlText: stepperFx(list, st, V)(h) } });
     y += h + 12;
   }
   // sections
-  const cols = list.columns.filter((c) => !c.builtin && c !== st);
+  const cols = list.columns.filter((c) => !c.builtin && !c.chain && c !== st);
   const groups = sections(cols);
   const bottomLimit = phone ? H - 84 : H - 16;
   const people = groups.find((g) => g.title === 'People and dates');
@@ -411,6 +416,93 @@ export function genDetail(project, list, opts = {}) {
   }
   scr.onVisible = `Set(${confirmVar}, false)`;
   void L;
+  return scr;
+}
+
+/**
+ * Approval-chain part of the details screen: stepper (each step coloured from its own stage's Decision column),
+ * newest-first history, and a decision bar that always shows something (decide / waiting on / outcome + resubmit).
+ */
+function chainDetailBlock(project, scr, list, ch, { x, y, w, T, has }) {
+  const { add, phone } = ctx(project, scr), V = varSel(list.name), vis = { Visible: has };
+  const sh = 132;
+  const stW = phone ? w : Math.floor((w - 12) * 0.62);
+  add('html', { name: 'htmlChain' + T, x, y, w: stW, h: sh, props: { html: '' }, fx: { ...vis, HtmlText: hx(stepperTpl(ch, V, sh, esc)) } });
+  const hx0 = phone ? x : x + stW + 12, hy = phone ? y + sh + 12 : y, hw = phone ? w : w - stW - 12, hh = phone ? 120 : sh;
+  const card = sectionCard(add, 'SecHistory' + T, hx0, hy, hw, 'History');
+  card.h = hh; card.fx.Visible = has;
+  add('label', { name: 'lblHistory' + T, x: hx0 + 18, y: hy + 40, w: hw - 36, h: hh - 50, props: { text: '', size: 10, color: '@TextMuted', valign: 'Top' },
+    fx: { ...vis, Text: `Coalesce(${V}.ApprovalHistory, "No decisions yet.")` } });
+  y = (phone ? hy + hh : y + sh) + 12;
+  // decision bar
+  const bh = phone ? 116 : 64;
+  const can = canDecideFx(ch, V), resub = canResubmitFx(ch, V);
+  const bar = add('card', { name: 'cardDecision' + T, x, y, w, h: bh, props: { fill: '@Surface', borderColor: '@Border', borderThickness: 1, radius: 'theme', shadow: true }, fx: { ...vis } });
+  void bar;
+  const who = (st) => st.approver === 'group' ? `"${(st.groupLabel || st.name + ' group').replace(/"/g, '""')}"` : `Coalesce(${V}.${/^[A-Za-z_]\w*$/.test(st.column) ? st.column : `'${st.column}'`}.DisplayName, "the ${st.name.replace(/"/g, '""')} approver")`;
+  const stField = `${V}.${/^[A-Za-z_]\w*$/.test(ch.field) ? ch.field : `'${ch.field}'`}.Value`;
+  const stateFx = `Switch(${V}.CurrentStage, ${ch.stages.map((st, i) => `${i + 1}, "Waiting on ${st.name.replace(/"/g, '""')} approval: " & ${who(st)}`).join(', ')}, If(${stField} = "${ch.values.rejected.replace(/"/g, '""')}", "Rejected. The requester can change it and resubmit.", If(${stField} = "${ch.values.approved.replace(/"/g, '""')}", "Approved by every stage.", ${stField})))`;
+  add('label', { name: 'lblDecisionState' + T, x: x + 18, y: y + (phone ? 12 : 12), w: w - 36 - (phone ? 0 : 170), h: phone ? 44 : 40, props: { text: '', size: 12, weight: 'Semibold', color: '@Text' },
+    fx: { Visible: `${has} && !(${can})`, Text: stateFx } });
+  if (ch.resubmit) add('button', { name: 'btnResubmit' + T, x: phone ? x + 18 : x + w - 18 - 150, y: phone ? y + 60 : y + 12, w: phone ? w - 36 : 150, h: 40, props: { text: 'Resubmit', size: 12 },
+    actions: { OnSelect: [{ type: 'resubmit', list: list.name }] }, fx: { Visible: resub } });
+  const bw = 112;
+  const cx = x + 18, cw = phone ? w - 36 : w - 36 - bw * 2 - 24;
+  const cy = phone ? y + 12 : y + 12;
+  const comment = add('textinput', { name: 'txtDecisionComment' + T, x: cx, y: cy, w: cw, h: 40, props: { hint: 'Comment (required to reject)', defaultText: '', size: 12 }, fx: { Visible: can } });
+  const by = phone ? y + 64 : cy, bx = phone ? x + 18 : cx + cw + 12, pbw = phone ? Math.floor((w - 36 - 12) / 2) : bw;
+  add('button', { name: 'btnChainApprove' + T, x: bx, y: by, w: pbw, h: 40, props: { text: 'Approve', fill: '@Success', borderColor: '@Success', size: 12 },
+    actions: { OnSelect: [{ type: 'decide', list: list.name, decision: 'Approved', commentCtl: comment.name }] }, fx: { Visible: can } });
+  add('button', { name: 'btnChainReject' + T, x: bx + pbw + 12, y: by, w: pbw, h: 40, props: { text: 'Reject', fill: '@Danger', borderColor: '@Danger', size: 12 },
+    actions: { OnSelect: [{ type: 'decide', list: list.name, decision: 'Rejected', commentCtl: comment.name }] },
+    fx: { Visible: can, DisplayMode: `If(IsBlank(Trim(${comment.name}.Text)), DisplayMode.Disabled, DisplayMode.Edit)` } });
+  return y + bh + 12;
+}
+
+/** Approval queue for a chain: items at a stage the signed-in user may decide, with a decision panel (tablet). */
+export function genChainApprovals(project, list, ch, opts = {}) {
+  const scr = newScreen(project, opts.name || 'scrApprovals' + slug(list.name));
+  project.screens.push(scr);
+  const { W, H, phone, add, pad, HH } = ctx(project, scr), T = tag(scr), V = varSel(list.name);
+  headerBlock(project, scr, { title: 'Approvals', back: !!opts.back });
+  const qw = phone ? W - pad * 2 : 500, gy = HH + 56;
+  const gal = add('gallery', { name: 'galQueue' + T, x: pad - 2, y: gy, w: qw + 4, h: H - gy - 12, props: { templateSize: 84 },
+    data: { list: list.name, searchCtl: '', searchField: '', filterField: '', filterValue: '', sortField: '', sortDir: 'Ascending', chainQueue: true },
+    fx: { Items: queueFx(ch) },
+    actions: { OnSelect: [{ type: 'openItem', list: list.name, screen: phone ? (opts.detailScreen?.id || '') : '', fresh: true }] } });
+  galleryRows(project, scr, gal, list);
+  add('label', { name: 'lblQueue' + T, x: pad, y: HH + 14, w: qw, h: 32, props: { text: 'Waiting for your decision', size: 13, weight: 'Semibold', color: '@Text' },
+    fx: { Text: `"Waiting for your decision (" & CountRows(${gal.name}.AllItems) & ")"` } });
+  emptyState(project, scr, gal, { x: pad, y: gy + 60, w: qw, title: 'All caught up', hint: 'Nothing is waiting for your decision.' });
+  if (phone) return scr;
+  const px = pad + qw + 20, pw = W - px - pad;
+  const has = canDecideFx(ch, V);
+  const panel = add('card', { name: 'cardPanel' + T, x: px, y: HH + 16, w: pw, h: H - HH - 28, props: { fill: '@Surface', borderColor: '@Border', borderThickness: 1, radius: 'theme', shadow: true } });
+  add('icon', { name: 'icoPick' + T, x: px + pw / 2 - 16, y: panel.y + panel.h / 2 - 50, w: 32, h: 32, props: { icon: 'eye', color: '@TextMuted', stroke: 2 }, fx: { Visible: `!(${has})` } });
+  add('label', { name: 'lblPick' + T, x: px + 20, y: panel.y + panel.h / 2 - 10, w: pw - 40, h: 30, props: { text: `Select a ${lower(list.name)} to decide it`, size: 13, color: '@TextMuted', align: 'Center' }, fx: { Visible: `!(${has})` } });
+  add('label', { name: 'lblPanelTitle' + T, x: px + 24, y: panel.y + 20, w: pw - 48, h: 36, props: { text: 'Title', size: 17, weight: 'Semibold', color: '@Text' }, bind: { src: 'sel', list: list.name, field: list.columns[0].name }, fx: { Visible: has } });
+  add('label', { name: 'lblPanelStage' + T, x: px + 24, y: panel.y + 56, w: pw - 48, h: 24, props: { text: '', size: 11, weight: 'Semibold', color: '@Primary' },
+    fx: { Visible: has, Text: `Switch(${V}.CurrentStage, ${ch.stages.map((st, i) => `${i + 1}, "Stage ${i + 1} of ${ch.stages.length}: ${st.name.replace(/"/g, '""')}"`).join(', ')}, "")` } });
+  add('label', { name: 'lblPanelMeta' + T, x: px + 24, y: panel.y + 80, w: pw - 48, h: 24, props: { text: '', size: 11, color: '@TextMuted' },
+    fx: { Visible: has, Text: `"Submitted by " & ${V}.'Created By'.DisplayName & " on " & Text(${V}.Created, "mm/dd/yyyy")` } });
+  let y = panel.y + 116;
+  const pcols = list.columns.filter((c) => !c.builtin && !c.chain && c.name !== ch.field);
+  const ordered = [...pcols.filter((c) => c.type !== 'Note'), ...pcols.filter((c) => c.type === 'Note')];
+  const maxY = panel.y + panel.h - 150;
+  for (const col of ordered) {
+    const h = col.type === 'Note' ? 54 : 24;
+    if (y + h > maxY) break;
+    add('label', { name: 'lblPCap' + slug(col.name) + T, x: px + 24, y, w: 170, h: 24, props: { text: pretty(col.name), size: 11, weight: 'Semibold', color: '@TextMuted' }, fx: { Visible: has } });
+    add('label', { name: 'lblPVal' + slug(col.name) + T, x: px + 200, y, w: pw - 224, h, props: { text: '-', size: 12, color: '@Text', valign: 'Top' }, bind: { src: 'sel', list: list.name, field: col.name }, fx: { Visible: has } });
+    y += h + 10;
+  }
+  const by = panel.y + panel.h - 64, bw = 150;
+  const comment = add('textinput', { name: 'txtDecisionComment' + T, x: px + 24, y: by - 56, w: pw - 48, h: 40, props: { hint: 'Comment (required to reject)', defaultText: '', size: 12 }, fx: { Visible: has } });
+  add('button', { name: 'btnChainApprove' + T, x: px + pw - 24 - bw * 2 - 12, y: by, w: bw, h: 44, props: { text: 'Approve', fill: '@Success', borderColor: '@Success', size: 12 }, fx: { Visible: has },
+    actions: { OnSelect: [{ type: 'decide', list: list.name, decision: 'Approved', commentCtl: comment.name }] } });
+  add('button', { name: 'btnChainReject' + T, x: px + pw - 24 - bw, y: by, w: bw, h: 44, props: { text: 'Reject', fill: '@Danger', borderColor: '@Danger', size: 12 },
+    fx: { Visible: has, DisplayMode: `If(IsBlank(Trim(${comment.name}.Text)), DisplayMode.Disabled, DisplayMode.Edit)` },
+    actions: { OnSelect: [{ type: 'decide', list: list.name, decision: 'Rejected', commentCtl: comment.name }] } });
   return scr;
 }
 
@@ -478,7 +570,7 @@ export function genApprovals(project, list, cfg = {}) {
   add('label', { name: 'lblPanelMeta' + T, x: px + 24, y: panel.y + 56, w: pw - 48, h: 24, props: { text: '', size: 11, color: '@TextMuted' },
     fx: { Visible: has, Text: `"Submitted by " & ${V}.'Created By'.DisplayName & " on " & Text(${V}.Created, "mm/dd/yyyy")` } });
   let y = panel.y + 96;
-  const pcols = list.columns.filter((c) => !c.builtin && c !== st);
+  const pcols = list.columns.filter((c) => !c.builtin && !c.chain && c !== st);
   const ordered = [...pcols.filter((c) => c.type !== 'Note'), ...pcols.filter((c) => c.type === 'Note')];
   const maxY = panel.y + panel.h - 84;
   for (const col of ordered) {
@@ -543,6 +635,7 @@ export function genHome(project, opts = {}) {
     const gal = add('gallery', { name: 'gal' + key + T, x: x - 2, y: sy + 34, w: w + 4, h: h - 34, props: { templateSize: 72 },
       data: { list: cfg.list.name, searchCtl: '', searchField: '', filterField: cfg.filterField || '', filterValue: cfg.filterValue || '', extraFilter: cfg.extraFilter || '', sortField: 'Modified', sortDir: 'Descending' },
       actions: { OnSelect: [{ type: 'openItem', list: cfg.list.name, screen: cfg.detailScreen?.id || '', fresh: true }] } });
+    if (cfg.chainQueue) { gal.data.chainQueue = true; gal.data.sortField = ''; gal.fx.Items = queueFx(chainFor(project, cfg.list.name)); }
     galleryRows(project, scr, gal, cfg.list, { compact: true });
     emptyState(project, scr, gal, { x, y: sy + 60, w, title: cfg.emptyTitle, hint: cfg.emptyHint, button: cfg.emptyButton });
   };
@@ -616,11 +709,16 @@ export function genLoading(project, { next, lists = [] } = {}) {
 }
 
 /** Build a complete app for the project's lists (requirements wizard / Claude plan → app). */
-export function generateApp(project, { screens = ['home', 'browse', 'detail', 'edit'], approvals = null } = {}) {
+export function generateApp(project, { screens = ['home', 'browse', 'detail', 'edit'], approvals = null, chain = null } = {}) {
   project.screens = [];
   project.app.features = features(project);
   const ft = project.app.features;
   project.lists = project.lists.filter((l) => !l.system);
+  // an approval chain replaces the single-step approvals for its list
+  const chList = chain && project.lists.find((l) => l.name === chain.list);
+  const ch = chain ? normalizeChain(chain.values ? chain : { ...chain, values: guessChainValues(chList, chain.field || 'Status') }) : null;
+  if (ch && project.lists.some((l) => l.name === ch.list)) { ensureChainColumns(project, ch); project.app.chain = ch; approvals = null; }
+  else delete project.app.chain;
   const apList = approvals && project.lists.find((l) => l.name === approvals.list);
   const apCol = apList && apList.columns.find((c) => c.name === (approvals.field || statusCol(apList)?.name) && c.type === 'Choice');
   project.app.approvalsCfg = apCol ? { list: apList.name, field: apCol.name, pending: approvals.pending || apCol.choices[0], yes: approvals.yes || apCol.choices.find((c) => /approv|accept|done/i.test(c)) || apCol.choices[1], no: approvals.no || apCol.choices.find((c) => NEG.test(c)) || apCol.choices[2] } : null;
@@ -637,7 +735,12 @@ export function generateApp(project, { screens = ['home', 'browse', 'detail', 'e
     if (s.edit) tiles.push({ label: 'New ' + lower(list.name), sub: 'Fill in the form', icon: 'plus', actions: [{ type: 'newItem', list: list.name, screen: s.edit.id }] });
   }
   let apScr = null;
-  if (project.app.approvalsCfg) {
+  if (project.app.chain) {
+    const list = project.lists.find((l) => l.name === project.app.chain.list);
+    const det = byList.find(([l]) => l === list)?.[1].detail;
+    apScr = genChainApprovals(project, list, project.app.chain, { back: screens.includes('home'), detailScreen: det });
+    tiles.unshift({ label: 'Approvals', sub: 'Waiting for your decision', icon: 'check', actions: [{ type: 'navigate', screen: apScr.id }] });
+  } else if (project.app.approvalsCfg) {
     const a = project.app.approvalsCfg, list = project.lists.find((l) => l.name === a.list);
     const det = byList.find(([l]) => l === list)?.[1].detail;
     apScr = genApprovals(project, list, { ...a, back: screens.includes('home'), detailScreen: det });
@@ -658,7 +761,9 @@ export function generateApp(project, { screens = ['home', 'browse', 'detail', 'e
         link: fs.browse ? { text: 'See all', actions: [{ type: 'setVar', name: scopeVar, value: '"mine"' }, { type: 'navigate', screen: fs.browse.id }] } : null,
         emptyTitle: `You have no ${pretty(fl.name).toLowerCase()} yet`, emptyHint: 'New ones you create show up here.',
         emptyButton: fs.edit ? { text: '+ New ' + lower(fl.name), actions: [{ type: 'newItem', list: fl.name, screen: fs.edit.id }] } : null } : null,
-      waiting: person && fs?.detail ? { list: fl, title: 'Waiting on me', filterField: person.name, extraFilter: `${/^[A-Za-z_]\w*$/.test(project.app.approvalsCfg.field) ? project.app.approvalsCfg.field : `'${project.app.approvalsCfg.field}'`}.Value = "${String(project.app.approvalsCfg.pending).replace(/"/g, '""')}"`,
+      waiting: fl && fs?.detail && project.app.chain?.list === fl.name ? { list: fl, title: 'Waiting on me', chainQueue: true, detailScreen: fs.detail,
+        link: apScr ? { text: 'Open queue', actions: [{ type: 'navigate', screen: apScr.id }] } : null, emptyTitle: 'Nothing waiting on you', emptyHint: `${pretty(fl.name)} you need to decide appear here.` }
+      : person && fs?.detail ? { list: fl, title: 'Waiting on me', filterField: person.name, extraFilter: `${/^[A-Za-z_]\w*$/.test(project.app.approvalsCfg.field) ? project.app.approvalsCfg.field : `'${project.app.approvalsCfg.field}'`}.Value = "${String(project.app.approvalsCfg.pending).replace(/"/g, '""')}"`,
         detailScreen: fs.detail, link: apScr ? { text: 'Open queue', actions: [{ type: 'navigate', screen: apScr.id }] } : null, emptyTitle: 'Nothing waiting on you', emptyHint: `${pretty(fl.name)} you need to decide appear here.` } : null,
     });
   }
@@ -711,11 +816,11 @@ export function insertBlock(project, screen, key, list, at = { x: 40, y: 96 }) {
   }
   if (key === 'formFields' && list) {
     let y = at.y;
-    for (const col of list.columns) { const r = inputFor(project, screen, list, col, at.x, y, Math.min(420, W - at.x - 40)); y = r.bottom + 16; }
+    for (const col of list.columns.filter((c) => !c.chain)) { const r = inputFor(project, screen, list, col, at.x, y, Math.min(420, W - at.x - 40)); y = r.bottom + 16; }
   }
   if (key === 'detailFields' && list) {
     let y = at.y;
-    for (const col of list.columns) {
+    for (const col of list.columns.filter((c) => !c.chain)) {
       add('label', { name: 'lblCap' + slug(col.name) + T, x: at.x, y, w: 180, h: 28, props: { text: pretty(col.name), size: 11, weight: 'Semibold', color: '@TextMuted' } });
       add('label', { name: 'lblVal' + slug(col.name) + T, x: at.x + 190, y, w: 360, h: 28, props: { text: '-', size: 12, color: '@Text' }, bind: { src: 'sel', list: list.name, field: col.name } });
       y += 36;

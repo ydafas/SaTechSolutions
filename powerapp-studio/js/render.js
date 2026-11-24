@@ -4,6 +4,7 @@
 import { cssColor, displayValue, colOf, varSel, walk, sampleRows, PEOPLE, FORM_FACTORS, hasActions, slug, INPUT_TYPES } from './core.js';
 import { ICONS } from './icons.js';
 import { flowsFor, recipientsText } from './flows.js';
+import { chainFor, playDecide, playResubmit, playCanDecide, stageCols } from './chain.js';
 
 const PT = 96 / 72; // Power Apps font Size is in points
 export const FONT_CSS = {
@@ -253,6 +254,8 @@ export function createRuntime(project, hooks) {
   rt.screen = start?.id;
   for (const l of project.lists) rt.vars[varSel(l.name)] = {};
   rt.vars.varIsAdmin = true; // Play signs you in as an admin; the Play bar can switch it off
+  // Play signs you in as a member of every approval group too (the Play bar can switch it off)
+  for (const st of project.app.chain?.stages || []) if (st.approver === 'group') rt.vars[stageCols(st).groupVar] = true;
   const scr = () => project.screens.find((s) => s.id === rt.screen);
   rt.api = {
     navigate(idOrName) {
@@ -404,6 +407,32 @@ function runAction(project, rt, screen, a, row) {
       if (a.then === 'back') rt.api.back(); else if (a.then === 'navigate') toScreen(a.screen);
       break;
     }
+    case 'decide': case 'resubmit': {
+      const ch = chainFor(project, a.list);
+      const cur = rt.vars[V];
+      const r = ch && cur?.ID && (rt.db[a.list] || []).find((x) => x.ID === cur.ID);
+      if (!r) { rt.api.toast((a.type === 'decide' ? 'Decision' : 'Resubmit') + ' failed. Nothing selected.', 'error'); return false; }
+      const before = JSON.stringify(r);
+      let changed = {}, msg;
+      if (a.type === 'decide') {
+        if (!playCanDecide(ch, r, rt.vars)) { rt.api.toast('You are not the approver for this stage (or it is your own request).', 'warning'); return false; }
+        const res = playDecide(ch, r, a.decision, rt.inputs[a.commentCtl] ?? '');
+        if (res.error) { rt.api.toast(res.error, 'warning'); return false; }
+        changed = res.changed; msg = res.msg;
+        delete rt.inputs[a.commentCtl];
+      } else {
+        const old = { ...r };
+        playResubmit(ch, r);
+        for (const k of Object.keys(r)) if (JSON.stringify(old[k]) !== JSON.stringify(r[k])) changed[k] = r[k];
+        msg = 'Resubmitted for approval';
+      }
+      if (JSON.stringify(r) !== before) r.Modified = new Date().toISOString().slice(0, 10);
+      rt.vars[V] = r;
+      const fired = flowsFor(project, a.list, 'changed', changed);
+      fired.forEach((f) => rt.api.toast(`⚡ Flow "${f.name}" would email ${recipientsText(f)}`, 'flow'));
+      rt.api.toast(msg, a.decision === 'Rejected' ? 'warning' : 'success');
+      break;
+    }
     case 'custom': try { evalFx(a.fx || '', { project, rt, row }); } catch { rt.api.toast('Custom formula runs in the real app only'); } break;
   }
   return true;
@@ -414,6 +443,7 @@ function galleryRowsFor(project, rt, ctl) {
   if (!d.list && ctl.fx?.Items) { const r = tryFx(ctl.fx.Items, { project, rt }, null); if (Array.isArray(r)) return r; if (r?.__list) return [...(rt.db[r.__list] || [])]; }
   if (!d.list && d.previewList) return [...(rt?.db[d.previewList] || [])];
   let rows = [...(rt?.db[d.list] || [])];
+  if (d.chainQueue) { const ch = chainFor(project, d.list); rows = ch ? rows.filter((r) => playCanDecide(ch, r, rt.vars)).sort((a, b) => String(a.Created).localeCompare(String(b.Created))) : []; return rows; }
   if (!d.list) return [1, 2, 3, 4, 5].map((n) => ({ Value: n }));
   if (d.searchCtl && d.searchField) {
     const q = String(rt.inputs[d.searchCtl] ?? '').toLowerCase();
