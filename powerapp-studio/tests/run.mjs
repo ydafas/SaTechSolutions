@@ -17,6 +17,10 @@ const { importYaml } = await import('../js/import.js');
 const { createRuntime } = await import('../js/render.js');
 const FL = await import('../js/flows.js');
 const AI = await import('../js/ai.js');
+const DP = await import('../js/deploy.js');
+const SU = await import('../js/setup.js');
+const GD = await import('../js/guide.js');
+const { buildDemo } = await import('../js/templates.js');
 const fs = await import('node:fs');
 const FIXTURE = JSON.parse(fs.readFileSync(new URL('./fixture-plan.json', import.meta.url), 'utf8'));
 
@@ -591,6 +595,119 @@ test('old project files without features still load', () => {
   const q = core.normalizeProject({ app: { name: 'X', features: { adminGroup: '"); Remove(x' , scope: 'evil' } }, screens: [], lists: [] });
   eq(q.app.features.adminGroup, '', 'non-GUID group ID dropped');
   eq(q.app.features.scope, 'all', 'unknown scope dropped');
+});
+
+// ---------------------------------------------------------------- round 2: paste assistant
+test('deploy hash is stable and content-sensitive', () => {
+  eq(DP.hash('abc'), DP.hash('abc'), 'same input, same hash');
+  assert(DP.hash('abc') !== DP.hash('abd'), 'one character changes the hash');
+  assert(/^[0-9a-f]{8}$/.test(DP.hash('')), '8 hex chars');
+});
+
+test('deploy record survives save/load and only the edited screen turns Changed', () => {
+  const p = withFlows();
+  const steps = DP.deploySteps(p);
+  assert(steps.some((s) => s.kind === 'screen') && steps.some((s) => s.kind === 'flow') && steps.at(-1).key === 'test', 'screens, flows and the final test step');
+  assert(steps.every((s) => s.kind === 'static' || s.text || s.flow), 'every artifact step has something to copy or download');
+  eq(DP.pendingSteps(p, steps).length, steps.length, 'first deploy: everything pending');
+  for (const s of steps) DP.markDeployed(p, s);
+  const p2 = core.normalizeProject(JSON.parse(JSON.stringify(p)));
+  eq(Object.keys(p2.deployed).length, steps.length, 'record survives a JSON round trip');
+  eq(DP.pendingSteps(p2).map((s) => s.key).join(), 'test', 'nothing changed: only the final test is pending');
+  const target = p2.screens.find((s) => s.name === 'scrBrowseRequests');
+  target.controls.find((c) => c.type === 'label').props.text = 'Something new';
+  const pend = DP.pendingSteps(p2).map((s) => s.key);
+  eq(JSON.stringify(pend), JSON.stringify(['scr:' + target.id, 'test']), 'exactly that screen changed');
+  p2.flows[0].subject = 'Changed subject';
+  assert(DP.pendingSteps(p2).some((s) => s.key === 'flow:' + p2.flows[0].id), 'editing a flow flips that flow');
+  const gone = p2.screens.pop();
+  assert(DP.removedSinceDeploy(p2).some((r) => r.key === 'scr:' + gone.id && r.name === gone.name), 'removed screens are reported by name');
+});
+
+test('normalizeProject cleans a hostile or missing deploy record', () => {
+  const p = build('tasks');
+  p.deployed = { 'scr:<img onerror=1>': { hash: 'zz' }, formulas: { hash: 'nothex!', at: 5 }, onstart: 'x' };
+  core.normalizeProject(p);
+  eq(JSON.stringify(Object.keys(p.deployed)), '["formulas"]', 'bad keys dropped');
+  eq(p.deployed.formulas.hash, '', 'bad hash blanked');
+  const q = build('tasks'); delete q.deployed; core.normalizeProject(q);
+  eq(JSON.stringify(q.deployed), '{}', 'missing record becomes empty');
+});
+
+// ---------------------------------------------------------------- round 2: finish setup
+test('Finish setup clears PS045 after Describe without a site URL', () => {
+  const { project: p } = AI.specToProject(FIXTURE, {});
+  assert(codes(p).has('PS045'), 'PS045 before');
+  const item = SU.setupItems(p).find((i) => i.id === 'siteUrl');
+  assert(item && !item.done && item.codes.includes('PS045'), 'site URL item maps to PS045');
+  SU.applySetup(p, 'siteUrl', 'not a url');
+  assert(!SU.setupItems(p).find((i) => i.id === 'siteUrl').done, 'invalid URL not done');
+  SU.applySetup(p, 'siteUrl', 'https://contoso.sharepoint.com/sites/Team');
+  assert(!codes(p).has('PS045'), 'every PS045 cleared');
+  assert(SU.setupItems(p).find((i) => i.id === 'siteUrl').done, 'item ticked');
+});
+
+test('Finish setup: app link, email-link screen, admin GUID, usage confirmation', () => {
+  const p = withFlows(); p.app.appLink = ''; delete p.app.deepLink;
+  const ids = SU.openSetupItems(p).map((i) => i.id);
+  assert(ids.includes('appLink') && ids.includes('deepLink'), 'link items open: ' + ids);
+  SU.applySetup(p, 'appLink', 'https://apps.powerapps.com/play/e/x/a/y?tenantId=z');
+  const det = p.screens.find((s) => s.name === 'scrDetailRequests');
+  SU.applySetup(p, 'deepLink', { screen: det.id });
+  eq(p.app.deepLink.list, 'Requests', 'list inferred from the screen');
+  assert(!SU.openSetupItems(p).length, 'all done');
+  assert(!codes(p).has('PS047'), 'PS047 cleared');
+  const q = buildFt('requests');
+  q.app.features.adminGroup = '';
+  assert(SU.openSetupItems(q).some((i) => i.id === 'adminGroup'), 'admin-gated app without a group asks for it');
+  eq(SU.applySetup(q, 'adminGroup', 'abc'), false, 'bad GUID refused');
+  eq(SU.applySetup(q, 'adminGroup', '11111111-2222-3333-4444-555555555555'), true, 'GUID accepted');
+  assert(!SU.openSetupItems(q).some((i) => i.id === 'adminGroup'), 'admin item done');
+  assert(SU.openSetupItems(q).some((i) => i.id === 'usageList'), 'usage list needs confirming');
+  SU.applySetup(q, 'usageList', true);
+  assert(!SU.openSetupItems(q).length, 'nothing left');
+  const r = core.normalizeProject(JSON.parse(JSON.stringify(q)));
+  assert(r.app.setup.usageConfirmed === true, 'confirmation survives load');
+});
+
+// ---------------------------------------------------------------- round 2: customer guide
+test('guide test cases cover every flow, decision, save screen and delete', () => {
+  const p = buildFt('requests');
+  p.flows = ['created', 'statusChanged', 'reminder', 'button'].map((k) => FL.newFlow(p, k, 'Requests'));
+  p.app.siteUrl = 'https://contoso.sharepoint.com/sites/T';
+  const cases = GD.guideCases(p), area = (a) => cases.filter((c) => c.area === a).length;
+  eq(area('Flow'), p.flows.length, 'one case per enabled flow');
+  const acts = GD.appActions(p);
+  const decisions = new Set(acts.filter((x) => x.a.type === 'setField').map((x) => `${x.a.list}|${x.a.field}|${x.a.value}`));
+  eq(area('Decision'), decisions.size, 'one case per distinct decision');
+  const saveScreens = new Set(acts.filter((x) => x.a.type === 'save').map((x) => x.screen.id + x.a.list));
+  eq(area('Create'), saveScreens.size, 'one create case per save screen');
+  eq(area('Delete'), new Set(acts.filter((x) => x.a.type === 'delete').map((x) => x.a.list)).size, 'one delete case per list');
+  assert(area('Start') === 1 && area('Access') === 1, 'loading and admin cases');
+  cases.forEach((c, i) => eq(c.id, 'TC' + String(i + 1).padStart(2, '0'), 'numbered'));
+});
+
+test('guide HTML is self-contained', () => {
+  const p = buildDemo(core.newProject);
+  const html = GD.guideHtml(p, { thumbs: { [p.screens[0].id]: '<div class="pa-ctl"><img src="https://evil.example/x.png"></div>' }, css: '.pa-ctl{position:absolute}' });
+  assert(html.startsWith('<!DOCTYPE html>'), 'a full page');
+  assert(!/(src|href)\s*=\s*["'](https?:)?\/\//i.test(html), 'no external src or href');
+  assert(!/url\(\s*["']?(https?:)?\/\//i.test(html), 'no external CSS urls');
+  assert(!/<link\b/i.test(html), 'no stylesheet links');
+  for (const f of p.flows) assert(html.includes(f.name.replace(/&/g, '&amp;')), 'flow listed: ' + f.name);
+  assert(html.includes('<svg') && html.includes('Lifecycle'), 'lifecycle diagram');
+  eq((html.match(/class="card tc"/g) || []).length, GD.guideCases(p).length, 'every case rendered');
+});
+
+// ---------------------------------------------------------------- round 2: demo
+test('the demo is lint-clean, fully set up and paste-safe', () => {
+  const p = buildDemo(core.newProject);
+  eq(E.lint(p).filter((x) => x.level !== 'info').length, 0, 'no lint errors or warnings: ' + E.lint(p).filter((x) => x.level !== 'info').map((x) => x.code + ' ' + x.msg).join('; '));
+  eq(SU.openSetupItems(p).length, 0, 'setup complete');
+  eq(p.flows.length, 2, 'two flows');
+  assert(p.screens[0].name === 'scrLoading', 'starts on the loading screen');
+  const seen = new Set();
+  for (const s of p.screens) checkScreenYaml(E.screenYaml(p, s), seen);
 });
 
 await Promise.all(pending);

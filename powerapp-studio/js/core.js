@@ -270,6 +270,14 @@ export function normalizeProject(p) {
   for (const sc of p.screens || []) if (sc && sc.role !== undefined && typeof sc.role !== 'string') delete sc.role;
   if (p.app.deepLink && typeof p.app.deepLink === 'object') p.app.deepLink = { screen: String(p.app.deepLink.screen || ''), list: String(p.app.deepLink.list || '') }; else delete p.app.deepLink;
   if (p.app.flowSample && typeof p.app.flowSample !== 'object') delete p.app.flowSample;
+  const su = p.app.setup && typeof p.app.setup === 'object' ? p.app.setup : {};
+  p.app.setup = { usageConfirmed: !!su.usageConfirmed, ...(typeof su.adminDraft === 'string' && su.adminDraft ? { adminDraft: su.adminDraft.slice(0, 60) } : {}) };
+  const dep = p.deployed && typeof p.deployed === 'object' && !Array.isArray(p.deployed) ? p.deployed : {};
+  p.deployed = {};
+  for (const [k, v] of Object.entries(dep)) {
+    if (!/^(lists|app|datasources|formulas|onstart|startscreen|test|scr:[A-Za-z0-9_-]{1,40}|flow:[A-Za-z0-9_-]{1,40})$/.test(k) || !v || typeof v !== 'object') continue;
+    p.deployed[k] = { hash: /^[0-9a-f]{0,8}$/.test(String(v.hash ?? '')) ? String(v.hash ?? '') : '', at: String(v.at || '').slice(0, 40), name: String(v.name || '').slice(0, 120) };
+  }
   p.flows = Array.isArray(p.flows) ? p.flows : [];
   const KINDS = ['created', 'statusChanged', 'reminder', 'button'];
   for (const f of p.flows) {
