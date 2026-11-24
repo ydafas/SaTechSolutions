@@ -607,7 +607,7 @@ export function renderControl(ctl, env) {
     case 'html':
       if (play && ctl.attachSlot && attachOn(env.project, ctl.attachSlot.list)) { playAttachments(el, ctl, env, C, font); break; }
       { const src = ctl.fx?.HtmlText ? tryFx(ctl.fx.HtmlText, env, null) : p.html;
-        el.innerHTML = `<div class="pa-html" style="font-family:${font};color:${C('@Text')}">${src == null ? '<code style="opacity:.6">ƒx HtmlText</code>' : sanitizeHtml(String(src))}</div>`; }
+        el.innerHTML = `<div class="pa-html" style="font-family:${font};color:${C('@Text')}${p.scroll ? ';overflow:auto' : ''}">${src == null ? '<code style="opacity:.6">ƒx HtmlText</code>' : sanitizeHtml(String(src))}</div>`; }
       if (hasActions(ctl)) runSel();
       break;
     case 'textinput': case 'person': {

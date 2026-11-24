@@ -141,19 +141,46 @@ const SP = 'shared_sharepointonline', O365 = 'shared_office365';
 const host = (conn, op) => ({ connectionName: conn, operationId: op, apiId: `/providers/Microsoft.PowerApps/apis/${conn}` });
 const spParams = (project, flow, extra = {}) => ({ dataset: String(project.app.siteUrl || '').trim().replace(/\/+$/, ''), table: flow.list, ...extra });
 
-function sendEmail(project, flow, runAfter) {
+function sendEmail(project, flow, runAfter, to = recipientsExpr(project, flow), subjectPrefix = '') {
   return {
     runAfter, type: 'OpenApiConnection',
     inputs: {
       host: host(O365, 'SendEmailV2'),
       parameters: {
-        'emailMessage/To': recipientsExpr(project, flow),
-        'emailMessage/Subject': interpolate(project, flow, flow.subject),
+        'emailMessage/To': to,
+        'emailMessage/Subject': subjectPrefix + interpolate(project, flow, flow.subject),
         'emailMessage/Body': interpolate(project, flow, flow.body, true),
         'emailMessage/Importance': 'Normal',
       },
       authentication: "@parameters('$authentication')",
     },
+  };
+}
+
+/** True when a recipient comes from a Person column, which can be blank on the item. */
+export const hasColumnRecipient = (flow) => (flow.recipients || []).some((r) => r.kind === 'column' && r.value);
+/**
+ * The email step(s). When a recipient comes from a Person column, a blank column used to fail the run with
+ * "BadRequest: To field cannot be empty" (seen in a real tenant). Then the step becomes: Compose the To line,
+ * send only when it holds an address, otherwise send to the fallback (Created By or a fixed address) or skip.
+ * Returns { actions, last } where last is the action name later steps run after.
+ */
+function emailSteps(project, flow, runAfter) {
+  if (!hasColumnRecipient(flow)) return { actions: { 'Send_an_email_(V2)': sendEmail(project, flow, runAfter) }, last: 'Send_an_email_(V2)' };
+  const fb = String(flow.fallback || '').trim();
+  const fbTo = fb === 'author' ? `@{${tokenExpr(project, flow, 'Author.Email')}}` : /@/.test(fb) ? fb : '';
+  const elseActions = fbTo ? { Send_to_fallback: sendEmail(project, flow, {}, fbTo, '[No recipient on the item] ') } : {};
+  return {
+    actions: {
+      Compose_recipients: { runAfter, type: 'Compose', inputs: recipientsExpr(project, flow) },
+      Check_recipients: {
+        actions: { 'Send_an_email_(V2)': sendEmail(project, flow, {}, "@{outputs('Compose_recipients')}") },
+        else: { actions: elseActions },
+        expression: { and: [{ not: { equals: ["@trim(replace(string(outputs('Compose_recipients')), ';', ''))", ''] } }] },
+        runAfter: { Compose_recipients: ['Succeeded'] }, type: 'If',
+      },
+    },
+    last: 'Check_recipients',
   };
 }
 
@@ -165,7 +192,7 @@ export function flowDefinition(project, flow) {
       recurrence: { interval: 1, frequency: 'Minute' }, splitOn: "@triggerOutputs()?['body/value']", type: 'OpenApiConnection',
       inputs: { host: host(SP, 'GetOnNewItems'), parameters: spParams(project, flow), authentication: "@parameters('$authentication')" },
     };
-    actions['Send_an_email_(V2)'] = sendEmail(project, flow, {});
+    Object.assign(actions, emailSteps(project, flow, {}).actions);
   }
   if (flow.kind === 'statusChanged') {
     const iname = internalName(flow.statusField || 'Status');
@@ -185,7 +212,7 @@ export function flowDefinition(project, flow) {
     const vals = (flow.statusValues || []).filter(Boolean);
     const valueRef = `@triggerOutputs()?['body/${iname}/Value']`;
     actions.Condition = {
-      actions: { 'Send_an_email_(V2)': sendEmail(project, flow, {}) }, else: { actions: {} },
+      actions: emailSteps(project, flow, {}).actions, else: { actions: {} },
       expression: vals.length ? { and: [changed, { or: vals.map((v) => ({ equals: [valueRef, v] })) }] } : { and: [changed] },
       runAfter: { Get_changes: ['Succeeded'] }, type: 'If',
     };
@@ -209,7 +236,7 @@ export function flowDefinition(project, flow) {
       runAfter: {}, type: 'OpenApiConnection',
       inputs: { host: host(SP, 'GetItems'), parameters: spParams(project, flow, { ...(filters.length ? { $filter: filters.join(' and ') } : {}), $top: 500 }), authentication: "@parameters('$authentication')" },
     };
-    actions.Apply_to_each = { foreach: "@outputs('Get_items')?['body/value']", actions: { 'Send_an_email_(V2)': sendEmail(project, flow, {}) }, runAfter: { Get_items: ['Succeeded'] }, type: 'Foreach' };
+    actions.Apply_to_each = { foreach: "@outputs('Get_items')?['body/value']", actions: emailSteps(project, flow, {}).actions, runAfter: { Get_items: ['Succeeded'] }, type: 'Foreach' };
   }
   if (flow.kind === 'button') {
     triggers.manual = {
@@ -220,9 +247,10 @@ export function flowDefinition(project, flow) {
       runAfter: {}, type: 'OpenApiConnection',
       inputs: { host: host(SP, 'GetItem'), parameters: spParams(project, flow, { id: "@triggerBody()['number']" }), authentication: "@parameters('$authentication')" },
     };
-    actions['Send_an_email_(V2)'] = sendEmail(project, flow, { Get_item: ['Succeeded'] });
+    const em = emailSteps(project, flow, { Get_item: ['Succeeded'] });
+    Object.assign(actions, em.actions);
     actions.Respond_to_a_PowerApp_or_flow = {
-      runAfter: { 'Send_an_email_(V2)': ['Succeeded'] }, type: 'Response', kind: 'PowerApp',
+      runAfter: { [em.last]: ['Succeeded'] }, type: 'Response', kind: 'PowerApp',
       inputs: { statusCode: 200, body: { result: 'Sent' }, schema: { type: 'object', properties: { result: { title: 'result', 'x-ms-dynamically-added': true, type: 'string' } } } },
     };
   }
@@ -338,5 +366,7 @@ export function flowLint(project, add) {
     if (/\{Link\}/.test(f.body + f.subject) && !String(project.app.appLink || '').trim()) add('warn', 'PS047', where, '{Link} needs the app web link on the App tab (Apps → Details → Web link). Until then it sends only the item ID.');
     if (/\{Link\}/.test(f.body + f.subject) && project.app.appLink && !deepLinkInfo(project)) add('warn', 'PS047', where, 'Pick the screen that opens an item from an email link on the App tab, or the link will just open the start screen.');
     for (const r of f.recipients || []) if (r.kind === 'column' && !list.columns.some((c) => c.name === r.value && c.type === 'Person')) add('error', 'PS044', where, `Recipient column ${r.value || '(none)'} is not a Person column of ${list.name}.`);
+    const optional = (f.recipients || []).filter((r) => r.kind === 'column' && list.columns.some((c) => c.name === r.value && c.type === 'Person' && !c.required)).map((r) => r.value);
+    if (optional.length && !(f.recipients || []).some((r) => r.kind !== 'column') && !String(f.fallback || '').trim()) add('info', 'PS062', where, `${optional.join(', ')} is optional, so some items have nobody to email; the flow then skips the email. Make the column required (Data tab) or pick "If nobody to email" in the flow editor.`);
   }
 }

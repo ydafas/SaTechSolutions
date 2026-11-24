@@ -851,7 +851,7 @@ function inspControl(f) {
   }
   if (c.type === 'rect') content.push(colorField('props.fill', p.fill, 'Fill'), colorField('props.borderColor', p.borderColor, 'Border color'), F('Border', inp('props.borderThickness', p.borderThickness, 'num')));
   if (c.type === 'image') content.push(`<div class="f"><span>Image</span><div class="btns"><button class="btn sm" data-cmd="pickImg">${ui('upload')}Upload</button>${p.src ? '<button class="btn sm danger" data-cmd="clearImg">Remove</button>' : ''}</div></div>`, F('Or image URL / data URI', inp('props.src', p.src && p.src.startsWith('data:') ? '(embedded image)' : p.src, 'str', p.src?.startsWith('data:') ? 'disabled' : '')), F('Fit', pick('props.fit', ['Fit', 'Fill', 'Stretch', 'Center', 'Tile'], p.fit)));
-  if (c.type === 'html') content.push(F('HTML <small>(inline styles only)</small>', ta('props.html', p.html, '', 6)));
+  if (c.type === 'html') content.push(F('HTML <small>(inline styles only)</small>', ta('props.html', p.html, '', 6)), chk('props.scroll', p.scroll, 'Allow scrolling (otherwise content is clipped to the box, so no scrollbar can appear)'));
   if (['textinput', 'person'].includes(c.type)) {
     content.push(F('Hint text', inp('props.hint', p.hint)));
     if (c.type === 'textinput' && !c.field) content.push(F('Default text', inp('props.defaultText', p.defaultText)), chk('props.multiline', p.multiline, 'Multiple lines'), chk('props.numeric', p.numeric, 'Numbers only'));
