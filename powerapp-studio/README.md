@@ -8,7 +8,7 @@ A browser-only Power Apps canvas app designer for satechitsolutions.com. There i
 2. **Designer**: drag-and-drop canvas, gallery templates, inputs bound to columns, an actions builder, Visible rules, Power Fx overrides, layers, undo, copy and paste, alignment tools.
 3. **Theme**: presets, 16 color tokens, font, corner radius. These are emitted as one `appTheme` named formula.
 4. **Play**: runs the app against sample data, including search, open, edit, save, delete, approve/reject, variables and people pickers.
-5. **Get YAML**: App.Formulas, App.OnStart, App.StartScreen and one paste-ready YAML block per screen. It also produces a lint report, a PnP provisioning script, the project JSON and a zip of everything.
+5. **Get YAML**: App.Formulas, App.OnStart, App.StartScreen and one paste-ready YAML block per screen. It also produces a lint report, a provisioning script (PnP PowerShell, or a GCC High / DoD flavour; see below), the project JSON and a zip of everything.
 6. **Import**: paste YAML copied from Power Apps Studio (or a `Src/*.pa.yaml` file) to keep editing it here.
 7. **Flows**: Power Automate flows for the app's lists, exported as legacy flow packages. There are four templates: email on a new item, email when a Choice column changes, a daily reminder, and a flow a button runs. The email editor uses `{Column}` tokens and `{Link}`, which deep-links into the app. Play mode shows which flows would fire.
 8. **Describe your app** (uses Claude): write requirements in plain English. Claude returns a plan of lists, screens, approvals and flows, which you review and refine before the studio builds it. It uses the visitor's own Anthropic API key.
@@ -56,7 +56,7 @@ These templates passed the harness and the skill's `screen_tool.py check`, but h
 | `index.html`, `studio.css` | Shell and styles (SaTech ink and cyan) |
 | `js/core.js` | Project model and JSDoc types, control catalog, column types, theme presets, sample data, `renameCopy` (unique names for copies), `normalizeProject` (makes loaded and shared projects safe) |
 | `js/fx.js` | Power Fx builders for the field-tested shapes: `ifErrorFx`, `upsertBaseFx`, `rebaseFx`, `spUserFx` / `meUserFx`, `recordFx`, `equalsFx`, `notifyFx`, `navigateFx` |
-| `js/emit.js` | YAML and Power Fx generation, deploy checklist, PnP script, lint (`LINT_RULES`) |
+| `js/emit.js` | YAML and Power Fx generation, deploy checklist, provisioning scripts (PnP and GCC High), lint (`LINT_RULES`) |
 | `js/scenarios.js` | Round 6: `buildScenario` (one call from a gallery card to a finished app with options, chain and flows), gallery summaries |
 | `js/attach.js` | Round 6: attachments placeholders, form names, loader line, Paste assistant text |
 | `js/versionstore.js` | Round 6: Version history in IndexedDB, with a localStorage fallback |
@@ -421,3 +421,16 @@ With none of them on, chain output is unchanged.
 **Deliberate output changes.** Details-screen section titles (and the chain's History title) now hide with their cards; before, they floated over the "nothing selected" state. Edit forms on phones too long for the screen shorten their multi-line boxes instead of running under the Save bar (no shipped scenario before round 6 was affected). Everything else is byte-identical to round 5 when the new features are off.
 
 **Needs a tenant test:** the attachments form pattern end to end with these names, the reassign Patch of a Person column from a people-picker variable, the `With({sla: …})` overdue formulas in a gallery, and the reminder flow's OData filter on `StageSince`.
+
+## Provisioning script: PnP or GCC High / DoD
+
+Get YAML → *Provisioning script* has two flavours. They create the same lists and columns, in the same order (lookup targets first), and both are safe to re-run (existing lists and columns print `[exists]` and are left alone).
+
+- **PnP PowerShell** (`Provision-Lists.ps1`): `Connect-PnPOnline -Interactive` and `Add-PnPFieldFromXml`. For commercial and GCC tenants.
+- **GCC High / DoD** (`Provision-Lists-GCCHigh.txt`): no PnP. It's a self-contained script you open in Notepad and paste into a PowerShell window:
+  - It loads MSAL.PS from a local path (`$MsalModulePath`, default `C:\eclipse\msal.ps`), which avoids the execution-policy error.
+  - `Connect-DoD365Interactive` signs in with `Get-MsalToken -Interactive` (CAC/PIV) against `https://login.microsoftonline.us`, with redirect URI `urn:ietf:wg:oauth:2.0:oob`.
+  - It then calls SharePoint REST with a request digest. Lists are created through `/_api/web/lists` (BaseTemplate 100), columns through `fields/createfieldasxml` with the same field XML as the PnP flavour (Options 8), and attachments and optional-Title settings through MERGE calls.
+  - The EDIT ME block holds the tenant ID, client ID, SharePoint resource and site URL. The resource and site are filled in from *Finish setup → Site URL* when it's set.
+
+Which flavour you get by default depends on the site URL: one on `sharepoint.us` or `sharepoint-mil.us` gives GCC High, anything else gives PnP. Clicking a flavour button saves the choice with the project (`app.scriptKind`). The paste assistant's *SharePoint lists* step and the zip use the same choice.

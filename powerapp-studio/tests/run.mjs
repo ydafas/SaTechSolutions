@@ -270,6 +270,27 @@ test('provisioning script creates lookup targets first', () => {
   assert(ps.includes('Add-PnPFieldFromXml'), 'uses field XML');
 });
 
+test('GCC High provisioning script: MSAL.PS + REST, same lists, no PnP', () => {
+  const p = build('events');
+  const gcc = E.provisioningScript(p, 'gcc'), pnp = E.provisioningScript(p, 'pnp');
+  assert(!/PnP/.test(gcc.replace(/No PnP needed/g, '')), 'no PnP cmdlets');
+  assert(gcc.includes("Import-Module -Name $MsalModulePath") && gcc.includes("'C:\\eclipse\\msal.ps'"), 'local MSAL.PS import');
+  assert(/# ===== EDIT ME =====[\s\S]*TenantId[\s\S]*ClientId[\s\S]*\$SiteUrl[\s\S]*# ===================/.test(gcc), 'EDIT ME block');
+  assert(/Get-MsalToken[\s\S]*-Interactive/.test(gcc) && gcc.includes('login.microsoftonline.us') && gcc.includes('urn:ietf:wg:oauth:2.0:oob'), 'interactive US Gov sign-in');
+  assert(gcc.includes('X-RequestDigest') && gcc.includes('createfieldasxml') && gcc.includes('SP.XmlSchemaFieldCreationInformation') && gcc.includes('Options = 8'), 'REST field creation');
+  assert(gcc.indexOf("Ensure-List 'Events'") < gcc.indexOf("Ensure-List 'Registrations'"), 'lookup targets first');
+  assert(/\$targetId = Get-ListId 'Events'/.test(gcc) && gcc.includes("List='{\" + $targetId + \"}'"), 'lookup uses the target list id');
+  assert(gcc.indexOf('Connect-DoD365Interactive\n') > gcc.indexOf('function Connect-DoD365Interactive'), 'signs in after defining helpers');
+  const fields = (s) => (s.match(/^Ensure-Field .*$/gm) || []).map((l) => l.replace(/\$target(Id|\.Id)/, 'X'));
+  eq(JSON.stringify(fields(gcc)), JSON.stringify(fields(pnp)), 'same field XML as the PnP flavour');
+  eq(E.scriptKind(p), 'pnp', 'commercial default');
+  p.app.siteUrl = 'https://dod365.sharepoint-mil.us/sites/MDA-Test';
+  eq(E.scriptKind(p), 'gcc', 'detects a sharepoint-mil.us site');
+  assert(E.provisioningScript(p).includes("$SiteUrl = 'https://dod365.sharepoint-mil.us/sites/MDA-Test'") && E.provisioningScript(p).includes("Resource    = 'https://dod365.sharepoint-mil.us'"), 'site and resource filled from the site URL');
+  eq(E.scriptFileName(p), 'Provision-Lists-GCCHigh.txt', '.txt for GCC High');
+  p.app.scriptKind = 'pnp'; eq(E.scriptKind(p), 'pnp', 'saved choice wins');
+});
+
 // ---------------------------------------------------------------- flows
 function withFlows() {
   const p = build('requests');
@@ -1113,7 +1134,7 @@ test('approval chain: Play walks approve → next stage → final, reject needs 
 });
 test('approval chain: default output is byte-identical to round 3', () => {
   const out = [];
-  const dump = (p) => { out.push(E.themeFormulas(p), E.onStartFx(p), E.provisioningScript(p), JSON.stringify(E.checklist(p))); for (const s of p.screens) out.push(E.screenYaml(p, s)); for (const f of p.flows || []) out.push(JSON.stringify(FL.flowDefinition(p, f))); };
+  const dump = (p) => { out.push(E.themeFormulas(p), E.onStartFx(p), E.provisioningScript(p, 'pnp'), JSON.stringify(E.checklist(p))); for (const s of p.screens) out.push(E.screenYaml(p, s)); for (const f of p.flows || []) out.push(JSON.stringify(FL.flowDefinition(p, f))); };
   const navy = () => core.clone(core.THEME_PRESETS.find((t) => t.name === 'Federal Navy'));
   // the scenarios that existed in round 3 (later rounds add more; their output is covered by their own tests)
   for (const sc of ['requests', 'assets', 'events', 'tasks', 'contacts', 'blank'].map((k) => SCENARIOS[k])) for (const ff of ['tablet', 'phone']) {
@@ -1124,6 +1145,7 @@ test('approval chain: default output is byte-identical to round 3', () => {
   // sha256 of the same output on origin/main 308cbb9 (round 3)
   // round 6: detail section titles now hide with their cards (Visible: has)
   // tenant fix 1: HtmlViewer boxes get 2px slack + clip (grey scrollbars in a real tenant); flows guard blank Person recipients
+  // GCC High script: x.sharepoint.us now defaults to the GCC High flavour, so the dump pins the PnP one
   eq(createHash('sha256').update(out.join('\n')).digest('hex'), 'ddf433e886bc52c8055ecc22e8b8c789ced58d977f8dabd3c94f7b473655416d', 'output hash');
   assert(!r.project.app.chain, 'the round-3 plan fixture (no stages) stays a single approvals queue');
 });
@@ -1473,6 +1495,13 @@ test('history: snapshot, diff, restore and cap', () => {
 
 // ---------------------------------------------------------------- round 6: scenario gallery
 const SC6 = await import('../js/scenarios.js');
+
+test('GCC High script for Leave requests: every column, attachments, optional Title', () => {
+  const lv = SC6.buildScenario('leave'); lv.lists.forEach((l) => { l.attachments = true; });
+  const g = E.provisioningScript(lv, 'gcc');
+  for (const c of lv.lists[0].columns.filter((c) => !c.builtin)) assert(g.includes(`Ensure-Field 'LeaveRequests' '${E.internalName ? E.internalName(c.name) : c.name}'`) || g.includes(`'${c.name}'`), 'column ' + c.name);
+  assert(g.includes("Set-ListProps 'LeaveRequests' @{ EnableAttachments = $true }"), 'attachments on');
+});
 const NEW_SCENARIOS = ['workorders', 'checkout', 'incidents', 'onboarding', 'leave', 'policies'];
 /** What Finish setup fills in, so lint judges the app rather than the missing setup values. */
 function setupDone(p) {

@@ -1,7 +1,7 @@
 // deploy.js — Paste Assistant model: the ordered deploy steps for a project, a stable hash of
 // every artifact a step pastes or imports, and change tracking against what was last deployed.
 // Pure functions (no DOM) so the tests can drive them. The UI lives in ui.js (deployView).
-import { screenYaml, themeFormulas, onStartFx, startScreenFx, usedLists, usesPeople, provisioningScript } from './emit.js';
+import { screenYaml, themeFormulas, onStartFx, startScreenFx, usedLists, usesPeople, provisioningScript, scriptKind } from './emit.js';
 import { flowDefinition, flowFxName, flowFileName } from './flows.js';
 import { FORM_FACTORS } from './core.js';
 import { attachSlots, attachHow, attachCopyText } from './attach.js';
@@ -26,8 +26,8 @@ export function deploySteps(project) {
   if (project.lists.length) {
     const t = provisioningScript(project);
     steps.push({ key: 'lists', kind: 'lists', title: 'SharePoint lists', text: t, copyLabel: 'Copy provisioning script',
-      how: `Create ${project.lists.map((l) => `"${l.name}"`).join(', ')} on your site, by hand or with this PnP PowerShell script (fill in its EDIT ME block). Skip this step if the lists already exist with these columns.`,
-      hash: hash(JSON.stringify(project.lists.map((l) => [l.name, l.columns.map((c) => [c.name, c.type, c.required, c.choices, c.lookupList])])) + (project.app.features?.usage ? '+usage' : '') + project.lists.filter((l) => l.attachments).map((l) => '+att:' + l.name).join('')) });
+      how: `Create ${project.lists.map((l) => `"${l.name}"`).join(', ')} on your site, by hand or with this ${scriptKind(project) === 'gcc' ? 'GCC High script (MSAL.PS sign-in + SharePoint REST; paste into PowerShell)' : 'PnP PowerShell script'} (fill in its EDIT ME block; switch flavour in Get YAML → Provisioning script). Skip this step if the lists already exist with these columns.`,
+      hash: hash(JSON.stringify(project.lists.map((l) => [l.name, l.columns.map((c) => [c.name, c.type, c.required, c.choices, c.lookupList])])) + (project.app.features?.usage ? '+usage' : '') + project.lists.filter((l) => l.attachments).map((l) => '+att:' + l.name).join('') + scriptKind(project)) });
   }
   steps.push({ key: 'app', kind: 'static', title: 'Blank canvas app', hash: hash(project.app.formFactor),
     how: `In Power Apps, create a blank canvas app in ${project.app.formFactor === 'phone' ? 'Phone' : 'Tablet'} format (${ff.w} × ${ff.h}). Skip this when you are updating an app you already deployed.` });
