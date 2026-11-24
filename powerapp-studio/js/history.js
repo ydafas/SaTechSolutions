@@ -120,3 +120,50 @@ export function describeDiff(d) {
   if (keys.length) out.push(`App settings changed: ${keys.map((k) => appNames[k] || k).join(', ')}`);
   return out;
 }
+
+// ------------------------------------------------------------------ YAML line diff
+/**
+ * Line diff of two texts (LCS). Returns rows {t: ' ' | '+' | '-' | '…', s} with `ctx` unchanged lines kept around
+ * each change and longer unchanged runs folded into one '…' row. Long inputs are trimmed to their changed middle first.
+ */
+export function lineDiff(a, b, ctx = 2) {
+  const A = String(a).split('\n'), B = String(b).split('\n');
+  let pre = 0; while (pre < A.length && pre < B.length && A[pre] === B[pre]) pre++;
+  let suf = 0; while (suf < A.length - pre && suf < B.length - pre && A[A.length - 1 - suf] === B[B.length - 1 - suf]) suf++;
+  const a2 = A.slice(pre, A.length - suf), b2 = B.slice(pre, B.length - suf);
+  const rows = A.slice(0, pre).map((s) => ({ t: ' ', s }));
+  if (a2.length * b2.length > 4e6) { a2.forEach((s) => rows.push({ t: '-', s })); b2.forEach((s) => rows.push({ t: '+', s })); }
+  else {
+    const n = a2.length, m = b2.length, L = Array.from({ length: n + 1 }, () => new Uint32Array(m + 1));
+    for (let i = n - 1; i >= 0; i--) for (let j = m - 1; j >= 0; j--) L[i][j] = a2[i] === b2[j] ? L[i + 1][j + 1] + 1 : Math.max(L[i + 1][j], L[i][j + 1]);
+    let i = 0, j = 0;
+    while (i < n && j < m) {
+      if (a2[i] === b2[j]) { rows.push({ t: ' ', s: a2[i] }); i++; j++; }
+      else if (L[i + 1][j] >= L[i][j + 1]) rows.push({ t: '-', s: a2[i++] });
+      else rows.push({ t: '+', s: b2[j++] });
+    }
+    while (i < n) rows.push({ t: '-', s: a2[i++] });
+    while (j < m) rows.push({ t: '+', s: b2[j++] });
+  }
+  A.slice(A.length - suf).forEach((s) => rows.push({ t: ' ', s }));
+  // fold unchanged runs
+  const keep = rows.map(() => false);
+  rows.forEach((r, k) => { if (r.t !== ' ') for (let d = -ctx; d <= ctx; d++) if (rows[k + d]) keep[k + d] = true; });
+  const out = [];
+  rows.forEach((r, k) => { if (keep[k]) out.push(r); else if (out.at(-1)?.t !== '…') out.push({ t: '…', s: '' }); });
+  return out;
+}
+/** Screens of `b` whose YAML differs from the same screen (by id) in `a`: [{id, name, plus, minus, rows}]. */
+export function screenYamlDiffs(a, b, yamlOf) {
+  const out = [];
+  for (const s of b.screens || []) {
+    const o = (a.screens || []).find((x) => x.id === s.id);
+    if (!o) continue;
+    let ya, yb;
+    try { ya = yamlOf(a, o); yb = yamlOf(b, s); } catch { continue; }
+    if (ya === yb) continue;
+    const rows = lineDiff(ya, yb);
+    out.push({ id: s.id, name: s.name, plus: rows.filter((r) => r.t === '+').length, minus: rows.filter((r) => r.t === '-').length, rows });
+  }
+  return out;
+}

@@ -56,6 +56,8 @@ export const CHANGE_SCHEMA = obj({
     days: { type: 'integer' },
     hour: { type: 'integer' },
     stages: arr(STAGE_SPEC, 'setApprovalStages: the 1-4 stages in order; else empty'),
+    reassign: { type: 'boolean', description: 'setApprovalStages: approvers may hand a waiting stage to someone else' },
+    adminOverride: { type: 'boolean', description: 'setApprovalStages: admins may decide a waiting stage with a reason (needs an admin group)' },
   })),
   notes: arr(str(), 'Anything you could not do with these operations, or questions for the person'),
 });
@@ -68,7 +70,7 @@ Operations (use the fewest that do the job, in the order they must run):
 - renameList (list, newName). addColumn (list, column, type, required, choices, lookupList). renameColumn (list, column, newName). removeColumn (list, column). setChoices (list, column, choices) for Choice columns: send the complete new list.
 - addFieldToForm / addFieldToDetail / addFieldToGallery (list, column, screen optional): show an existing or just-added column on the list's form, details screen or gallery rows. When the person adds a column they almost always want it on the form and details screen too; add it to the gallery only if they ask or it is a key value.
 - addScreenFromTemplate (template, list): browse, detail, edit, approvals (list needs a Choice status column), home, blank, loading.
-- setApprovalStages (list, column = the Choice status column, stages): turn the list's approvals into a chain of 1 to 4 sequential stages, or change its stages. Each stage: name, approverKind personColumn (approverColumn = an existing Person column, or empty to add one) or group (groupId, notifyEmail if given). It adds the per-stage columns, rebuilds that list's details and approvals screens and adds the hand-off and outcome emails itself: do not add those columns or flows separately. The requester can never approve their own item; the creator's manager cannot be looked up, so use a Person column.
+- setApprovalStages (list, column = the Choice status column, stages): turn the list's approvals into a chain of 1 to 4 sequential stages, or change its stages. Each stage: name, approverKind personColumn (approverColumn = an existing Person column, or empty to add one) or group (groupId, notifyEmail if given). It adds the per-stage columns, rebuilds that list's details and approvals screens and adds the hand-off and outcome emails itself: do not add those columns or flows separately. The requester can never approve their own item; the creator's manager cannot be looked up, so use a Person column. Per stage, slaDays gives a deadline (overdue badge plus a daily reminder; 0 = none); reassign lets approvers hand a waiting stage to someone else; adminOverride lets admin-group members decide a waiting stage with a required reason. Repeat the current stages with the new settings to change only those.
 - addFlow (flowKind, flowName, list, recipients, subject, body, statusField, statusValues, reminderValue, days, hour). editFlow (flowName, then only the fields to change; newName to rename). removeFlow (flowName).
 
 Rules:
@@ -327,7 +329,8 @@ export function applyOps(project, ops) {
           const col = findCol(l, o.column);
           const field = col?.type === 'Choice' ? col.name : (statusCol(l)?.name || 'Status');
           const stages = stagesFromSpec(l, o.stages, findCol, notes);
-          const r = setApprovalChain(project, { list: l.name, field, values: guessChainValues(l, field), stages });
+          const r = setApprovalChain(project, { list: l.name, field, values: guessChainValues(l, field), stages, reassign: o.reassign === true, override: o.adminOverride === true });
+          if (o.adminOverride === true && !project.app.features?.adminGroup) notes.push('Admin override needs an admin group (App tab).');
           notes.push(...r.notes); touch(r.screens);
           break;
         }

@@ -6,10 +6,11 @@
 //   CHANGELOG.md, bundle.json                             history; bundle.json embeds the project
 // export/ and export_src/ hold a Studio export and are only kept when a bundle that had them is
 // re-exported from a project that came from it; tools/ is not shipped by the studio.
-import { normalizeProject, newList, newColumn, COLTYPES } from './core.js';
+import { normalizeProject, newList, newColumn, COLTYPES, allNames, companions, walk, uid } from './core.js';
+import { renameListIn, rewriteFormulas } from './edit.js';
 import { screenYaml, themeFormulas, onStartFx, startScreenFx, lint } from './emit.js';
 import { flowPackageFiles, internalName } from './flows.js';
-import { importYaml } from './import.js';
+import { importYaml, renameFx } from './import.js';
 
 export const FORMAT = 'power-app-studio-bundle';
 const SP_TYPE = { Text: 'Text', Note: 'Note', Number: 'Number', Currency: 'Currency', DateTime: 'DateTime', Choice: 'Choice', YesNo: 'Boolean', Person: 'User', Lookup: 'Lookup' };
@@ -125,4 +126,66 @@ export async function readBundle(data, JSZip, makeProject) {
   if (!p.screens.length) throw new Error('None of the screens in the bundle could be read.');
   if (!p.screens.some((x) => x.id === p.app.startScreen)) p.app.startScreen = p.screens[0].id;
   return { project: normalizeProject(p), source: 'canonical', notes };
+}
+
+// ------------------------------------------------------------------ add a bundle to the open app
+/**
+ * Add the lists, screens and flows of `src` (a bundle's project) to `target`, renaming whatever would clash:
+ * a list with the same name and the same columns is shared, otherwise renamed (Requests → Requests2, with every
+ * formula and variable that uses it); screens and controls get a number suffix (names must be unique app-wide)
+ * and the formulas that name them follow; flows get " 2". App settings (theme, start screen, approvals, chain,
+ * options) stay the open app's. Mutates both (src is consumed). Returns {lists, screens, flows, renamed, notes}.
+ */
+export function mergeProjects(target, src) {
+  const out = { lists: [], screens: [], flows: [], renamed: [], notes: [] };
+  const colsSig = (l) => JSON.stringify(l.columns.map((c) => [c.name, c.type, (c.choices || []).join('|'), c.lookupList || '']));
+  for (const l of [...src.lists]) {
+    const same = target.lists.find((x) => x.name === l.name);
+    if (same && colsSig(same) === colsSig(l)) continue;
+    if (same || target.lists.some((x) => x.name === l.name)) {
+      let n = l.name.replace(/\d+$/, ''), i = 2;
+      while (target.lists.some((x) => x.name === n + i) || src.lists.some((x) => x.name === n + i)) i++;
+      out.renamed.push(`list ${l.name} → ${n + i}`);
+      renameListIn(src, l.name, n + i);
+    }
+    target.lists.push(l); out.lists.push(l.name);
+  }
+  // screen and control names
+  const used = allNames(target), map = {};
+  const pick = (base, extra = () => []) => { const b = base.replace(/\d+$/, ''); let i = 2; while (used.has(b + i) || extra(b + i).some((x) => used.has(x))) i++; return b + i; };
+  for (const s of src.screens) {
+    if (used.has(s.name)) { const n = pick(s.name); map[s.name] = n; out.renamed.push(`screen ${s.name} → ${n}`); s.name = n; }
+    used.add(s.name);
+    if (target.screens.some((x) => x.id === s.id)) s.id = uid();
+    for (const [c] of walk(s.controls)) {
+      if (target.screens.some((x) => [...walk(x.controls)].some(([y]) => y.id === c.id))) c.id = uid();
+      const clash = used.has(c.name) || companions(c).some((x) => used.has(x));
+      if (clash) {
+        const n = pick(c.name, (nn) => companions({ ...c, name: nn }));
+        map[c.name] = n; if (c.type === 'person') map['varPick' + c.name] = 'varPick' + n;
+        c.name = n;
+      }
+      used.add(c.name); companions(c).forEach((x) => used.add(x));
+    }
+  }
+  if (Object.keys(map).length) {
+    rewriteFormulas(src, (f) => renameFx(f, map));
+    for (const s of src.screens) for (const [c] of walk(s.controls)) {
+      for (const a of Object.values(c.actions || {}).flat()) for (const k of ['commentCtl', 'picker']) if (map[a[k]]) a[k] = map[a[k]];
+      if (c.data?.searchCtl && map[c.data.searchCtl]) c.data.searchCtl = map[c.data.searchCtl];
+    }
+    const n = Object.keys(map).filter((k) => !k.startsWith('varPick')).length;
+    out.notes.push(`${n} screen or control name${n === 1 ? '' : 's'} got a number so names stay unique in the app.`);
+  }
+  for (const s of src.screens) { target.screens.push(s); out.screens.push(s.name); }
+  const fxNames = new Set((target.flows || []).map((f) => f.name));
+  for (const f of src.flows || []) {
+    if (target.flows?.some((x) => x.id === f.id)) f.id = uid();
+    let n = f.name, i = 2; while (fxNames.has(n)) n = `${f.name} ${i++}`;
+    if (n !== f.name) out.renamed.push(`flow ${f.name} → ${n}`);
+    f.name = n; fxNames.add(n);
+    (target.flows = target.flows || []).push(f); out.flows.push(f.name);
+  }
+  if (src.app?.chain || src.app?.approvalsCfg) out.notes.push('The bundle\'s approval settings were not added: the open app keeps its own (App tab).');
+  return out;
 }

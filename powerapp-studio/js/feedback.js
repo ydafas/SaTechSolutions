@@ -5,6 +5,7 @@
 import { walk, uid, MAX_FINDINGS } from './core.js';
 import { flatNodes } from './emit.js';
 import { flowFxName } from './flows.js';
+import { FORM_RE, allAttachSlots } from './attach.js';
 
 const CONNECTORS = { Office365Users: 'Office 365 Users', Office365Groups: 'Office 365 Groups', Office365Outlook: 'Office 365 Outlook' };
 
@@ -43,6 +44,17 @@ export function analyzeOne(project, text, idx = nameIndex(project)) {
   const select = ctl?.owner ? [{ kind: 'select', ctlId: ctl.owner.id, screenId: ctl.screen.id, label: `Select ${ctl.owner.name}` }] : scr ? [{ kind: 'screen', screenId: scr.id, label: `Open ${scr.name}` }] : [];
   const out = (family, title, cause, fix, actions = []) => ({ family, code, title, cause, fix, where, actions: [...actions, ...select], excerpt: t.slice(0, 2000) });
 
+  // the hand-added attachments form (attach.js) is missing or named differently
+  const fm = (t.match(FORM_RE) || [])[0];
+  if (fm && /recogni[sz]ed|isn'?t valid|is not valid|invalid name|unknown|not found/i.test(t)) {
+    const slot = allAttachSlots(project).find((x) => x.form === fm);
+    const acts = slot ? [{ kind: 'select', ctlId: slot.ctl.id, screenId: slot.screen.id, label: `Show where ${fm} goes` }] : [];
+    const r = out('attachForm', `${fm} is not on the screen yet`,
+      `Attachments cannot be pasted. ${slot ? `${slot.screen.name} expects an Edit form named ${fm} that you insert by hand` : `The app expects an Edit form named ${fm} that you insert by hand`}; the loader and Save refer to it by that name. This error shows right after a paste (or a re-paste, which deletes hand-added controls).`,
+      `Follow the Paste assistant's "Attachments on ${slot ? slot.screen.name : 'the screen'}" step: Insert → Edit form, rename it to ${fm}, data source ${slot ? slot.list : 'the list'}, only the Attachments field, Item and DefaultMode as listed. If you do not want attachments, turn Attachments off for the list on the Data tab and copy the screen again.`, acts);
+    if (slot) r.where = `${slot.screen.name} › ${slot.ctl.name}`;
+    return r;
+  }
   // PA2108 — a property this control type doesn't have in this tenant
   if (code === 'PA2108' || /unknown property/i.test(t)) {
     const prop = (t.match(/unknown property[:\s]+['"‘’]?([A-Za-z][A-Za-z0-9]*)/i) || [])[1]

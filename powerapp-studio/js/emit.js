@@ -13,8 +13,9 @@ import { iconSvg } from './icons.js';
 import { contrastIssues } from './a11y.js';
 import { notifyFx, navigateFx, rebaseFx, upsertBaseFx, ifErrorFx, spUserFx, meUserFx, recordFx, equalsFx } from './fx.js';
 import { flowFxName, deepLinkInfo, flowLint, internalName as flowInternalName } from './flows.js';
-import { chainFor, decideFx, resubmitFx, newItemStageFx, groupChecksFx, chainLint } from './chain.js';
+import { chainFor, decideFx, resubmitFx, newItemStageFx, newItemSinceFx, chainSla, reassignFx, groupChecksFx, chainLint } from './chain.js';
 import { largeLists, capCounts, delegationIssues } from './delegation.js';
+import { attachSlots, allAttachSlots, attachLoaderFx } from './attach.js';
 
 // ---------------------------------------------------------------- color helpers
 export function colorFx(v) {
@@ -156,7 +157,7 @@ export const ACTION_TYPES = {
   save: 'Save form to list', delete: 'Delete selected item', setField: 'Set a column on selected item',
   setVar: 'Set variable', toggleVar: 'Toggle variable', notify: 'Show message', launch: 'Open a link',
   refresh: 'Refresh list', reset: 'Clear inputs on screen', runFlow: 'Run a flow',
-  decide: 'Approve or reject (approval chain)', resubmit: 'Resubmit (approval chain)', custom: 'Custom Power Fx',
+  decide: 'Approve or reject (approval chain)', resubmit: 'Resubmit (approval chain)', reassign: 'Reassign the waiting stage (approval chain)', override: 'Admin override (approval chain)', custom: 'Custom Power Fx',
 };
 const scrName = (project, id) => project.screens.find((x) => x.id === id || x.name === id)?.name;
 
@@ -176,6 +177,7 @@ export function actionFx(project, screen, a, ctx = {}) {
       // approval chain: a new item starts at stage 1 (an existing one keeps the stage it is at)
       const ch = chainFor(project, a.list);
       if (ch && !fields.some(([k]) => k === 'CurrentStage')) fields.push(['CurrentStage', newItemStageFx(ch)]);
+      if (ch && chainSla(ch) && !fields.some(([k]) => k === 'StageSince')) fields.push(['StageSince', newItemSinceFx(ch)]);
       const rec = recordFx(fields.map(([k, v]) => [q(k), v]));
       const tried = 'varTriedSave' + slug(a.list), doneVar = 'varDone' + slug(a.list);
       let done = [notifyFx(a.message || 'Saved', 'Success')];
@@ -187,7 +189,10 @@ export function actionFx(project, screen, a, ctx = {}) {
         inputs.forEach((c) => done.push(`Reset(${c.name})`));
         inputs.filter((c) => c.type === 'person').forEach((c) => done.push(`Set(${pickVar(c)}, Blank())`));
       } else if (then(a)) done.push(then(a));
-      const save = ifErrorFx(`Patch(${L}, ${upsertBaseFx(L, V)}, ${rec})`, 'Save', done);
+      // attachments: the hand-added Edit form's changes ride along as an extra record argument
+      const forms = attachSlots(project, screen, 'edit').filter((x) => x.list === a.list).map((x) => x.form);
+      if (forms.length && a.then === 'stay') forms.forEach((f) => done.push(`ResetForm(${f})`));
+      const save = ifErrorFx(`Patch(${L}, ${upsertBaseFx(L, V)}, ${rec}${forms.map((f) => `, ${f}.Updates`).join('')})`, 'Save', done);
       const missing = a.validate ? missingFx(project, screen, a.list) : null;
       if (!missing) return save;
       return `If(\n    ${missing.any},\n    Set(${tried}, true);\n    Notify("Fill in the required fields: " & ${missing.list}, NotificationType.Warning),\n    ${save.replace(/\n/g, '\n    ')}\n)`;
@@ -214,7 +219,7 @@ export function actionFx(project, screen, a, ctx = {}) {
     case 'refresh': return a.list ? `Refresh(${L})` : '';
     case 'reset': {
       const ins = screenInputs(screen);
-      return ins.map((c) => `Reset(${c.name})`).concat(ins.filter((c) => c.type === 'person').map((c) => `Set(${pickVar(c)}, Blank())`)).join(';\n');
+      return ins.map((c) => `Reset(${c.name})`).concat(ins.filter((c) => c.type === 'person').map((c) => `Set(${pickVar(c)}, Blank())`), attachSlots(project, screen, 'edit').map((x) => `ResetForm(${x.form})`)).join(';\n');
     }
     case 'runFlow': {
       const f = (project.flows || []).find((x) => x.id === a.flow && x.kind === 'button');
@@ -229,6 +234,12 @@ export function actionFx(project, screen, a, ctx = {}) {
       return ch && a.commentCtl ? decideFx(ch, a.decision === 'Rejected' ? 'Rejected' : 'Approved', a.commentCtl) : '';
     }
     case 'resubmit': { const ch = chainFor(project, a.list); return ch ? resubmitFx(ch) : ''; }
+    case 'reassign': { const ch = chainFor(project, a.list); return ch?.reassign && a.picker ? reassignFx(ch, a.picker) : ''; }
+    case 'override': {
+      const ch = chainFor(project, a.list);
+      if (!ch?.override || !a.commentCtl) return '';
+      return `If(\n    IsBlank(Trim(${a.commentCtl}.Text)),\n    Notify("Give a reason for the override.", NotificationType.Warning),\n    ${decideFx(ch, a.decision === 'Rejected' ? 'Rejected' : 'Approved', a.commentCtl, { override: true }).replace(/\n/g, '\n    ')}\n)`;
+    }
     case 'custom': return (a.fx || '').replace(/^=/, '');
   }
   return '';
@@ -573,6 +584,7 @@ function screenOnVisible(project, screen) {
   const inputs = screenInputs(screen).filter((c) => c.field?.list);
   inputs.filter((c) => c.type === 'person').forEach((c) => parts.push(`Set(${pickVar(c)}, Blank())`));
   inputs.forEach((c) => parts.push(`Reset(${c.name})`));
+  attachSlots(project, screen, 'edit').forEach((x) => parts.push(attachLoaderFx(x)));
   return parts.join(';\n');
 }
 /** Project-level output adjustments applied to every emitted node, children included:
@@ -779,6 +791,7 @@ export function provisioningScript(project) {
   for (const l of order) {
     out.push(`# ---- ${l.name}`);
     out.push(`$null = Ensure-List '${psEsc(l.name)}'`);
+    if (l.attachments) out.push(`Set-PnPList -Identity '${psEsc(l.name)}' -EnableAttachments $true | Out-Null   # the app's attachments form needs them on`);
     for (const c of l.columns) {
       if (c.builtin) { if (c.required === false) out.push(`Set-PnPField -List '${psEsc(l.name)}' -Identity 'Title' -Values @{Required=$false} | Out-Null`); continue; }
       const iname = internalName(c.name), dn = xmlEsc(c.name), req = c.required ? "Required='TRUE'" : "Required='FALSE'";
@@ -832,6 +845,7 @@ export const LINT_RULES = {
   PS053: 'Approval chain list or stage count invalid', PS054: 'Approval group stage without a valid group ID', PS055: 'Approval stage approver is not a Person column',
   PS056: 'Approval chain column missing', PS057: 'Approve/reject action without a chain or comment box',
   PS058: 'Formula override on a property the tenant rejected', PS059: 'Not delegable on a large list',
+  PS060: 'Attachments form is added by hand after the paste', PS061: 'Admin override without an admin group',
 };
 const screenHas = (scr, name) => !!name && [...walk(scr.controls)].some(([c]) => c.name === name);
 const overlap = (a, b) => Math.max(0, Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x)) * Math.max(0, Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y));
@@ -856,7 +870,7 @@ export function lint(project) {
   const F = [];
   const ff = FORM_FACTORS[project.app.formFactor || 'tablet'];
   const fxText = (c) => Object.values(c.fx || {}).join('\n') + '\n' + Object.values(c.actions || {}).flat().filter((a) => a.type === 'custom').map((a) => a.fx || '').join('\n');
-  const mk = (suppressText = '') => (level, code, where, msg) => { if (!suppressText.includes('lint-ok ' + code)) F.push({ level, code, where, msg }); };
+  const mk = (suppressText = '') => (level, code, where, msg, extra) => { if (!suppressText.includes('lint-ok ' + code)) F.push({ level, code, where, msg, ...(extra || {}) }); };
   const addG = mk();
   const appNames = allNames(project);
   // variables something sets (actions, custom Power Fx, OnStart, OnVisible)
@@ -921,6 +935,10 @@ export function lint(project) {
         }
         if ((a.type === 'setVar' || a.type === 'toggleVar') && a.name && !IDENT.test(a.name)) add('error', 'PS025', where, `Variable name "${a.name}" is not valid.`);
         if (a.type === 'custom' && /\bNavigate\(/.test(a.fx || '') && ev === 'OnVisible') add('error', 'PS042', where, 'Navigate() is not allowed in OnVisible.');
+        if (a.type === 'reassign' && !chainFor(project, a.list)?.reassign) add('error', 'PS057', where, `${ev}: "${ACTION_TYPES[a.type]}" needs an approval chain on ${a.list || 'its list'} with reassigning turned on.`);
+        if (a.type === 'reassign' && chainFor(project, a.list)?.reassign && !screenHas(scr, a.picker)) add('error', 'PS057', where, `${ev}: the people picker "${a.picker || '(none)'}" is not on this screen.`);
+        if (a.type === 'override' && !chainFor(project, a.list)?.override) add('error', 'PS057', where, `${ev}: "${ACTION_TYPES[a.type]}" needs an approval chain on ${a.list || 'its list'} with admin override turned on.`);
+        if (a.type === 'override' && chainFor(project, a.list)?.override && !screenHas(scr, a.commentCtl)) add('error', 'PS057', where, `${ev}: the reason box "${a.commentCtl || '(none)'}" is not on this screen.`);
         if ((a.type === 'decide' || a.type === 'resubmit') && !chainFor(project, a.list)) add('error', 'PS057', where, `${ev}: "${ACTION_TYPES[a.type]}" needs an approval chain on ${a.list || 'its list'} (wizard or App tab).`);
         if (a.type === 'decide' && chainFor(project, a.list) && !screenHas(scr, a.commentCtl)) add('error', 'PS057', where, `${ev}: the comment box "${a.commentCtl || '(none)'}" is not on this screen.`);
         if (a.type === 'runFlow' && !(project.flows || []).some((f) => f.id === a.flow && f.kind === 'button')) add('error', 'PS049', where, `${ev}: "Run a flow" needs a flow of the "Run from a button" kind (Flows tab).`);
@@ -965,6 +983,9 @@ export function lint(project) {
     const over = htmlOverflow(String(c.props?.html || ''), c.h);
     if (over > 0) mk(fxText(c))('warn', 'PS051', `${scr.name} › ${c.name}`, `The HTML box is ${over}px taller than this control can show (HtmlViewer adds 5px padding on each side), so Power Apps will draw a scrollbar. Make the box ${over}px shorter or the control ${over}px taller.`);
   }
+  // attachments: the Edit form cannot be pasted (attach.js); remind where it goes, flag placeholders that do nothing
+  for (const x of allAttachSlots(project)) addG('info', 'PS060', `${x.screen.name} › ${x.ctl.name}`, `Insert an Edit form named ${x.form} over this box after pasting (Paste assistant, Attachments step). Re-pasting ${x.screen.name} removes it: copy it to Notepad first.`);
+  for (const scr of project.screens) for (const [c, parent] of walk(scr.controls)) if (c.attachSlot && (parent || !project.lists.find((l) => l.name === c.attachSlot.list)?.attachments)) addG('warn', 'PS060', `${scr.name} › ${c.name}`, parent ? 'An attachments box inside a gallery does nothing. Move it out of the gallery.' : `Attachments is off for ${c.attachSlot.list}, so this box does nothing. Turn Attachments on (Data tab) or delete the box.`);
   for (const x of contrastIssues(project.theme.colors)) addG('info', 'PS052', 'Theme', `${x.fg} on ${x.bg} (${x.where}) has contrast ${x.ratio.toFixed(2)}:1; WCAG AA needs 4.5:1. Theme tab → Contrast fixes it in one click.`);
   // properties switched off after a tenant rejected them (Report a paste error → PA2108)
   const sup = project.app.suppressProps || {};
@@ -979,9 +1000,9 @@ export function lint(project) {
     for (const n of flatNodes(project, scr)) for (const [k, v] of n.props) for (const x of delegationIssues(v, large)) {
       const key = n.name + '|' + x.msg; if (seen.has(key)) continue; seen.add(key);
       const owner = [...walk(scr.controls)].map(([c]) => c).filter((c) => n.name.startsWith(c.name)).sort((a, b) => b.name.length - a.name.length)[0];
-      mk(owner ? fxText(owner) : '')('warn', 'PS059', `${scr.name} › ${n.name}.${k}`, x.msg);
+      mk(owner ? fxText(owner) : '')('warn', 'PS059', `${scr.name} › ${n.name}.${k}`, x.msg, { list: x.list });
     }
   }
-  for (const scr of project.screens) for (const [c] of walk(scr.controls)) if (c.bind?.kind === 'count' && !(large.has(c.bind.list))) { addG('info', 'PS035', `${scr.name} › ${c.name}`, 'CountRows over a SharePoint list is not delegable: counts stop at the data row limit (500 by default, 2000 max).'); break; }
+  for (const scr of project.screens) for (const [c] of walk(scr.controls)) if (c.bind?.kind === 'count' && !(large.has(c.bind.list))) { addG('info', 'PS035', `${scr.name} › ${c.name}`, 'CountRows over a SharePoint list is not delegable: counts stop at the data row limit (500 by default, 2000 max).', { list: c.bind.list }); break; }
   return F;
 }
