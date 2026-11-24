@@ -79,6 +79,10 @@ These templates passed the harness and the skill's `screen_tool.py check`, but h
 | `js/setup.js` | Finish setup: `setupItems()` (each mapped to the lint codes it clears), `applySetup()`, GUID check |
 | `js/guide.js` | Customer guide: `guideCases()` test cases from the app's actions and flows, `lifecycleSvg()`, `guideHtml()` |
 | `js/assistui.js` | UI for the Paste assistant, Finish setup card and dialog, guide export (thumbnails from the designer renderer) and the tour |
+| `js/feedback.js`, `js/feedbackui.js` | Report a paste error: `analyze()` maps Studio and Power Automate error text to a control, cause and fix; `applyAction()` (switch a property off or on, mark a list large); findings log and `exportFindings()` |
+| `js/delegation.js` | Expected list size (`SIZES`), `capCounts()` ("2000+" KPI counts), `delegationIssues()` (PS059), `needsRowLimit()` |
+| `js/history.js`, `js/historyui.js` | Version history: `takeSnapshot()`, `restoreSnapshot()`, `diffProjects()` / `describeDiff()`, `mergeSnapshots()` |
+| `js/bundle.js` | App bundle zip in the skill's layout: `bundleFiles()`, `bundleZip()`, `schemaDigest()`, `readBundle()` (embedded project, or rebuilt from `canonical/` and `schema/`) |
 | `js/flowsui.js` | Flows tab, new-flow picker, flow editor with email preview, package download, tenant-sample loader |
 | `tests/run.mjs` | Test harness: no dependencies beyond Node 18+ and the vendored js-yaml |
 | `vendor/` | js-yaml 4.1.0 and JSZip 3.10.1, served locally |
@@ -139,6 +143,8 @@ Every finding has a stable code. To silence one rule on one control, put `lint-o
 | PS055 | error | Stage approver column is not a Person column |
 | PS056 | error | A chain column (stage decision, date, comment, history, current stage) is missing from the list |
 | PS057 | error | Approve/Reject action without a chain, or Reject without a comment box |
+| PS058 | warn | A formula override on a property the tenant rejected (switched off in *Report a paste error*): the override is dropped from the YAML |
+| PS059 | warn | On a list marked Large: `CountRows` without the "2000+" cap, `Search()`, or a `Filter` on the list itself using `<>`, `in`, `= Blank()`, `IsBlank()` or a function over a column |
 
 To add a rule, give it the next code in `LINT_RULES`, implement it in `lint()` in `js/emit.js`, and add a failing case to the "lint rules fire" test in `tests/run.mjs`.
 
@@ -174,6 +180,10 @@ The harness covers:
 - Ask for a change: the schema stays inside structured-output limits (closed objects, every property required, no size or `oneOf` keywords). The request carries names and types only. A mocked response (`tests/fixture-change.json`) is reviewed (invalid edits flagged, destructive ones marked) and applied. Every untouched screen's YAML stays byte-identical and the original project is not modified, which is what Undo restores. Adding a field reflows the tablet form so it still fits above the Save bar. A batch of list, screen, option and flow edits leaves no stale names behind.
 - CSV and Excel: quotes, doubled quotes, newlines in quotes, BOM, semicolon and tab files, write/read round trip. Type inference for every type. A generated `.xlsx` read in workbook sheet order, with rich-text strings and style-based dates. Imported lists get clean names, are capped at 200 rows, survive `normalizeProject`, feed Play, and export back to CSV.
 - Accessibility: contrast ratios match WCAG reference values, and the fix reaches AA with the smallest nudge. PS052 is info only. `AccessibleLabel` is absent by default and present on inputs and tap buttons when opted in.
+- Report a paste error: one case per error family (PA2108, PA2110, PA2109, PA1001, unknown names for lists, connectors, `appTheme`, `ThisItem`, screens, variables and flows, record/text type errors, column names, delegation warnings, flow connection, template and import errors). Switching a property off removes it only for that control type and changes nothing else; PS058; the findings log is capped, survives load and is stripped from share links; an empty `suppressProps` is byte-identical.
+- App bundle: project → zip → project is identical; the schema digest shape; import without an embedded project rebuilds screens, lists and the start screen; a zip that is not a bundle is explained.
+- Large lists: each PS059 pattern; every scenario marked Large stays lint-clean and passes the paste rules; Small is byte-identical; capped KPI counts; non-delegable extra filters move outside; the row-limit setup item.
+- Version history: diff (added column, changed control, added flow, theme), restore, the cap drops automatic versions first, junk snapshots are dropped on load.
 - Drift: a solution zip with a nested `.msapp` is read, Studio-only controls and screens are found, imported verbatim (formula positions kept) without touching other screens, and an `.msapp` without YAML source is explained.
 
 Run the harness before every push. If you change the emitter on purpose, look at the diff of a generated screen before pasting it into Studio.
@@ -354,3 +364,36 @@ It is then compressed with `deflate-raw` and base64url-encoded into `#play=…`.
 - The decision Patch on a list with the generated chain columns.
 - The stepper HtmlText.
 - A resubmit after a rejection.
+
+## Round 5: paste errors, app bundles, large lists, version history
+
+**Report a paste error.** Top bar → *Paste error*, Project → *Report a paste error*, *Got an error?* in each Paste assistant step, or *Studio showed an error?* on the lint report. Paste what Studio (red banner, formula bar, App checker) or Power Automate's import page said; several messages at once are fine. Each one is mapped to the designer control and screen where the names allow it, with the likely cause and the fix, and buttons for the next step: select the control, open the Data tab, mark a list large, or, for PA2108 (unknown property), **switch that property off for that control type**. Switched-off properties live in the project as `app.suppressProps` (`{"Classic/DatePicker": ["IconBackground"]}`) and the emitter leaves them out of every screen. Every explained error goes into the **tenant log** (Tenant log tab), which you can export as text and send along when a paste keeps failing. With no switched-off properties the YAML is byte-identical to before.
+
+**App bundle.** Project → *Export app bundle (.zip)* writes the powerapps-canvas-yaml skill's layout:
+
+```
+<App>_bundle_<date>/
+  canonical/<screen>.pa.yaml, canonical/App.pa.yaml
+  schema/schema.json            lists, internal and display names, types, choices
+  flows/<flow>/definition.json
+  reports/lint.txt, reports/drift.txt
+  CHANGELOG.md                  from the version history and deploy records
+  bundle.json                   format, generator, file list and the whole project
+```
+
+*Import app bundle…* restores the embedded project when `bundle.json` has one. Bundles made by `screen_tool.py` have none: the app is rebuilt from `canonical/*.pa.yaml` and `schema/schema.json` (App.Formulas and OnStart are regenerated, and the dialog says so). The current app is saved as a version first.
+
+**Large lists.** Data tab → *Expected size* per list. Not set and Small change nothing. Medium and Large add a Finish-setup item to raise the data row limit to 2000 (Settings → General). Large also:
+
+- caps KPI counts as `With({n: CountRows(...)}, If(n >= 2000, "2000+", Text(n)))`, because `CountRows` is never delegated to SharePoint;
+- moves a gallery's extra filter outside when SharePoint cannot delegate it: `Filter(Filter(List, delegable), local)`;
+- turns on PS059 for formulas you write.
+
+The generated Mine, status and search filters were already delegable (`'Created By'.Email =`, Choice `.Value =`, `StartsWith`), so Large leaves them as they are.
+
+**Version history.** Project → *Version history*: save a named version, compare any version with now (lists, columns, screens, controls, flows, theme, app settings), restore, delete. A version is saved automatically before Describe → Build, Ask for a change, a Studio import, a bundle import and a restore. Up to 15 are kept in the project (the oldest automatic ones go first), with a warning past about 1.5 MB because the browser keeps about 5 MB per site. Versions, the tenant log and deploy records are not part of Undo and are left out of share links.
+
+**Test in a tenant before relying on these:**
+- A PA2108 copied from Studio, switched off, and the screen pasted again.
+- The "2000+" KPI labels and a reshaped extra filter on a list with more than 2,000 items (no delegation warning in Studio).
+- A bundle made here opened by `screen_tool.py`, and one made by `screen_tool.py` imported here.

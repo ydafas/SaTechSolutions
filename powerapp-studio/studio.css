@@ -246,6 +246,8 @@ pre.code.small { max-height: 220px; font-size: 11px; }
 .listcard { border: 1px solid var(--line); border-radius: 10px; margin-bottom: 12px; overflow: hidden; }
 .listcard-h { display: flex; align-items: center; gap: 6px; padding: 8px 10px; background: var(--bg); border-bottom: 1px solid var(--line); }
 .listcard-h input { flex: 1; font-weight: 700; border: 1px solid transparent; background: none; border-radius: 6px; padding: 3px 6px; }
+.lsize { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-bottom: 1px solid var(--line); font-size: 12px; color: var(--muted); }
+.lsize select { flex: 1; min-width: 0; }
 .listcard-h input:focus { outline: none; border-color: var(--cyan); background: #fff; }
 .col { padding: 8px 10px; border-bottom: 1px solid var(--line); }
 .col:last-of-type { border-bottom: 0; }
@@ -562,3 +564,41 @@ input[type=range] { width: 100%; accent-color: var(--cyan); }
 .viewer-banner { display: flex; align-items: center; gap: 12px; padding: 8px 16px; background: #0E7490; color: #fff; font-size: 13px; }
 .viewer-banner span { opacity: .92; }
 .viewer-banner .tb.primary { background: #fff; color: #0E5A70; }
+
+/* ---------------------------------------------------------------- round 5: paste errors, version history */
+.fb-tabs { display: flex; gap: 4px; padding: 8px 20px 0; border-bottom: 1px solid var(--line); }
+.fb-tabs button { border: 0; background: none; padding: 8px 12px; font: inherit; font-size: 13px; font-weight: 600; color: var(--muted); border-bottom: 2px solid transparent; cursor: pointer; }
+.fb-tabs button[aria-selected="true"] { color: var(--ink, #0f172a); border-bottom-color: var(--cyan); }
+.fb-tabs b { display: inline-block; min-width: 18px; margin-left: 4px; padding: 0 5px; border-radius: 9px; background: var(--line); font-size: 11px; color: var(--muted); }
+.fb-tabs b:empty { display: none; }
+.fb-in { width: 100%; font: 12.5px/1.45 ui-monospace, Consolas, monospace; resize: vertical; margin-bottom: 12px; box-sizing: border-box; }
+.fb-card { border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; margin-bottom: 10px; font-size: 13px; }
+.fb-card p { margin: 6px 0; }
+.fb-card .btns { margin-top: 8px; }
+.fb-card details { margin-top: 6px; }
+.fb-card summary { font-size: 12px; color: var(--muted); cursor: pointer; }
+.fb-card pre { white-space: pre-wrap; font-size: 11.5px; background: var(--bg); border-radius: 6px; padding: 6px 8px; margin: 6px 0 0; }
+.fb-top { display: flex; align-items: center; gap: 8px; }
+.fb-top b { font-size: 14px; }
+.fb-fam { flex: none; font-size: 10.5px; font-weight: 800; letter-spacing: .02em; padding: 2px 8px; border-radius: 9px; background: #fef2f2; color: #991b1b; }
+.fb-where { display: flex; align-items: center; gap: 6px; margin-top: 6px; font: 12px ui-monospace, Consolas, monospace; color: var(--cyan); }
+.fb-where svg { width: 14px; height: 14px; flex: none; }
+.fb-h { font-size: 13px; margin: 14px 0 6px; }
+.fb-row { display: flex; align-items: center; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
+.fb-row span { flex: 1; font-weight: 600; }
+.fb-log { display: flex; align-items: flex-start; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
+.fb-log > div { flex: 1; }
+.fb-log small { display: block; color: var(--muted); font-size: 11.5px; margin-top: 2px; }
+.fb-log.fixed > div { color: var(--muted); }
+.fb-log .chk { margin: 0; flex: none; }
+.h-save { display: flex; gap: 8px; margin-bottom: 12px; }
+.h-save .inp { flex: 1; }
+.h-list { border: 1px solid var(--line); border-radius: 10px; }
+.h-row { display: flex; align-items: center; gap: 8px; padding: 9px 12px; border-bottom: 1px solid var(--line); }
+.h-row:last-child { border-bottom: 0; }
+.h-main { flex: 1; min-width: 0; }
+.h-main b { display: block; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.h-main small { color: var(--muted); font-size: 11.5px; }
+.h-auto { color: var(--warn); font-weight: 600; }
+.h-diff { margin: 0; padding-left: 20px; font-size: 13px; }
+.h-diff li { margin-bottom: 4px; }

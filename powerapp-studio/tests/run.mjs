@@ -29,6 +29,10 @@ const ED = await import('../js/edit.js');
 const SH = await import('../js/share.js');
 const TB = await import('../js/tabular.js');
 const A11 = await import('../js/a11y.js');
+const FB = await import('../js/feedback.js');
+const BU = await import('../js/bundle.js');
+const HI = await import('../js/history.js');
+const DG = await import('../js/delegation.js');
 const JSZip = require(path.join(here, '../vendor/jszip.min.js'));
 
 // ---------------------------------------------------------------- tiny runner
@@ -1273,6 +1277,195 @@ test('share link: hostile payload is normalized like any untrusted project', asy
   const p = await SH.decodeShare(h);
   assert(/^[A-Za-z0-9_-]+$/.test(p.screens[0].id) && /^[A-Za-z0-9_-]+$/.test(p.screens[0].controls[0].id), 'ids made safe');
   assert(!/javascript/.test(JSON.stringify(p.screens[0].controls[0].props)), 'bad color refused');
+});
+
+// ---------------------------------------------------------------- round 5: Report a paste error
+const demo = () => { const p = buildDemo(core.newProject); core.normalizeProject(p); return p; };
+const firstOf = (p, type) => { for (const s of p.screens) for (const [c] of core.walk(s.controls)) if (c.type === type) return { s, c }; return null; };
+
+test('paste-error parser: PA2108 finds the control and property and switches it off', () => {
+  const p = demo(), { s, c } = firstOf(p, 'datepicker');
+  const [f] = FB.analyze(p, `Error PA2108: Unknown property 'IconBackground' on control '${c.name}'.`);
+  eq(f.family, 'unknownProperty', 'family'); eq(f.code, 'PA2108', 'code');
+  assert(f.where.includes(c.name), 'mapped to the control: ' + f.where);
+  const sup = f.actions.find((a) => a.kind === 'suppress');
+  eq(sup?.control, 'Classic/DatePicker', 'control type'); eq(sup?.prop, 'IconBackground', 'property');
+  assert(f.actions.some((a) => a.kind === 'select' && a.ctlId === c.id), 'select action');
+  const before = E.screenYaml(p, s);
+  FB.applyAction(p, sup); core.normalizeProject(p);
+  const after = E.screenYaml(p, s);
+  assert(before.includes('IconBackground') && !after.includes('IconBackground'), 'property no longer emitted');
+  eq(after.split('\n').filter((l) => !/IconBackground/.test(l)).join('\n'), before.split('\n').filter((l) => !/IconBackground/.test(l)).join('\n'), 'nothing else changed');
+  checkScreenYaml(after, new Set());
+  c.fx.IconBackground = 'Color.Red';
+  assert(codes(p).has('PS058'), 'override on a switched-off property is flagged');
+  FB.applyAction(p, { kind: 'unsuppress', control: 'Classic/DatePicker', prop: 'IconBackground' });
+  assert(!p.app.suppressProps, 'unsuppress cleans up');
+});
+
+test('paste-error parser: every error family', () => {
+  const p = demo(), L = p.lists[0].name, scr = p.screens[1].name, ctl = firstOf(p, 'gallery').c.name;
+  const fam = (t) => FB.analyze(p, t)[0];
+  eq(fam(`PA2110 An entity with name '${ctl}' already exists`).family, 'duplicateName', 'PA2110');
+  eq(fam('PA2109 Unknown control type Classic/Fancy@9.9.9').family, 'controlVersion', 'PA2109');
+  eq(fam('PA1001 Error while parsing: mapping values are not allowed here').family, 'parse', 'PA1001');
+  const ds = fam(`Name isn't valid. '${L}' isn't recognized.`);
+  eq(ds.family, 'missingDataSource', 'list'); assert(ds.actions.some((a) => a.kind === 'dataTab'), 'data tab action');
+  eq(fam(`Name isn't valid. 'Office365Users' isn't recognized.`).family, 'missingConnector', 'connector');
+  eq(fam(`'appTheme' isn't recognized`).family, 'missingFormulas', 'theme');
+  eq(fam(`'ThisItem' isn't recognized`).family, 'thisItem', 'ThisItem');
+  eq(fam(`'${scr}' isn't recognized`).family, 'missingScreen', 'screen');
+  eq(fam(`'varIsAdmin' isn't recognized`).family, 'missingVariable', 'variable');
+  const fl = p.flows.find((f) => f.kind === 'button');
+  if (fl) eq(fam(`'${FL.flowFxName(fl.name)}' isn't recognized`).family, 'missingFlow', 'flow');
+  eq(fam('The type of this argument does not match: expected record, found text. Status').family, 'choiceAsText', 'choice');
+  eq(fam('Invalid argument type (Boolean). Expecting a Record value instead.').family, 'choiceAsText', 'record expected');
+  eq(fam('Invalid argument type. Expects a number.').family, 'argType', 'arg type');
+  eq(fam("The specified column 'Needed By' does not exist. The column with the most similar name is 'NeededBy'.").family, 'columnName', 'column');
+  const dg = fam(`Delegation warning. The "Filter" part of this formula might not work correctly on large data sets. ${L}`);
+  eq(dg.family, 'delegation', 'delegation'); assert(dg.actions.some((a) => a.kind === 'largeList' && a.list === L), 'mark large action');
+  eq(fam('The connection for SharePoint was not found. Select a connection during import.').family, 'flowConnection', 'connection');
+  eq(fam("InvalidTemplate. Unable to process template language expressions in action 'Send_an_email_(V2)'").title, 'Flow action "Send_an_email_(V2)" failed validation', 'template');
+  eq(fam('Import Package failed: Importing packages with flows is disabled').family, 'flowImport', 'import');
+  eq(fam('Something completely new happened').family, 'unknown', 'unknown');
+  eq(FB.analyze(p, 'PA2110 a already exists\n\nPA1001 parse failure').length, 2, 'several messages split');
+});
+
+test('findings log: logged, capped, exported, survives save/load', () => {
+  const p = demo();
+  FB.logFindings(p, FB.analyze(p, "PA2108 Unknown property 'Foo'"));
+  for (let i = 0; i < core.MAX_FINDINGS + 5; i++) FB.logFindings(p, FB.analyze(p, 'odd ' + i));
+  eq(p.findings.length, core.MAX_FINDINGS, 'capped');
+  const back = core.normalizeProject(JSON.parse(JSON.stringify(p)));
+  eq(back.findings.length, core.MAX_FINDINGS, 'survives load');
+  const txt = FB.exportFindings(p);
+  assert(txt.includes(p.app.name) && txt.includes('odd '), 'export text');
+  const sh = SH.shareProject(p);
+  assert(!sh.findings && !sh.snapshots, 'share link strips findings and snapshots');
+});
+
+test('suppressProps default is byte-identical and junk is dropped', () => {
+  const p = demo(), base = p.screens.map((s) => E.screenYaml(p, s)).join('');
+  p.app.suppressProps = {}; core.normalizeProject(p);
+  assert(!('suppressProps' in p.app), 'empty map removed');
+  eq(p.screens.map((s) => E.screenYaml(p, s)).join(''), base, 'identical');
+  p.app.suppressProps = { 'Classic/Button': ['X', 'bad name', 'HoverFill'], '<script>': ['Fill'] }; core.normalizeProject(p);
+  eq(JSON.stringify(p.app.suppressProps), '{"Classic/Button":["HoverFill"]}', 'sanitized');
+});
+
+// ---------------------------------------------------------------- round 5: bundles
+test('bundle: project → zip → project is identical', async () => {
+  const p = demo();
+  HI.takeSnapshot(p, 'First version');
+  p.deployed = { formulas: { hash: 'abc12345', at: '2026-11-24T10:00:00Z', name: 'App.Formulas' } };
+  core.normalizeProject(p);
+  const { name, files, root } = BU.bundleFiles(p, { date: '2026-11-24' });
+  assert(name === `${root}.zip` && /_bundle_2026-11-24$/.test(root), 'dated name: ' + name);
+  for (const k of ['canonical/App.pa.yaml', 'schema/schema.json', 'reports/lint.txt', 'reports/drift.txt', 'CHANGELOG.md', 'bundle.json']) assert(files[`${root}/${k}`], 'has ' + k);
+  for (const s of p.screens) checkScreenYaml(files[`${root}/canonical/${s.name}.pa.yaml`], new Set());
+  assert(Object.keys(files).some((k) => /\/flows\/[^/]+\/definition\.json$/.test(k)), 'flow definitions');
+  assert(files[`${root}/CHANGELOG.md`].includes('First version'), 'changelog from snapshots');
+  yaml.load(files[`${root}/canonical/App.pa.yaml`]);
+  const z = new JSZip(); for (const [k, v] of Object.entries(files)) z.file(k, v);
+  const bytes = await z.generateAsync({ type: 'uint8array' });
+  const r = await BU.readBundle(bytes, JSZip, core.newProject);
+  eq(r.source, 'embedded', 'restored from bundle.json');
+  eq(JSON.stringify(r.project), JSON.stringify(p), 'identical project');
+});
+
+test('bundle: schema digest shape and import without an embedded project', async () => {
+  const p = demo();
+  p.lists[0].columns.push(core.newColumn('Needed Date', 'DateTime'));
+  const d = BU.schemaDigest(p);
+  const col = d.lists[0].columns.find((c) => c.display === 'Needed Date');
+  eq(col.name, 'NeededDate', 'internal name'); eq(col.type, 'DateTime', 'type');
+  eq(d.lists[0].columns[0].name, 'Title', 'Title first');
+  assert(d.lists.flatMap((l) => l.columns).every((c) => ['name', 'display', 'type', 'required'].every((k) => k in c)), 'digest fields');
+  const yesno = BU.listsFromDigest({ lists: [{ name: 'T', columns: [{ name: 'Flag', type: 'Boolean' }, { name: 'Who', type: 'User' }, { name: 'Title', type: 'Text', required: false }] }] })[0];
+  eq(yesno.columns.map((c) => c.type).join(), 'Text,YesNo,Person', 'SharePoint types mapped back');
+  const { files, root } = BU.bundleFiles(p);
+  const meta = JSON.parse(files[`${root}/bundle.json`]); delete meta.project; files[`${root}/bundle.json`] = JSON.stringify(meta);
+  const z = new JSZip(); for (const [k, v] of Object.entries(files)) z.file(k, v);
+  const r = await BU.readBundle(await z.generateAsync({ type: 'uint8array' }), JSZip, core.newProject);
+  eq(r.source, 'canonical', 'rebuilt from canonical');
+  eq(r.project.screens.length, p.screens.length, 'all screens');
+  eq(r.project.lists.map((l) => l.name).join(), p.lists.map((l) => l.name).join(), 'lists from schema');
+  eq(p.screens.find((s) => s.id === p.app.startScreen)?.name || p.screens[0].name, r.project.screens.find((s) => s.id === r.project.app.startScreen)?.name, 'start screen');
+  let msg = ''; const z2 = new JSZip(); z2.file('x.txt', 'hi');
+  try { await BU.readBundle(await z2.generateAsync({ type: 'uint8array' }), JSZip, core.newProject); } catch (e) { msg = e.message; }
+  assert(/bundle/.test(msg), 'non-bundle explained');
+});
+
+// ---------------------------------------------------------------- round 5: large lists
+test('large lists: warnings for non-delegable formulas', () => {
+  const L = new Set(['Requests']);
+  const has = (fx) => DG.delegationIssues(fx, L).length > 0;
+  assert(has('Text(CountRows(Requests))') === true && !has(DG.capCounts('Text(CountRows(Requests))', L)), 'CountRows flagged unless capped');
+  assert(has('Search(Requests, txt.Text, "Title")'), 'Search');
+  assert(has('Filter(Requests, Status.Value <> "Closed")'), '<>');
+  assert(has('Filter(Requests, Title in colPicked)'), 'in');
+  assert(has('Filter(Requests, DueDate = Blank())'), '= Blank()');
+  assert(!has('Filter(Requests, StartsWith(Title, x.Text) && Status.Value = "Open" && \'Created By\'.Email = User().Email)'), 'delegable shapes pass');
+  assert(!has('Filter(Other, Status.Value <> "x")'), 'other lists untouched');
+  assert(!has('Filter(Filter(Requests, Owner.Email = User().Email), Status.Value <> "x")'), 'skill shape passes');
+});
+
+test('large lists: generated apps stay lint-clean and paste-rule clean; default unchanged', () => {
+  for (const sc of Object.keys(SCENARIOS)) for (const ff of ['tablet', 'phone']) {
+    const base = buildFt(sc, ff), big = buildFt(sc, ff);
+    for (const l of big.lists) l.size = 'large';
+    const errs = E.lint(big).filter((x) => x.level !== 'info');
+    eq(errs.length, 0, `${sc} ${ff} large: ` + errs.map((x) => `${x.code} ${x.where} ${x.msg}`).join(' | '));
+    const seen = new Set();
+    for (const s of big.screens) checkScreenYaml(E.screenYaml(big, s), seen);
+    for (const l of base.lists) l.size = 'small';
+    core.normalizeProject(base);
+    const plain = buildFt(sc, ff);
+    eq(base.screens.map((s) => E.screenYaml(base, s)).join(''), plain.screens.map((s) => E.screenYaml(plain, s)).join(''), `${sc} ${ff}: small is byte-identical`);
+  }
+  const d = demo(); for (const l of d.lists) l.size = 'large';
+  const home = d.screens.find((s) => s.name === 'scrHome');
+  const y = E.screenYaml(d, home);
+  assert(y.includes('"2000+"') && !/Text\(CountRows\(Filter\(/.test(y), 'KPI counts capped');
+  checkScreenYaml(y, new Set());
+  const g = firstOf(d, 'gallery').c; g.data.extraFilter = 'Status.Value <> "Closed"';
+  const items = E.itemsFx(d, g);
+  assert(/Filter\((?:Filter|SortByColumns)\(/.test(items) && !DG.delegationIssues(items, DG.largeLists(d)).length, 'non-delegable extra filter reshaped: ' + items);
+  g.data.extraFilter = 'Status.Value = "Open"';
+  assert(!/Filter\(Filter\(/.test(E.itemsFx(d, g)), 'delegable extra filter stays inside');
+  d.app.setup = {}; core.normalizeProject(d);
+  assert(SU.setupItems(d).some((i) => i.id === 'rowLimit' && !i.done), 'row limit setup item');
+  SU.applySetup(d, 'rowLimit', true);
+  assert(SU.setupItems(d).find((i) => i.id === 'rowLimit').done, 'confirmed');
+});
+
+// ---------------------------------------------------------------- round 5: version history
+test('history: snapshot, diff, restore and cap', () => {
+  const p = demo();
+  HI.takeSnapshot(p, 'Start');
+  const l = p.lists[0]; l.columns.push(core.newColumn('CostCenter', 'Text'));
+  const g = firstOf(p, 'gallery').c; g.props.templateSize += 4;
+  p.flows.push(FL.newFlow(p, 'created', l.name)); p.flows.at(-1).name = 'New flow';
+  p.theme.colors.Primary = '#123456';
+  const snap = p.snapshots[0];
+  const d = HI.diffProjects(HI.snapshotProject(snap), p);
+  const lines = HI.describeDiff(d).join('\n');
+  assert(lines.includes('CostCenter'), 'column added: ' + lines);
+  assert(lines.includes(g.name), 'control changed');
+  assert(lines.includes('New flow'), 'flow added');
+  assert(lines.includes('Theme changed'), 'theme');
+  assert(HI.diffIsEmpty(HI.diffProjects(p, JSON.parse(JSON.stringify(p)))), 'no diff with itself');
+  const r = core.normalizeProject(HI.restoreSnapshot(p, snap.id));
+  assert(!r.lists[0].columns.some((c) => c.name === 'CostCenter'), 'restored state');
+  eq(r.snapshots.length, 2, 'snapshot of the replaced state added');
+  assert(r.snapshots[1].name.startsWith('Before restoring'), 'named');
+  for (let i = 0; i < core.MAX_SNAPSHOTS + 3; i++) HI.takeSnapshot(r, 'auto ' + i, { auto: true });
+  eq(r.snapshots.length, core.MAX_SNAPSHOTS, 'capped');
+  assert(r.snapshots.some((x) => x.name === 'Start'), 'manual snapshot kept; automatic ones dropped first');
+  const sizeOk = HI.snapshotsBytes(r) > 0; assert(sizeOk, 'size measured');
+  const n = core.normalizeProject(JSON.parse(JSON.stringify({ ...r, snapshots: [...r.snapshots, { data: 'not json' }, null] })));
+  eq(n.snapshots.length, core.MAX_SNAPSHOTS, 'junk snapshots dropped on load');
+  assert(!JSON.parse(n.snapshots[0].data).snapshots, 'snapshots do not nest');
 });
 
 await Promise.all(pending);

@@ -16,7 +16,7 @@ const HIDDEN = 'address hidden in preview';
 /** The trimmed copy that goes into a link. */
 export function shareProject(project, { includeLinks = false } = {}) {
   const p = clone(project);
-  delete p.deployed;
+  delete p.deployed; delete p.snapshots; delete p.findings;
   p.app = p.app || {};
   for (const k of ['setup', 'flowSample', 'approvalsDraft']) delete p.app[k];
   if (!includeLinks) { delete p.app.siteUrl; delete p.app.appLink; }

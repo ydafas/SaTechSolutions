@@ -14,6 +14,7 @@ import { contrastIssues } from './a11y.js';
 import { notifyFx, navigateFx, rebaseFx, upsertBaseFx, ifErrorFx, spUserFx, meUserFx, recordFx, equalsFx } from './fx.js';
 import { flowFxName, deepLinkInfo, flowLint, internalName as flowInternalName } from './flows.js';
 import { chainFor, decideFx, resubmitFx, newItemStageFx, groupChecksFx, chainLint } from './chain.js';
+import { largeLists, capCounts, delegationIssues } from './delegation.js';
 
 // ---------------------------------------------------------------- color helpers
 export function colorFx(v) {
@@ -266,10 +267,14 @@ export function itemsFx(project, ctl) {
       if (col) conds.push(equalsFx(q(d.filterField), col.type, d.filterValue));
     }
   }
-  if (d.extraFilter) conds.push(`(${d.extraFilter})`);
+  // Large lists: an extra (user) filter may not be delegable, so the server narrows first and the
+  // extra filter runs locally on that result: Filter(Filter(List, delegable), local) — skill pattern.
+  const large = d.extraFilter && largeLists(project).has(d.list) && delegationIssues(`Filter(${L}, ${d.extraFilter})`, new Set([d.list])).length > 0;
+  if (d.extraFilter && !large) conds.push(`(${d.extraFilter})`);
   const F = (extra) => {
     const all = [...conds, ...extra];
-    const src = all.length ? `Filter(${L}, ${all.join(' && ')})` : L;
+    let src = all.length ? `Filter(${L}, ${all.join(' && ')})` : L;
+    if (large) src = `Filter(${all.length ? src : `SortByColumns(${L}, "Modified", SortOrder.Descending)`}, ${d.extraFilter})`;
     return d.sortField ? `SortByColumns(${src}, ${s(d.sortField)}, SortOrder.${d.sortDir || 'Descending'})` : src;
   };
   // Mine/All toggle and a status dropdown: one delegable Filter per combination, chosen with If
@@ -570,8 +575,31 @@ function screenOnVisible(project, screen) {
   inputs.forEach((c) => parts.push(`Reset(${c.name})`));
   return parts.join(';\n');
 }
-export function screenYaml(project, screen) {
+/** Project-level output adjustments applied to every emitted node, children included:
+ *  suppressProps (properties a tenant rejected, PA2108) and large-list count capping. Empty → no change. */
+function finalize(project, nodes) {
+  const sup = project.app?.suppressProps || {}, large = largeLists(project);
+  if (!Object.keys(sup).length && !large.size) return nodes;
+  const rec = (ns) => ns.forEach((n) => {
+    const drop = sup[String(n.control || '').split('@')[0]];
+    if (drop?.length) n.props = n.props.filter(([k]) => !drop.includes(k));
+    if (large.size) n.props = n.props.map(([k, v]) => [k, capCounts(v, large)]);
+    if (n.children) rec(n.children);
+  });
+  rec(nodes);
+  return nodes;
+}
+/** Every emitted control of a screen, flattened, after finalize: [{name, control, props, inGallery}]. */
+export function flatNodes(project, screen) {
   const { nodes, tail } = buildNodes(project, screen, screen.controls, false);
+  const out = [];
+  const rec = (ns, inGallery) => ns.forEach((n) => { out.push({ name: n.name, control: n.control, props: n.props, inGallery }); if (n.children) rec(n.children, true); });
+  rec(finalize(project, [...nodes, ...tail]), false);
+  return out;
+}
+export function screenYaml(project, screen) {
+  const { nodes: rawNodes, tail: rawTail } = buildNodes(project, screen, screen.controls, false);
+  const nodes = finalize(project, rawNodes), tail = finalize(project, rawTail);
   const lines = ['Screens:', `  ${screen.name}:`, '    Properties:', yProp('      ', 'Fill', screen.fillFx || colorFx(screen.fill || '@Bg'))];
   const ov = screenOnVisible(project, screen);
   if (ov) lines.push(yProp('      ', 'OnVisible', ov));
@@ -583,7 +611,7 @@ export function screenYaml(project, screen) {
 export function controlYaml(project, screen, ctl) {
   const inGallery = !screen.controls.includes(ctl);
   const { nodes, tail } = buildNodes(project, screen, [ctl], inGallery);
-  return yNodes([...nodes, ...tail], '').join('\n');
+  return yNodes(finalize(project, [...nodes, ...tail]), '').join('\n');
 }
 /** Flat list of every Power Apps control name emitted for a screen (for checks). */
 export function emittedNames(project, screen) {
@@ -803,6 +831,7 @@ export const LINT_RULES = {
   PS052: 'Theme text color below WCAG AA contrast',
   PS053: 'Approval chain list or stage count invalid', PS054: 'Approval group stage without a valid group ID', PS055: 'Approval stage approver is not a Person column',
   PS056: 'Approval chain column missing', PS057: 'Approve/reject action without a chain or comment box',
+  PS058: 'Formula override on a property the tenant rejected', PS059: 'Not delegable on a large list',
 };
 const screenHas = (scr, name) => !!name && [...walk(scr.controls)].some(([c]) => c.name === name);
 const overlap = (a, b) => Math.max(0, Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x)) * Math.max(0, Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y));
@@ -937,6 +966,22 @@ export function lint(project) {
     if (over > 0) mk(fxText(c))('warn', 'PS051', `${scr.name} › ${c.name}`, `The HTML box is ${over}px taller than this control can show (HtmlViewer adds 5px padding on each side), so Power Apps will draw a scrollbar. Make the box ${over}px shorter or the control ${over}px taller.`);
   }
   for (const x of contrastIssues(project.theme.colors)) addG('info', 'PS052', 'Theme', `${x.fg} on ${x.bg} (${x.where}) has contrast ${x.ratio.toFixed(2)}:1; WCAG AA needs 4.5:1. Theme tab → Contrast fixes it in one click.`);
-  for (const scr of project.screens) for (const [c] of walk(scr.controls)) if (c.bind?.kind === 'count') { addG('info', 'PS035', `${scr.name} › ${c.name}`, 'CountRows over a SharePoint list is not delegable: counts stop at the data row limit (500 by default, 2000 max).'); break; }
+  // properties switched off after a tenant rejected them (Report a paste error → PA2108)
+  const sup = project.app.suppressProps || {};
+  if (Object.keys(sup).length) for (const scr of project.screens) for (const [c] of walk(scr.controls)) {
+    const pa = String(c.type === 'raw' ? c.paControl : CATALOG[c.type]?.pa || '').split('@')[0];
+    for (const k of Object.keys(c.fx || {})) if (sup[pa]?.includes(k) && String(c.fx[k]).trim()) mk(fxText(c))('warn', 'PS058', `${scr.name} › ${c.name}`, `Your formula for ${k} is not emitted: ${k} is switched off for ${pa} because your tenant rejected it (App tab → Tenant fixes).`);
+  }
+  // large lists: formulas SharePoint cannot delegate
+  const large = largeLists(project);
+  if (large.size) for (const scr of project.screens) {
+    const seen = new Set();
+    for (const n of flatNodes(project, scr)) for (const [k, v] of n.props) for (const x of delegationIssues(v, large)) {
+      const key = n.name + '|' + x.msg; if (seen.has(key)) continue; seen.add(key);
+      const owner = [...walk(scr.controls)].map(([c]) => c).filter((c) => n.name.startsWith(c.name)).sort((a, b) => b.name.length - a.name.length)[0];
+      mk(owner ? fxText(owner) : '')('warn', 'PS059', `${scr.name} › ${n.name}.${k}`, x.msg);
+    }
+  }
+  for (const scr of project.screens) for (const [c] of walk(scr.controls)) if (c.bind?.kind === 'count' && !(large.has(c.bind.list))) { addG('info', 'PS035', `${scr.name} › ${c.name}`, 'CountRows over a SharePoint list is not delegable: counts stop at the data row limit (500 by default, 2000 max).'); break; }
   return F;
 }

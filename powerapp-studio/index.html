@@ -38,11 +38,15 @@
             <button data-cmd="copyProject">Copy project JSON</button>
             <button data-cmd="open">Open project file…</button>
             <button data-cmd="paste">Paste project JSON…</button>
+            <button data-cmd="history">Version history…</button>
+            <button data-cmd="bundleExport">Export app bundle (.zip)</button>
+            <button data-cmd="bundleImport">Import app bundle…</button>
             <hr>
             <button data-cmd="describe">Describe your app (Claude)…</button>
             <button data-cmd="change">Ask for a change (Claude)…</button>
             <button data-cmd="import">Import screen YAML…</button>
             <button data-cmd="drift">Check against a Studio export…</button>
+            <button data-cmd="feedback">Report a paste error…</button>
             <hr>
             <button data-cmd="setup">Finish setup…</button>
             <button data-cmd="guide">Export customer guide (.html)</button>
@@ -54,6 +58,7 @@
             <button data-cmd="reset" class="danger">Start over</button>
           </div>
         </div>
+        <button class="tb" id="btnReport" title="Paste an error from Studio or Power Automate: see which control it is, why, and the fix">Paste error</button>
         <button class="tb setup" id="btnSetup" hidden title="Values the app still needs before it deploys cleanly">Finish setup <b class="setup-badge" id="setupBadge"></b></button>
         <button class="tb play" id="btnPlay" title="Test the app (F5)"><svg viewBox="0 0 24 24"><path d="M8 5l11 7-11 7z"/></svg>Play</button>
         <button class="tb primary" id="btnCode" title="Get paste-ready YAML">Get YAML <b class="lint-badge" id="lintBadge" hidden></b></button>
@@ -101,6 +106,7 @@
   <input type="file" id="fileImg" accept="image/*" hidden>
   <input type="file" id="fileYaml" accept=".yaml,.yml,.txt" hidden>
   <input type="file" id="fileBlocks" accept=".json,application/json" hidden>
+  <input type="file" id="fileBundle" accept=".zip,application/zip" hidden>
   <div class="small-screen" id="smallScreen">
     <div>
       <h2>Power App Studio needs a wider screen</h2>

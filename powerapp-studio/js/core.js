@@ -306,6 +306,31 @@ export function normalizeProject(p) {
     p.deployed[k] = { hash: /^[0-9a-f]{0,8}$/.test(String(v.hash ?? '')) ? String(v.hash ?? '') : '', at: String(v.at || '').slice(0, 40), name: String(v.name || '').slice(0, 120) };
   }
   if (p.app.chain) { const ch = normalizeChain(p.app.chain); if (ch) p.app.chain = ch; else delete p.app.chain; }
+  // Report a paste error: properties a tenant rejected (PA2108), per control type
+  if (p.app.suppressProps && typeof p.app.suppressProps === 'object' && !Array.isArray(p.app.suppressProps)) {
+    const sp = {};
+    for (const [k, v] of Object.entries(p.app.suppressProps)) {
+      if (!/^[A-Za-z][A-Za-z0-9/]{0,40}$/.test(k) || !Array.isArray(v)) continue;
+      const props = [...new Set(v.map(String).filter((x) => IDENT.test(x) && !['X', 'Y', 'Width', 'Height'].includes(x)))].slice(0, 40);
+      if (props.length) sp[k] = props;
+    }
+    if (Object.keys(sp).length) p.app.suppressProps = sp; else delete p.app.suppressProps;
+  } else delete p.app.suppressProps;
+  if (p.app.setup) p.app.setup.rowLimitConfirmed = !!(su.rowLimitConfirmed); if (!p.app.setup.rowLimitConfirmed) delete p.app.setup.rowLimitConfirmed;
+  // tenant findings log
+  if (Array.isArray(p.findings) && p.findings.length) {
+    p.findings = p.findings.filter((f) => f && typeof f === 'object').slice(-MAX_FINDINGS).map((f) => ({
+      id: SAFE_ID.test(f.id || '') ? f.id : uid(), at: String(f.at || '').slice(0, 40), code: String(f.code || '').slice(0, 20), family: String(f.family || '').slice(0, 30),
+      title: String(f.title || '').slice(0, 200), where: String(f.where || '').slice(0, 200), excerpt: String(f.excerpt || '').slice(0, 2000), status: f.status === 'fixed' ? 'fixed' : 'open',
+    }));
+  } else delete p.findings;
+  // version history (snapshots keep the whole project as JSON text; restored through normalizeProject)
+  if (Array.isArray(p.snapshots) && p.snapshots.length) {
+    p.snapshots = p.snapshots.filter((x) => x && typeof x === 'object' && typeof x.data === 'string' && x.data.startsWith('{') && x.data.length < 5e6).slice(-MAX_SNAPSHOTS).map((x) => ({
+      id: SAFE_ID.test(x.id || '') ? x.id : uid(), name: String(x.name || 'Snapshot').slice(0, 80), at: String(x.at || '').slice(0, 40), auto: !!x.auto, data: x.data,
+    }));
+    if (!p.snapshots.length) delete p.snapshots;
+  } else delete p.snapshots;
   p.flows = Array.isArray(p.flows) ? p.flows : [];
   const KINDS = ['created', 'statusChanged', 'reminder', 'button'];
   for (const f of p.flows) {
@@ -344,6 +369,7 @@ export function normalizeProject(p) {
         return o;
       });
     } else delete l.rows;
+    if (!['small', 'medium', 'large'].includes(l.size)) delete l.size;
   }
   p.screens = Array.isArray(p.screens) ? p.screens : [];
   const screenMap = {};
@@ -406,6 +432,8 @@ export function sampleValue(col, i, lists) {
 }
 /** Imported rows kept in a project (Play data and CSV export). */
 export const MAX_ROWS = 200;
+export const MAX_FINDINGS = 100;
+export const MAX_SNAPSHOTS = 15;
 /** A Person value for Play from an imported email address. */
 export function personFromEmail(v) {
   const m = String(v || '').trim().toLowerCase();

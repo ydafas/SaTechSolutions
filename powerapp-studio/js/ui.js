@@ -21,6 +21,11 @@ import { addChainFlows } from './ai.js';
 import { encodeShare, decodeShare, isShareHash, WARN_CHARS, MAX_CHARS } from './share.js';
 import { loadBlocks, saveBlocks, makeBlock, insertSavedBlock, exportBlocksJson, importBlocksJson } from './blocks.js';
 import { ICONS, ICON_NAMES } from './icons.js';
+import { SIZES } from './delegation.js';
+import { initFeedbackUI, feedbackDialog } from './feedbackui.js';
+import { initHistoryUI, historyDialog } from './historyui.js';
+import { takeSnapshot, mergeSnapshots } from './history.js';
+import { bundleZip, readBundle } from './bundle.js';
 
 // ------------------------------------------------------------------ small helpers
 const $ = (s, r = document) => r.querySelector(s);
@@ -60,7 +65,19 @@ const KEY = 'pas.project.v1';
 let P = null;
 const S = { tab: 'insert', screenId: null, sel: [], zoom: 'fit', undo: [], redo: [], last: '', clip: null, actEvent: 'OnSelect', blockList: '', codeTab: 'deploy', showCond: false };
 function loadSaved() { try { const t = localStorage.getItem(KEY); return t ? JSON.parse(t) : null; } catch { return null; } }
-function persist() { if (S.viewer) return; try { localStorage.setItem(KEY, JSON.stringify(P)); } catch { /* storage unavailable */ } }
+/** Save to this browser. Returns false (and says so once) when storage is full, e.g. after many saved versions. */
+function persist() {
+  if (S.viewer) return true;
+  try { localStorage.setItem(KEY, JSON.stringify(P)); S.storeWarned = false; return true; }
+  catch {
+    if (!S.storeWarned) toast('This browser\'s storage is full: changes are not being kept. Delete old versions (Project → Version history) or save a project file.', true);
+    S.storeWarned = true; return false;
+  }
+}
+/** Version history, the tenant findings log and deploy records are not part of Undo: they describe the tenant and the past, not the app. */
+const META = ['snapshots', 'findings', 'deployed'];
+function ser(p) { const o = {}; for (const k of Object.keys(p)) if (!META.includes(k)) o[k] = p[k]; return JSON.stringify(o); }
+function fromUndo(text) { const q = JSON.parse(text); for (const k of META) { if (P[k]) q[k] = P[k]; else delete q[k]; } return q; }
 const screen = () => P.screens.find((s) => s.id === S.screenId) || P.screens[0];
 const selCtls = () => S.sel.map((id) => findCtl(P, id)).filter(Boolean);
 const one = () => (S.sel.length === 1 ? findCtl(P, S.sel[0]) : null);
@@ -71,7 +88,7 @@ function setProject(p, keepUndo = false) {
   migrate(P);
   S.screenId = P.screens[0]?.id; S.sel = [];
   if (!keepUndo) { S.undo = []; S.redo = []; }
-  S.last = JSON.stringify(P); persist(); renderAll(); zoomFit();
+  S.last = ser(P); persist(); renderAll(); zoomFit();
 }
 /** Bring any saved or shared project up to the current model. Safe to run on untrusted files. */
 function migrate(p) {
@@ -82,20 +99,30 @@ function migrate(p) {
 let commitTimer = null;
 function commit() {
   clearTimeout(commitTimer);
-  const cur = JSON.stringify(P);
-  if (cur !== S.last) { S.undo.push(S.last); if (S.undo.length > 120) S.undo.shift(); S.redo = []; S.last = cur; persist(); }
+  const cur = ser(P);
+  if (cur !== S.last) { S.undo.push(S.last); if (S.undo.length > 120) S.undo.shift(); S.redo = []; S.last = cur; }
+  persist();
   updateTop(); lintSoon();
 }
 const commitSoon = () => { clearTimeout(commitTimer); commitTimer = setTimeout(commit, 350); };
-function undo() { commit(); if (!S.undo.length) return; S.redo.push(S.last); S.last = S.undo.pop(); P = JSON.parse(S.last); afterHistory(); }
-function redo() { if (!S.redo.length) return; S.undo.push(S.last); S.last = S.redo.pop(); P = JSON.parse(S.last); afterHistory(); }
-/** Swap in a whole new project as ONE undo step (Describe builds, Ask for a change). */
-function replaceProject(p) {
+function undo() { commit(); if (!S.undo.length) return; S.redo.push(S.last); S.last = S.undo.pop(); P = fromUndo(S.last); afterHistory(); }
+function redo() { if (!S.redo.length) return; S.undo.push(S.last); S.last = S.redo.pop(); P = fromUndo(S.last); afterHistory(); }
+const isBlank = (p) => !p.lists.length && p.screens.every((s) => !s.controls.length);
+/** Swap in a whole new project as ONE undo step (Describe builds, Ask for a change, imports, restores).
+ *  `label` saves the current app as an automatic version first. Versions, the findings log and switched-off
+ *  properties carry over unless the new project brings its own. `mergeVersions` (bundle import) joins both version
+ *  lists and leaves deploy records with the app they belong to. */
+function replaceProject(p, label = '', { mergeVersions = false } = {}) {
   commit();
   const prev = S.last;
+  if (mergeVersions) p.snapshots = mergeSnapshots(P.snapshots, p.snapshots);
+  for (const k of META) if (!p[k] && P[k] && !(mergeVersions && k === 'deployed')) p[k] = clone(P[k]); // another app's deploy records never carry into a bundle
+  if (P.app.suppressProps && p.app && !p.app.suppressProps) p.app.suppressProps = clone(P.app.suppressProps);
+  if (label && !isBlank(P)) takeSnapshot(p, label, { auto: true, source: P });
+  if (!p.snapshots?.length) delete p.snapshots;
   P = p; migrate(P);
   S.undo.push(prev); if (S.undo.length > 120) S.undo.shift(); S.redo = [];
-  S.last = JSON.stringify(P);
+  S.last = ser(P);
   if (!P.screens.find((s) => s.id === S.screenId)) S.screenId = P.screens[0]?.id;
   S.sel = S.sel.filter((id) => findCtl(P, id));
   persist(); renderAll();
@@ -106,7 +133,7 @@ function afterHistory() { if (!P.screens.find((s) => s.id === S.screenId)) S.scr
 function renderAll() { updateTop(); renderRail(); renderPanel(); renderTabs(); renderCanvas(); renderInspector(); lintSoon(); }
 function updateTop() {
   const inp = $('#appName'); if (document.activeElement !== inp) inp.value = P.app.name;
-  $('#btnUndo').disabled = !S.undo.length && JSON.stringify(P) === S.last; $('#btnRedo').disabled = !S.redo.length;
+  $('#btnUndo').disabled = !S.undo.length && ser(P) === S.last; $('#btnRedo').disabled = !S.redo.length;
   updateSetupBadge();
 }
 function updateSetupBadge() {
@@ -427,7 +454,7 @@ async function openShared(hash) {
     m.el.querySelector('[data-x]').onclick = () => { m.close(); leaveViewer(); };
     return;
   }
-  P = p; migrate(P); S.screenId = P.screens[0]?.id; S.last = JSON.stringify(P); renderAll();
+  P = p; migrate(P); S.screenId = P.screens[0]?.id; S.last = ser(P); renderAll();
   play({ viewer: true });
 }
 function leaveViewer(copy = null) {
@@ -581,6 +608,7 @@ function dataEditorHtml(lists) {
   if (!lists.length) return '<p class="note"><b>No lists yet.</b> Add one, or run New app to start from a scenario.</p>';
   return lists.map((l, li) => `<div class="listcard" data-li="${li}">
     <div class="listcard-h"><i style="width:16px;height:16px;color:var(--cyan)">${ui('data')}</i><input value="${esc(l.name)}" data-dl="name" aria-label="List name"><button class="mini danger" data-dcmd="delList" title="Delete list">${ui('trash')}</button></div>
+    <div class="lsize"><label for="lsz${li}">Expected size</label><select class="inp" id="lsz${li}" data-dl="size" title="${esc(SIZES[l.size]?.note || 'Not set: formulas are generated for lists under 500 items.')}"><option value="">Not set</option>${Object.entries(SIZES).map(([k, v]) => `<option value="${k}" ${k === l.size ? 'selected' : ''}>${v.label}</option>`).join('')}</select></div>
     ${l.columns.map((c, ci) => `<div class="col" data-ci="${ci}">
       <div class="col-top"><input class="inp" value="${esc(c.name)}" data-dc="name" ${c.builtin ? 'disabled' : ''} aria-label="Column name" title="${esc(c.name)}">
         ${c.builtin ? '' : `<button class="mini" data-dcmd="colUp" title="Move up" aria-label="Move ${esc(c.name)} up">${ui('up')}</button><button class="mini danger" data-dcmd="delCol" title="Delete column" aria-label="Delete ${esc(c.name)}">${ui('trash')}</button>`}</div>
@@ -597,6 +625,14 @@ function bindDataEditor(root, lists, onChange, rerender) {
   root.oninput = root.onchange = (e) => {
     const t = e.target, card = t.closest('[data-li]'); if (!card) return;
     const l = lists[+card.dataset.li];
+    if (t.dataset.dl === 'size') {
+      if (e.type !== 'change') return;
+      if (t.value) l.size = t.value; else delete l.size;
+      t.title = SIZES[l.size]?.note || '';
+      onChange();
+      if (lists === P.lists && l.size) toast(SIZES[l.size].note);
+      return;
+    }
     if (t.dataset.dl === 'name') {
       const nv = t.value.trim();
       if (e.type === 'change' && nv && nv !== l.name) { if (lists === P.lists) renameList(l.name, nv); else l.name = nv; onChange(); if (lists === P.lists) renderPanel(); }
@@ -1282,8 +1318,9 @@ function codeDialog(tab) {
       return;
     }
     if (k === 'lint') {
-      main.innerHTML = `<div class="bar"><h3>Lint report</h3></div>${F2.length ? F2.map((x, i) => `<div class="finding" data-fi="${i}"><span class="lv ${x.level}">${x.level.toUpperCase()}</span><div><b>${esc(x.where)} · ${esc(x.code)}</b>${esc(x.msg)}</div>${SETUP_CODES.has(x.code) && (x.code !== 'PS041' || /varIsAdmin/.test(x.msg)) ? '<button class="btn sm" data-fix="1">Fix in Finish setup</button>' : ''}</div>`).join('') : '<p>No problems found. Every rule the generator knows about passes.</p>'}
+      main.innerHTML = `<div class="bar"><h3>Lint report</h3><button class="btn sm" id="cReport" title="Paste the error Studio showed; see the control, cause and fix">Studio showed an error?</button></div>${F2.length ? F2.map((x, i) => `<div class="finding" data-fi="${i}"><span class="lv ${x.level}">${x.level.toUpperCase()}</span><div><b>${esc(x.where)} · ${esc(x.code)}</b>${esc(x.msg)}</div>${SETUP_CODES.has(x.code) && (x.code !== 'PS041' || /varIsAdmin/.test(x.msg)) ? '<button class="btn sm" data-fix="1">Fix in Finish setup</button>' : ''}</div>`).join('') : '<p>No problems found. Every rule the generator knows about passes.</p>'}
         <p class="note">Lint checks the paste rules learned from real tenants: unique names app-wide, no Navigate in OnStart/OnVisible, ThisItem only in galleries, valid bindings and targets, required columns covered by Save, clickable controls not covered. To silence one rule on one control, add a comment such as <code>// lint-ok PS040</code> to any of its formulas.</p>`;
+      main.querySelector('#cReport').onclick = () => { m.close(); feedbackDialog(); };
       main.querySelectorAll('[data-fix]').forEach((b) => b.onclick = (e) => { e.stopPropagation(); m.close(); setupDialog(); });
       main.querySelectorAll('[data-fi]').forEach((d) => d.onclick = () => { const x = F2[+d.dataset.fi]; const nm = x.where.split(' › ')[1]; for (const s of P.screens) for (const [c] of walk(s.controls)) if (c.name === nm) { S.screenId = s.id; S.sel = [c.id]; m.close(); renderAll(); return; } });
       return;
@@ -1482,6 +1519,10 @@ function runCmd(cmd, el) {
     case 'importSchema': return schemaDialog();
     case 'importTable': return importTableDialog();
     case 'drift': return driftDialog();
+    case 'feedback': return feedbackDialog();
+    case 'history': return historyDialog();
+    case 'bundleExport': return exportBundle();
+    case 'bundleImport': { const fi = $('#fileBundle'); fi.value = ''; fi.click(); return; }
     case 'showScript': return codeDialog('script');
     case 'setup': return setupDialog();
     case 'guide': exportGuide(); return;
@@ -1520,13 +1561,36 @@ function runCmd(cmd, el) {
   }
 }
 
+// ------------------------------------------------------------------ app bundle (.zip in the powerapps-canvas-yaml skill's layout)
+async function exportBundle() {
+  if (!window.JSZip) { toast('Zip library did not load', true); return; }
+  try { const { name, blob } = await bundleZip(P, window.JSZip); download(name, blob); }
+  catch (e) { toast('Could not build the bundle: ' + e.message, true); }
+}
+async function importBundle(file) {
+  if (!window.JSZip) { toast('Zip library did not load', true); return; }
+  let r;
+  try { r = await readBundle(new Uint8Array(await file.arrayBuffer()), window.JSZip, core.newProject); }
+  catch (e) { toast('Not an app bundle: ' + e.message, true); return; }
+  const ok = await ask('Open this app bundle?', `${file.name} holds "${r.project.app.name}" (${r.project.screens.length} screens, ${r.project.lists.length} lists) and replaces the app you have open. The current app is saved as a version first, and Undo brings it back.${r.notes.length ? ' ' + r.notes.join(' ') : ''}`, 'Open bundle');
+  if (!ok) return;
+  replaceProject(r.project, 'Before importing a bundle', { mergeVersions: true });
+  S.screenId = P.screens.find((s) => s.id === P.app.startScreen)?.id || P.screens[0]?.id; S.sel = []; renderAll(); zoomFit();
+  toast(r.source === 'embedded' ? 'Bundle opened' : 'Bundle opened: rebuilt from the canonical screens and schema');
+}
+
 function init() {
   initFlowsUI({ P: () => P, modal, toast, ui, esc, svgIcon, commit, renderPanel, download, copyText, ask });
-  initDescribeUI({ P: () => P, modal, toast, ui, esc, ask, changeDialog: () => changeDialog(), setProject: (p) => { replaceProject(p); S.screenId = P.screens[0]?.id; S.sel = []; renderAll(); zoomFit(); afterBuild(); } });
-  initChangeUI({ P: () => P, modal, toast, ui, esc, replaceProject, undo });
-  initDriftUI({ P: () => P, modal, toast, ui, esc, replaceProject });
+  initDescribeUI({ P: () => P, modal, toast, ui, esc, ask, changeDialog: () => changeDialog(), setProject: (p) => { replaceProject(p, 'Before Describe → Build'); S.screenId = P.screens[0]?.id; S.sel = []; renderAll(); zoomFit(); afterBuild(); } });
+  initChangeUI({ P: () => P, modal, toast, ui, esc, replaceProject: (p) => replaceProject(p, 'Before Ask for a change'), undo });
+  initDriftUI({ P: () => P, modal, toast, ui, esc, replaceProject: (p) => replaceProject(p, 'Before importing Studio controls') });
+  initFeedbackUI({ P: () => P, modal, toast, ui, esc, commit, persist, copyText, download, slug: core.slug,
+    selectControl: (screenId, id) => { S.screenId = screenId; S.sel = [id]; renderAll(); },
+    openScreen: (screenId) => { S.screenId = screenId; S.sel = []; renderAll(); },
+    openDataTab: (list) => { S.tab = 'data'; renderRail(); renderPanel(); const i = P.lists.findIndex((l) => l.name === list); $(`#panel [data-li="${i}"]`)?.scrollIntoView({ block: 'start' }); } });
+  initHistoryUI({ P: () => P, modal, toast, ui, esc, ask, persist, replaceProject });
   initTableUI({ P: () => P, modal, toast, ui, esc, commit, renderAll: () => { if (!P.screens.find((s) => s.id === S.screenId)) S.screenId = P.screens[0]?.id; renderAll(); } });
-  initAssistUI({ P: () => P, modal, toast, ui, esc, commit, copyText, download, downloadFlow, renderThumb, slug: core.slug,
+  initAssistUI({ P: () => P, modal, toast, ui, esc, commit, copyText, download, downloadFlow, renderThumb, slug: core.slug, reportError: () => feedbackDialog(),
     onSetupChange: () => { lintSoon(); updateSetupBadge(); renderPanelIf('flows'); renderPanelIf('app'); } });
   $('#btnSetup').onclick = () => setupDialog();
   $('#condChip').onclick = () => { S.showCond = !S.showCond; renderCanvas(); };
@@ -1546,6 +1610,8 @@ function init() {
   $('#btnChange').onclick = () => changeDialog();
   $('#btnPlay').onclick = play;
   $('#btnCode').onclick = () => codeDialog();
+  $('#btnReport').onclick = () => feedbackDialog();
+  $('#fileBundle').onchange = (e) => { const f = e.target.files[0]; if (f) importBundle(f); };
   const fm = $('#fileMenu');
   $('#btnFile').onclick = (e) => { e.stopPropagation(); fm.classList.toggle('open'); };
   document.addEventListener('click', () => fm.classList.remove('open'));
