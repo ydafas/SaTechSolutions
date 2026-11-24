@@ -1,6 +1,7 @@
 // templates.js — requirement scenarios, whole-screen templates and insertable blocks.
 import { newControl, newScreen, newList, newColumn, FORM_FACTORS, allNames, slug, varSel, uid } from './core.js';
 import { readFx, missingFx, usageFx } from './emit.js';
+import { newFlow } from './flows.js';
 
 
 // ---------------------------------------------------------------- scenarios (the requirements wizard)
@@ -654,6 +655,25 @@ export function generateApp(project, { screens = ['home', 'browse', 'detail', 'e
   }
   project.app.startScreen = project.screens[0]?.id;
   return project;
+}
+
+// ---------------------------------------------------------------- first-visit demo
+/** A finished Request Tracker with every option and two flows, set up completely, for "Explore a finished demo". */
+export function buildDemo(newProject) {
+  const p = newProject();
+  p.app.name = 'Request Tracker';
+  p.app.formFactor = 'tablet';
+  p.lists = SCENARIOS.requests.lists();
+  p.app.features = { loading: true, usage: true, confirm: true, stepper: true, scope: 'all', adminGroup: '11111111-2222-4333-8444-555555555555' };
+  p.app.siteUrl = 'https://contoso.sharepoint.com/sites/Requests';
+  p.app.appLink = 'https://apps.powerapps.com/play/e/default-demo/a/00000000-demo?tenantId=00000000-demo';
+  p.app.setup = { usageConfirmed: true };
+  generateApp(p, { screens: ['home', 'browse', 'detail', 'edit'], approvals: SCENARIOS.requests.approvals });
+  p.flows = [newFlow(p, 'created', 'Requests'), newFlow(p, 'statusChanged', 'Requests')];
+  const det = p.screens.find((s) => s.name === 'scrDetailRequests');
+  if (det) p.app.deepLink = { screen: det.id, list: 'Requests' };
+  p.app.demo = true;
+  return p;
 }
 
 // ---------------------------------------------------------------- insertable blocks (Insert tab)

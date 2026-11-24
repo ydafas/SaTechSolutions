@@ -4,9 +4,11 @@ import { CATALOG, CATS, COLTYPES, THEME_COLORS, THEME_PRESETS, FONTS, FORM_FACTO
 import { screenYaml, themeFormulas, onStartFx, startScreenName, startScreenFx, checklist, provisioningScript, lint, ACTION_TYPES, controlYaml, usedLists } from './emit.js';
 import { flowDefinition, flowFileName, flowFxName, FLOW_KINDS } from './flows.js';
 import { initDescribeUI, describeDialog } from './describeui.js';
+import { initAssistUI, setupDialog, setupCardHtml, bindSetupCard, openSetupCount, deployView, exportGuide, startTour, tourDone, conditionalCount } from './assistui.js';
+import { SETUP_CODES } from './setup.js';
 import { initFlowsUI, panelFlows, addFlowDialog, flowDialog, downloadFlow, duplicateFlow, deleteFlow, loadFlowSample, flowZipBlob } from './flowsui.js';
 import { renderControl, renderScreen, createRuntime, svgIcon, FONT_CSS, tryFx } from './render.js';
-import { SCENARIOS, generateApp, SCREEN_TEMPLATES, genBlank, genHome, genBrowse, genDetail, genEdit, genApprovals, genLoading, BLOCKS, insertBlock, galleryRows } from './templates.js';
+import { SCENARIOS, generateApp, SCREEN_TEMPLATES, genBlank, genHome, genBrowse, genDetail, genEdit, genApprovals, genLoading, BLOCKS, insertBlock, galleryRows, buildDemo } from './templates.js';
 import { importYaml } from './import.js';
 import { ICONS, ICON_NAMES } from './icons.js';
 
@@ -46,7 +48,7 @@ function download(name, data, type = 'text/plain') {
 // ------------------------------------------------------------------ state
 const KEY = 'pas.project.v1';
 let P = null;
-const S = { tab: 'insert', screenId: null, sel: [], zoom: 'fit', undo: [], redo: [], last: '', clip: null, actEvent: 'OnSelect', blockList: '', codeTab: 'steps' };
+const S = { tab: 'insert', screenId: null, sel: [], zoom: 'fit', undo: [], redo: [], last: '', clip: null, actEvent: 'OnSelect', blockList: '', codeTab: 'deploy', showCond: false };
 function loadSaved() { try { const t = localStorage.getItem(KEY); return t ? JSON.parse(t) : null; } catch { return null; } }
 function persist() { try { localStorage.setItem(KEY, JSON.stringify(P)); } catch { /* storage unavailable */ } }
 const screen = () => P.screens.find((s) => s.id === S.screenId) || P.screens[0];
@@ -84,6 +86,11 @@ function renderAll() { updateTop(); renderRail(); renderPanel(); renderTabs(); r
 function updateTop() {
   const inp = $('#appName'); if (document.activeElement !== inp) inp.value = P.app.name;
   $('#btnUndo').disabled = !S.undo.length && JSON.stringify(P) === S.last; $('#btnRedo').disabled = !S.redo.length;
+  updateSetupBadge();
+}
+function updateSetupBadge() {
+  let n = 0; try { n = openSetupCount(); } catch { n = 0; }
+  $('#btnSetup').hidden = !n; $('#setupBadge').textContent = n;
 }
 let lintTimer = null;
 function lintSoon() {
@@ -119,9 +126,25 @@ function renderCanvas() {
   const host = $('#screen');
   host.classList.add('design');
   renderScreen(host, scr, designEnv());
+  host.classList.toggle('show-cond', !!S.showCond);
+  const n = conditionalCount(scr), chip = $('#condChip');
+  chip.hidden = !n; chip.textContent = `${n} conditional`; chip.setAttribute('aria-pressed', String(!!S.showCond)); chip.classList.toggle('on', !!S.showCond);
   applyZoom();
   drawOverlay();
 }
+/** HTML of one screen as the designer draws it, for guide thumbnails. */
+function renderThumb(scr) {
+  refreshSample();
+  const host = document.createElement('div');
+  renderScreen(host, scr, { ...designEnv(), showHidden: false, selIds: new Set() });
+  return host.innerHTML;
+}
+function openDemo() {
+  setProject(buildDemo(core.newProject), true); commit();
+  toast('Demo loaded: a finished Request Tracker with flows. Press Play to try it.');
+  if (!tourDone()) setTimeout(startTour, 350);
+}
+function afterBuild() { if (openSetupCount()) setTimeout(setupDialog, 350); }
 /** Design view previews formulas against the first sample row of each list. */
 function designEnv() {
   const vars = { varIsAdmin: true, locInited: true, locStep: 2 }; for (const l of P.lists) vars[varSel(l.name)] = SAMPLE[l.name]?.[0] || {};
@@ -392,6 +415,7 @@ function alignSel(how) {
 function renderPanelIf(tab) { if (S.tab === tab) renderPanel(); }
 function renderPanel() {
   const el = $('#panel');
+  el.classList.toggle('wide', S.tab === 'data');
   const f = { insert: panelInsert, screens: panelScreens, layers: panelLayers, data: panelData, flows: panelFlows, theme: panelTheme, app: panelApp }[S.tab];
   el.innerHTML = f();
   if (S.tab === 'data') bindDataEditor(el, P.lists, () => { renderCanvas(); renderInspector(); commitSoon(); });
@@ -444,10 +468,10 @@ function dataEditorHtml(lists) {
   return lists.map((l, li) => `<div class="listcard" data-li="${li}">
     <div class="listcard-h"><i style="width:16px;height:16px;color:var(--cyan)">${ui('data')}</i><input value="${esc(l.name)}" data-dl="name" aria-label="List name"><button class="mini danger" data-dcmd="delList" title="Delete list">${ui('trash')}</button></div>
     ${l.columns.map((c, ci) => `<div class="col" data-ci="${ci}">
-      <div class="col-top"><input class="inp" value="${esc(c.name)}" data-dc="name" ${c.builtin ? 'disabled' : ''} aria-label="Column name">
-        <select class="inp" data-dc="type" ${c.builtin ? 'disabled' : ''}>${Object.entries(COLTYPES).map(([k, v]) => `<option value="${k}" ${k === c.type ? 'selected' : ''}>${v.label}</option>`).join('')}</select>
-        ${c.builtin ? '' : `<button class="mini" data-dcmd="colUp" title="Move up">${ui('up')}</button><button class="mini danger" data-dcmd="delCol" title="Delete column">${ui('trash')}</button>`}</div>
-      <div class="col-more"><label class="chk" style="margin:0"><input type="checkbox" data-dc="required" ${c.required ? 'checked' : ''} ${c.type === 'YesNo' ? 'disabled' : ''}>Required</label>${c.builtin ? '<span class="lock">Built-in Title column</span>' : ''}
+      <div class="col-top"><input class="inp" value="${esc(c.name)}" data-dc="name" ${c.builtin ? 'disabled' : ''} aria-label="Column name" title="${esc(c.name)}">
+        ${c.builtin ? '' : `<button class="mini" data-dcmd="colUp" title="Move up" aria-label="Move ${esc(c.name)} up">${ui('up')}</button><button class="mini danger" data-dcmd="delCol" title="Delete column" aria-label="Delete ${esc(c.name)}">${ui('trash')}</button>`}</div>
+      <div class="col-more"><select class="inp col-type" data-dc="type" ${c.builtin ? 'disabled' : ''} aria-label="Type of ${esc(c.name)}">${Object.entries(COLTYPES).map(([k, v]) => `<option value="${k}" ${k === c.type ? 'selected' : ''}>${v.label}</option>`).join('')}</select>
+        <label class="chk" style="margin:0"><input type="checkbox" data-dc="required" ${c.required ? 'checked' : ''} ${c.type === 'YesNo' ? 'disabled' : ''}>Required</label>${c.builtin ? '<span class="lock">Built-in Title column</span>' : ''}
         ${c.type === 'Choice' ? `<textarea class="inp" data-dc="choices" placeholder="One choice per line">${esc(c.choices.join('\n'))}</textarea>` : ''}
         ${c.type === 'Lookup' ? `<select class="inp" data-dc="lookupList"><option value="">(lookup target list)</option>${lists.filter((x) => x !== l).map((x) => `<option ${x.name === c.lookupList ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</select>` : ''}</div>
     </div>`).join('')}
@@ -992,7 +1016,7 @@ function newScreenDialog() {
 function wizard(first = false) {
   const wz = { step: 1, scen: 'requests', name: SCENARIOS.requests.app, ff: P?.app.formFactor || 'tablet', lists: SCENARIOS.requests.lists(), screens: new Set(['home', 'browse', 'detail', 'edit']), approvals: true, theme: P?.theme?.name || THEME_PRESETS[0].name, ft: { loading: true, confirm: true, stepper: true, scope: 'all', usage: false, adminGroup: '' } };
   const m = modal(`<div class="modal-h"><h2>${first ? 'Build a Power App' : 'New app from requirements'}</h2><div class="steps" id="wzSteps"></div><button class="mini" data-close>${ui('close')}</button></div><div class="modal-b" id="wzBody"></div>
-    <div class="modal-f"><span class="grow" id="wzNote"></span>${first ? '<button class="btn" id="wzBlank">Start with a blank canvas</button>' : ''}<button class="btn" id="wzBack">Back</button><button class="btn pri" id="wzNext">Next</button></div>`);
+    <div class="modal-f"><span class="grow" id="wzNote"></span>${first ? '<button class="btn" id="wzDemo">Explore a finished demo</button><button class="btn" id="wzBlank">Start with a blank canvas</button>' : ''}<button class="btn" id="wzBack">Back</button><button class="btn pri" id="wzNext">Next</button></div>`);
   const body = m.el.querySelector('#wzBody');
   const draw = () => {
     m.el.querySelector('#wzSteps').innerHTML = ['What', 'Data', 'Screens and look'].map((t, i) => `${i ? '<i></i>' : ''}<span class="${wz.step === i + 1 ? 'on' : wz.step > i + 1 ? 'done' : ''}"><b>${i + 1}</b>${t}</span>`).join('');
@@ -1037,6 +1061,7 @@ function wizard(first = false) {
   };
   m.el.querySelector('#wzBack').onclick = () => { wz.step--; draw(); };
   m.el.querySelector('#wzBlank')?.addEventListener('click', () => { m.close(); });
+  m.el.querySelector('#wzDemo')?.addEventListener('click', () => { m.close(); openDemo(); });
   m.el.querySelector('#wzNext').onclick = async () => {
     if (wz.step === 2) {
       const names = wz.lists.map((l) => l.name);
@@ -1060,6 +1085,7 @@ function wizard(first = false) {
     m.close();
     setProject(p, true); commit();
     toast(`Generated ${p.screens.length} screens. Press Play to try it.`);
+    afterBuild();
   };
   draw();
 }
@@ -1069,7 +1095,7 @@ function codeDialog(tab) {
   if (tab) S.codeTab = tab;
   const F2 = lint(P), errs = F2.filter((x) => x.level === 'error').length, warns = F2.filter((x) => x.level === 'warn').length;
   const items = [
-    ['grp', 'Paste into Power Apps'], ['steps', 'Deploy steps'], ['formulas', 'App.Formulas'], ...(onStartFx(P) ? [['onstart', 'App.OnStart']] : []), ['startscreen', 'App.StartScreen'],
+    ['grp', 'Paste into Power Apps'], ['deploy', 'Paste assistant'], ['steps', 'All steps as text'], ['formulas', 'App.Formulas'], ...(onStartFx(P) ? [['onstart', 'App.OnStart']] : []), ['startscreen', 'App.StartScreen'],
     ...P.screens.map((s) => ['scr:' + s.id, s.name]),
     ...((P.flows || []).filter((f) => f.enabled !== false).length ? [['grp', 'Flows (Import Package, Legacy)'], ...P.flows.filter((f) => f.enabled !== false).map((f) => ['flow:' + f.id, f.name])] : []),
     ['grp', 'Check'], ['lint', 'Lint report'],
@@ -1077,20 +1103,22 @@ function codeDialog(tab) {
   ];
   const m = modal(`<div class="modal-h"><h2>Get YAML</h2><button class="mini" data-close>${ui('close')}</button></div>
     <div class="modal-b"><div class="code-layout"><nav class="code-nav" id="codeNav">${items.map(([k, l]) => k === 'grp' ? `<div class="grp">${l}</div>` : `<button data-ct="${k}">${k.startsWith('scr:') ? ui('screen') : ''}${esc(l)}${k === 'lint' ? `<span class="cnt ${errs ? '' : warns ? 'warn' : 'ok'}">${errs || warns || '✓'}</span>` : ''}</button>`).join('')}</nav><div class="code-main" id="codeMain"></div></div></div>
-    <div class="modal-f"><span class="grow">${errs ? `<b style="color:var(--danger)">${errs} error${errs > 1 ? 's' : ''}</b> to fix before pasting. ` : ''}Paste screens one at a time with Ctrl+V on an empty canvas in Studio.</span><button class="btn" id="zipAll">${ui('download')}Download all (.zip)</button><button class="btn pri" data-close>Done</button></div>`);
+    <div class="modal-f"><span class="grow">${errs ? `<b style="color:var(--danger)">${errs} error${errs > 1 ? 's' : ''}</b> to fix before pasting. ` : ''}Paste screens one at a time with Ctrl+V on an empty canvas in Studio.</span><button class="btn" id="guideBtn">${ui('file')}Export guide</button><button class="btn" id="zipAll">${ui('download')}Download all (.zip)</button><button class="btn pri" data-close>Done</button></div>`);
   const main = m.el.querySelector('#codeMain');
   const show = (k) => {
     S.codeTab = k;
     m.el.querySelectorAll('[data-ct]').forEach((b) => b.classList.toggle('on', b.dataset.ct === k));
     let title = '', text = '', fname = '', extra = '';
+    if (k === 'deploy') { deployView(main, m.close); return; }
     if (k === 'steps') {
       main.innerHTML = `<div class="bar"><h3>Deploy steps</h3></div><ol class="checklist">${checklist(P).map((s) => `<li>${esc(s)}</li>`).join('')}</ol>
         <p class="note">Re-pasting a screen deletes controls you added by hand in Studio. Copy those first (select, Ctrl+C, paste into Notepad) and paste them back afterwards, or import the screen here so the designer keeps them.</p>`;
       return;
     }
     if (k === 'lint') {
-      main.innerHTML = `<div class="bar"><h3>Lint report</h3></div>${F2.length ? F2.map((x, i) => `<div class="finding" data-fi="${i}"><span class="lv ${x.level}">${x.level.toUpperCase()}</span><div><b>${esc(x.where)} · ${esc(x.code)}</b>${esc(x.msg)}</div></div>`).join('') : '<p>No problems found. Every rule the generator knows about passes.</p>'}
+      main.innerHTML = `<div class="bar"><h3>Lint report</h3></div>${F2.length ? F2.map((x, i) => `<div class="finding" data-fi="${i}"><span class="lv ${x.level}">${x.level.toUpperCase()}</span><div><b>${esc(x.where)} · ${esc(x.code)}</b>${esc(x.msg)}</div>${SETUP_CODES.has(x.code) && (x.code !== 'PS041' || /varIsAdmin/.test(x.msg)) ? '<button class="btn sm" data-fix="1">Fix in Finish setup</button>' : ''}</div>`).join('') : '<p>No problems found. Every rule the generator knows about passes.</p>'}
         <p class="note">Lint checks the paste rules learned from real tenants: unique names app-wide, no Navigate in OnStart/OnVisible, ThisItem only in galleries, valid bindings and targets, required columns covered by Save, clickable controls not covered. To silence one rule on one control, add a comment such as <code>// lint-ok PS040</code> to any of its formulas.</p>`;
+      main.querySelectorAll('[data-fix]').forEach((b) => b.onclick = (e) => { e.stopPropagation(); m.close(); setupDialog(); });
       main.querySelectorAll('[data-fi]').forEach((d) => d.onclick = () => { const x = F2[+d.dataset.fi]; const nm = x.where.split(' › ')[1]; for (const s of P.screens) for (const [c] of walk(s.controls)) if (c.name === nm) { S.screenId = s.id; S.sel = [c.id]; m.close(); renderAll(); return; } });
       return;
     }
@@ -1115,6 +1143,7 @@ function codeDialog(tab) {
     main.querySelector('#cDl').onclick = () => download(fname, text);
   };
   m.el.querySelector('#codeNav').addEventListener('click', (e) => { const b = e.target.closest('[data-ct]'); if (b) show(b.dataset.ct); });
+  m.el.querySelector('#guideBtn').onclick = () => exportGuide();
   m.el.querySelector('#zipAll').onclick = async () => {
     if (!window.JSZip) { toast('Zip library did not load', true); return; }
     const z = new window.JSZip(), root = z.folder(core.slug(P.app.name));
@@ -1277,6 +1306,10 @@ function runCmd(cmd, el) {
     case 'addList': { let n = 'NewList', k = 2; while (P.lists.some((l) => l.name === n)) n = 'NewList' + k++; P.lists.push(newList(n)); renderPanel(); commit(); return; }
     case 'importSchema': return schemaDialog();
     case 'showScript': return codeDialog('script');
+    case 'setup': return setupDialog();
+    case 'guide': exportGuide(); return;
+    case 'demo': return ask('Open the demo?', 'This replaces the current project with the finished Request Tracker demo. Save a project file first if you want to keep your work.', 'Open demo').then((ok) => { if (ok) openDemo(); });
+    case 'tour': return startTour();
     case 'describe': return describeDialog();
     case 'addFlow': return addFlowDialog();
     case 'editFlow': return flowDialog(el.dataset.fid);
@@ -1310,7 +1343,11 @@ function runCmd(cmd, el) {
 
 function init() {
   initFlowsUI({ P: () => P, modal, toast, ui, esc, svgIcon, commit, renderPanel, download, copyText, ask });
-  initDescribeUI({ P: () => P, modal, toast, ui, esc, ask, setProject: (p) => { setProject(p, true); commit(); } });
+  initDescribeUI({ P: () => P, modal, toast, ui, esc, ask, setProject: (p) => { setProject(p, true); commit(); afterBuild(); } });
+  initAssistUI({ P: () => P, modal, toast, ui, esc, commit, copyText, download, downloadFlow, renderThumb, slug: core.slug,
+    onSetupChange: () => { lintSoon(); updateSetupBadge(); renderPanelIf('flows'); renderPanelIf('app'); } });
+  $('#btnSetup').onclick = () => setupDialog();
+  $('#condChip').onclick = () => { S.showCond = !S.showCond; renderCanvas(); };
   // icons in static buttons
   $('#btnUndo').innerHTML = ui('undo'); $('#btnRedo').innerHTML = ui('redo');
   const saved = loadSaved();

@@ -492,7 +492,7 @@ export function renderControl(ctl, env) {
   const font = FONT_CSS[theme.font] || FONT_CSS['Segoe UI'];
   const rad = (r) => num(r === 'theme' || r == null ? theme.radius : r) + 'px';
   if (!isVisible(ctl, env)) { el.style.display = 'none'; return el; }
-  if (mode === 'design' && (ctl.visibleWhen?.var || ctl.fx?.Visible)) el.classList.add('pa-cond');
+  if (mode === 'design' && (ctl.visibleWhen?.var || ctl.fx?.Visible)) { el.classList.add('pa-cond'); if (env.selIds?.has(ctl.id)) el.classList.add('pa-selected'); }
   const play = mode === 'play';
   const click = (handler) => { if (play) { el.style.cursor = 'pointer'; el.addEventListener('click', (e) => { e.stopPropagation(); handler(); }); } };
   const runSel = () => click(() => env.rt.run(env.screen, ctl.actions?.OnSelect, env.row));

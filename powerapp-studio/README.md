@@ -10,8 +10,12 @@ A browser-only Power Apps canvas app designer for satechitsolutions.com. There i
 4. **Play**: runs the app against sample data, including search, open, edit, save, delete, approve/reject, variables and people pickers.
 5. **Get YAML**: App.Formulas, App.OnStart, App.StartScreen and one paste-ready YAML block per screen. It also produces a lint report, a PnP provisioning script, the project JSON and a zip of everything.
 6. **Import**: paste YAML copied from Power Apps Studio (or a `Src/*.pa.yaml` file) to keep editing it here.
-8. **Describe your app** (uses Claude): write requirements in plain English. Claude returns a plan of lists, screens, approvals and flows, which you review and refine before the studio builds it. It uses the visitor's own Anthropic API key.
 7. **Flows**: Power Automate flows for the app's lists, exported as legacy flow packages. There are four templates: email on a new item, email when a Choice column changes, a daily reminder, and a flow a button runs. The email editor uses `{Column}` tokens and `{Link}`, which deep-links into the app. Play mode shows which flows would fire.
+8. **Describe your app** (uses Claude): write requirements in plain English. Claude returns a plan of lists, screens, approvals and flows, which you review and refine before the studio builds it. It uses the visitor's own Anthropic API key.
+9. **Paste assistant**: Get YAML opens a step-by-step deploy. Each step has one Copy or Download button and a "Done, next" button. It records a hash of what each step pasted, so the next deploy offers "Only what changed".
+10. **Finish setup**: one checklist for the values an app needs before it deploys cleanly: site URL, app web link, email-link screen, admin group ID and AppUsage list. Fixing a field clears its lint error at once.
+11. **Customer guide**: Export guide writes one self-contained HTML page with a lifecycle diagram, screen thumbnails, data model, who can do what, emails and flows, and numbered test cases with Pass/Fail, notes and Copy results.
+12. **Demo and tour**: first-time visitors can open a finished Request Tracker with flows and a 4-step tour.
 
 ## What the generator builds
 
@@ -51,6 +55,10 @@ These templates passed the harness and the skill's `screen_tool.py check`, but h
 | `js/flows.js` | Flow model and templates, Logic Apps definitions, legacy package files (`flowPackageFiles`), tokens to expressions, deep link (`deepLinkInfo`), flow lint |
 | `js/ai.js` | Describe-your-app: plan JSON schema, system prompt, browser call to the Claude API, `specToProject` (cleans the plan and builds the project, wiring button flows and deep links) |
 | `js/describeui.js` | The Describe dialog: requirements, key, model, review, refine, build |
+| `js/deploy.js` | Paste assistant model: ordered `deploySteps()`, FNV-1a `hash()`, `stepStatus()` (new / changed / unchanged), `markDeployed()`, `pendingSteps()`, `removedSinceDeploy()` |
+| `js/setup.js` | Finish setup: `setupItems()` (each mapped to the lint codes it clears), `applySetup()`, GUID check |
+| `js/guide.js` | Customer guide: `guideCases()` test cases from the app's actions and flows, `lifecycleSvg()`, `guideHtml()` |
+| `js/assistui.js` | UI for the Paste assistant, Finish setup card and dialog, guide export (thumbnails from the designer renderer) and the tour |
 | `js/flowsui.js` | Flows tab, new-flow picker, flow editor with email preview, package download, tenant-sample loader |
 | `tests/run.mjs` | Test harness: no dependencies beyond Node 18+ and the vendored js-yaml |
 | `vendor/` | js-yaml 4.1.0 and JSZip 3.10.1, served locally |
@@ -133,6 +141,10 @@ The harness covers:
 - PS051 and quote-free `FontCss`.
 - Play: "Still needed" names the blank field, the confirmation page appears, two-click delete, items created in Play count as Mine, and the loading timer reaches Home.
 - A plan's `options` reach the app, a bad group ID is dropped and reported, old plans and projects get defaults.
+- Paste assistant: the hash is stable, the deploy record survives save/load, editing one control flips only that screen, editing a flow flips that flow, removed screens are reported, and a hostile deploy record is cleaned.
+- Finish setup: after Describe without a site URL, entering it clears every PS045. App link, email-link screen, admin GUID (bad values refused) and the AppUsage confirmation all tick their items.
+- Customer guide: test cases match the app (one per flow, per distinct decision, per save screen, per delete list), are numbered, and the page makes no external requests.
+- Demo: lint-clean with no warnings, setup complete, two flows, paste rules hold.
 
 Run the harness before every push. If you change the emitter on purpose, look at the diff of a generated screen before pasting it into Studio.
 
@@ -196,3 +208,32 @@ The browser calls `https://api.anthropic.com/v1/messages` directly, sending the 
 - `tests/fixture-plan.json` is a deliberately messy plan. The tests check that it builds a lint-clean project, and they mock `fetch` to check the request headers and error handling.
 
 Corporate and government networks often block `api.anthropic.com`; the dialog reports that case clearly. The Claude artifact preview also blocks outside requests, so this feature only works on the live site.
+
+## Paste assistant, Finish setup, guide, demo
+
+**Paste assistant** (Get YAML → Paste assistant, the default tab):
+- **Steps, in order:** SharePoint lists (provisioning script), blank canvas app, data sources, App.Formulas, App.OnStart, flows (before the screens that run them), each screen, App.StartScreen, then test with Play.
+- **Marking a step done** stores `{hash, at, name}` under `project.deployed[key]`. Keys are `formulas`, `scr:<screenId>`, `flow:<flowId>` and so on.
+- **Hashes:** screens hash their full YAML. Flows hash their definition, not the package, since package keys are random per download. Lists hash their schema.
+- **Next deploy:** "Only what changed" lists just the steps whose hash differs. It also names screens and flows deleted since the last deploy.
+- **Re-pasted screens** show the warning about copying hand-added controls out to Notepad first.
+
+**Finish setup** (top-bar button when anything is open, the Project menu, a card in the Paste assistant, and automatically after Generate or Describe → Build):
+
+| Item | Shown when | Clears |
+|---|---|---|
+| SharePoint site URL | any enabled flow | PS045 |
+| App web link, email-link screen and list | a flow uses `{Link}` | PS047 |
+| Admin group ID | screens use `varIsAdmin`, or a group is set | the admin gate |
+| AppUsage list exists | usage tracking is on | (confirmation only) |
+
+**Customer guide** (Get YAML → Export guide, or the Project menu):
+- Downloads `<App>-guide.html`.
+- Screen thumbnails are the designer's own render plus the studio's `.pa-*` CSS rules. External `src`/`href`/`url()` references are stripped, so the page works offline.
+- Pass/Fail marks and notes are kept in the reader's `localStorage` (wrapped in try/catch). Copy results writes a plain-text summary.
+
+**Demo**: `buildDemo()` in `js/templates.js` builds a Request Tracker with every option and two flows, fully set up. The tour (`startTour()`) highlights Insert, the canvas, Play and Get YAML. Finishing or skipping it sets `pas.tour.done` in localStorage. Project → Take the tour runs it again.
+
+**Designer polish**: on the Data tab the left panel widens to 380px, and column names get their own row, so long names are never cut off. The per-control orange "conditional" dots now show only on hover or selection; the "N conditional" chip in the stage bar marks them all.
+
+None of this changes screen YAML: generated screens, formulas and flow definitions are byte-identical to before for every scenario and the fixture plan.

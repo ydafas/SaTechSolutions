@@ -41,10 +41,16 @@
             <button data-cmd="describe">Describe your app (Claude)…</button>
             <button data-cmd="import">Import screen YAML…</button>
             <hr>
+            <button data-cmd="setup">Finish setup…</button>
+            <button data-cmd="guide">Export customer guide (.html)</button>
+            <hr>
+            <button data-cmd="demo">Open the finished demo</button>
+            <button data-cmd="tour">Take the tour</button>
             <button data-cmd="help">How it works</button>
             <button data-cmd="reset" class="danger">Start over</button>
           </div>
         </div>
+        <button class="tb setup" id="btnSetup" hidden title="Values the app still needs before it deploys cleanly">Finish setup <b class="setup-badge" id="setupBadge"></b></button>
         <button class="tb play" id="btnPlay" title="Test the app (F5)"><svg viewBox="0 0 24 24"><path d="M8 5l11 7-11 7z"/></svg>Play</button>
         <button class="tb primary" id="btnCode" title="Get paste-ready YAML">Get YAML <b class="lint-badge" id="lintBadge" hidden></b></button>
       </div>
@@ -64,6 +70,7 @@
       <main class="stage">
         <div class="stage-bar">
           <div class="tabs" id="screenTabs"></div>
+          <button class="cond-chip" id="condChip" hidden aria-pressed="false" title="Controls with a Visible rule. Click to mark them all."></button>
           <label class="showhid" title="Show overlays, empty states and other controls that are hidden until something happens"><input type="checkbox" id="showHidden">Show hidden</label>
           <div class="zoom">
             <button class="ic sm" data-zoom="-" aria-label="Zoom out">−</button>
