@@ -10,6 +10,7 @@
 //  * 3-argument IfError(Patch, Notify(error), success...) shape
 import { CATALOG, FORM_FACTORS, INPUT_TYPES, q, s, slug, varSel, hexToRgba, isHex, walk, colOf, hasActions, IDENT, RESERVED, allNames, SP_RESERVED_COLS } from './core.js';
 import { iconSvg } from './icons.js';
+import { contrastIssues } from './a11y.js';
 import { notifyFx, navigateFx, rebaseFx, upsertBaseFx, ifErrorFx, spUserFx, meUserFx, recordFx, equalsFx } from './fx.js';
 import { flowFxName, deepLinkInfo, flowLint, internalName as flowInternalName } from './flows.js';
 
@@ -453,12 +454,24 @@ const tapButton = (name, ctl, onSelect, hover = 'appTheme.HoverTint') => ({
 /** Controls that take their own clicks or typing (they must sit in front of a gallery's row tap). */
 export const isInteractive = (c) => INPUT_TYPES.has(c.type) || (c.type === 'button' && hasActions(c)) || (c.type !== 'button' && c.type !== 'gallery' && hasActions(c));
 /** Build emitted nodes for a list of designer controls. Returns {nodes, tail}. */
+/** Screen-reader name for a control: its bound column, else its name without the prefix and screen tag ("icoBackEditRequests" → "Back"). */
+export function a11yLabel(project, screen, ctl) {
+  if (ctl.field?.column) return ctl.field.column.replace(/([a-z])([A-Z])/g, '$1 $2');
+  const def = CATALOG[ctl.type] || {}, tagS = screen.name.replace(/^scr/, '');
+  let n = ctl.name.replace(new RegExp('^' + (def.prefix || '')), '');
+  if (tagS && n.endsWith(tagS) && n.length > tagS.length) n = n.slice(0, -tagS.length);
+  n = n.replace(/\d+$/, '').replace(/^(Row|Tile|Btn)(?=[A-Z])/, '');
+  return n.replace(/([a-z])([A-Z])/g, '$1 $2').trim() || def.label || 'Control';
+}
+const A11Y_INPUTS = new Set(['textinput', 'dropdown', 'datepicker', 'toggle', 'person']);
 function buildNodes(project, screen, controls, inGallery) {
   const nodes = [], tail = [];
+  const a11y = !!project.app.features?.a11y; // opt-in: AccessibleLabel is not in the field-tested references yet
   for (const ctl of controls) {
     const def = CATALOG[ctl.type];
     if (!def) continue;
     const node = { name: ctl.name, control: ctl.type === 'raw' ? ctl.paControl : def.pa, variant: ctl.type === 'gallery' ? 'Vertical' : ctl.type === 'raw' ? ctl.variant : undefined, props: controlProps(project, screen, ctl) };
+    if (a11y && A11Y_INPUTS.has(ctl.type) && !node.props.some(([k]) => k === 'AccessibleLabel')) node.props.push(['AccessibleLabel', s(a11yLabel(project, screen, ctl))]);
     nodes.push(node);
     if (ctl.type === 'gallery') {
       // Row tap goes in front of passive row content but behind anything that is clickable on its own,
@@ -478,7 +491,9 @@ function buildNodes(project, screen, controls, inGallery) {
     } else if (ctl.type === 'raw' && ctl.rawChildren) {
       node.children = ctl.rawChildren;
     } else if (['icon', 'card', 'image', 'label', 'rect', 'html'].includes(ctl.type) && hasActions(ctl)) {
-      nodes.push(tapButton(ctl.name + 'Tap', ctl, actionsFx(project, screen, ctl.actions.OnSelect)));
+      const tb = tapButton(ctl.name + 'Tap', ctl, actionsFx(project, screen, ctl.actions.OnSelect));
+      if (a11y) tb.props.splice(tb.props.length - 1, 0, ['AccessibleLabel', s(a11yLabel(project, screen, ctl))]);
+      nodes.push(tb);
     }
     if (ctl.type === 'person' && !inGallery) {
       const pv = pickVar(ctl), f = inputInfo(project, ctl);
@@ -772,6 +787,7 @@ export const LINT_RULES = {
   PS043: 'Flow has no list', PS044: 'Flow has no valid recipient', PS045: 'Flow needs the SharePoint site URL',
   PS046: 'Flow watch column missing or not Choice', PS047: 'Email link needs the app link and a deep-link screen',
   PS048: 'Unknown {token} in a flow email', PS049: 'Run a flow action without a button flow', PS050: 'Two flows with the same Power Apps name', PS051: 'HTML box taller than its control allows',
+  PS052: 'Theme text color below WCAG AA contrast',
 };
 const overlap = (a, b) => Math.max(0, Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x)) * Math.max(0, Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y));
 const PASSIVE_COVER = new Set(['label', 'card', 'rect', 'html', 'image', 'icon', 'badge']);
@@ -901,6 +917,7 @@ export function lint(project) {
     const over = htmlOverflow(String(c.props?.html || ''), c.h);
     if (over > 0) mk(fxText(c))('warn', 'PS051', `${scr.name} › ${c.name}`, `The HTML box is ${over}px taller than this control can show (HtmlViewer adds 5px padding on each side), so Power Apps will draw a scrollbar. Make the box ${over}px shorter or the control ${over}px taller.`);
   }
+  for (const x of contrastIssues(project.theme.colors)) addG('info', 'PS052', 'Theme', `${x.fg} on ${x.bg} (${x.where}) has contrast ${x.ratio.toFixed(2)}:1; WCAG AA needs 4.5:1. Theme tab → Contrast fixes it in one click.`);
   for (const scr of project.screens) for (const [c] of walk(scr.controls)) if (c.bind?.kind === 'count') { addG('info', 'PS035', `${scr.name} › ${c.name}`, 'CountRows over a SharePoint list is not delegable: counts stop at the data row limit (500 by default, 2000 max).'); break; }
   return F;
 }

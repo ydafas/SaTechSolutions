@@ -2,17 +2,11 @@
 import { MODELS, callClaude, refineHistory, specToProject, AiError } from './ai.js';
 import { FLOW_KINDS, recipientsText } from './flows.js';
 import { COLTYPES } from './core.js';
+import { store, KEY, DRAFT, MODEL } from './keystore.js';
 
 let H = null; // { P, modal, toast, ui, esc, ask, setProject, commit }
 export function initDescribeUI(helpers) { H = helpers; }
 
-const KEY = 'pas.aikey', DRAFT = 'pas.aidraft', MODEL = 'pas.aimodel';
-const store = {
-  get(k) { try { return localStorage.getItem(k) ?? sessionStorage.getItem(k) ?? ''; } catch { return ''; } },
-  set(k, v, remember) { try { (remember ? localStorage : sessionStorage).setItem(k, v); (remember ? sessionStorage : localStorage).removeItem(k); } catch { /* storage blocked */ } },
-  del(k) { try { localStorage.removeItem(k); sessionStorage.removeItem(k); } catch { /* storage blocked */ } },
-  remembered(k) { try { return !!localStorage.getItem(k); } catch { return false; } },
-};
 const EXAMPLE = `We need an app for employees to request training.
 A request has a course name, the provider, cost, start date, a justification and the employee's supervisor.
 Supervisors approve or reject requests.
@@ -32,7 +26,8 @@ export function describeDialog() {
     body.innerHTML = `<div class="flow-grid">
       <div><label class="f"><span>What should the app do? Who uses it, what do they track, who approves, who gets emailed and when.</span>
         <textarea class="plain" id="dText" rows="15" placeholder="${esc(EXAMPLE)}">${esc(st.text)}</textarea></label>
-        <div class="btns"><button class="btn sm" id="dEx">Use the example</button></div></div>
+        <div class="btns"><button class="btn sm" id="dEx">Use the example</button></div>
+        ${H.P().screens.some((s) => s.controls.length) ? `<div class="note-box"><b>Already have an app?</b> Describing builds a new one and replaces it. To change the app you have, <button class="linkbtn" id="dToChange">ask for a change</button> instead.</div>` : ''}</div>
       <div>
         <label class="f"><span>Anthropic API key</span><div class="rrow" style="margin:0"><input type="password" id="dKey" autocomplete="off" spellcheck="false" placeholder="sk-ant-…" value="${esc(store.get(KEY))}"><button class="btn sm" id="dShow" type="button">Show</button></div></label>
         <label class="chk"><input type="checkbox" id="dRem" ${store.remembered(KEY) ? 'checked' : ''}>Remember the key on this browser</label>
@@ -50,6 +45,7 @@ export function describeDialog() {
     foot.innerHTML = `<span class="grow">You review the plan before anything is built.</span><button class="btn" data-x>Cancel</button><button class="btn pri" id="dGo">Plan my app</button>`;
     const t = body.querySelector('#dText');
     t.addEventListener('input', () => { st.text = t.value; store.set(DRAFT, t.value, true); });
+    body.querySelector('#dToChange')?.addEventListener('click', () => { m.close(); H.changeDialog?.(); });
     body.querySelector('#dEx').onclick = () => { t.value = EXAMPLE; st.text = EXAMPLE; store.set(DRAFT, EXAMPLE, true); t.focus(); };
     body.querySelector('#dShow').onclick = (e) => { const k = body.querySelector('#dKey'); k.type = k.type === 'password' ? 'text' : 'password'; e.target.textContent = k.type === 'password' ? 'Show' : 'Hide'; };
     foot.querySelector('[data-x]').onclick = m.close;

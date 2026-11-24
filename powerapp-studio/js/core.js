@@ -265,7 +265,7 @@ export function normalizeProject(p) {
   if (!FORM_FACTORS[p.app.formFactor]) p.app.formFactor = 'tablet';
   for (const k of ['name', 'startScreen', 'onStart', 'formulas', 'siteUrl', 'appLink']) p.app[k] = String(p.app[k] ?? '');
   const ft = p.app.features && typeof p.app.features === 'object' ? p.app.features : {};
-  p.app.features = { loading: !!ft.loading, usage: !!ft.usage, confirm: ft.confirm !== false, stepper: ft.stepper !== false, scope: ft.scope === 'mine' ? 'mine' : 'all',
+  p.app.features = { loading: !!ft.loading, usage: !!ft.usage, ...(ft.a11y ? { a11y: true } : {}), confirm: ft.confirm !== false, stepper: ft.stepper !== false, scope: ft.scope === 'mine' ? 'mine' : 'all',
     adminGroup: /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(ft.adminGroup || '').trim()) ? String(ft.adminGroup).trim() : '' };
   for (const sc of p.screens || []) if (sc && sc.role !== undefined && typeof sc.role !== 'string') delete sc.role;
   if (p.app.deepLink && typeof p.app.deepLink === 'object') p.app.deepLink = { screen: String(p.app.deepLink.screen || ''), list: String(p.app.deepLink.list || '') }; else delete p.app.deepLink;
@@ -299,6 +299,15 @@ export function normalizeProject(p) {
     if (!SAFE_ID.test(l.id || '')) l.id = uid();
     l.name = String(l.name || 'List'); l.columns = Array.isArray(l.columns) ? l.columns : [];
     for (const c of l.columns) { if (!SAFE_ID.test(c.id || '')) c.id = uid(); c.name = String(c.name || 'Column'); if (!COLTYPES[c.type]) c.type = 'Text'; c.choices = Array.isArray(c.choices) ? c.choices.map(String) : []; c.lookupList = String(c.lookupList || ''); c.required = !!c.required; }
+    // imported sample rows (CSV/Excel): plain values only, capped
+    if (Array.isArray(l.rows) && l.rows.length) {
+      const names = new Set(l.columns.map((c) => c.name));
+      l.rows = l.rows.slice(0, MAX_ROWS).filter((r) => r && typeof r === 'object' && !Array.isArray(r)).map((r) => {
+        const o = {};
+        for (const [k, v] of Object.entries(r)) if (names.has(k) && (typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean')) o[k] = typeof v === 'string' ? v.slice(0, 4000) : typeof v === 'number' && !Number.isFinite(v) ? 0 : v;
+        return o;
+      });
+    } else delete l.rows;
   }
   p.screens = Array.isArray(p.screens) ? p.screens : [];
   const screenMap = {};
@@ -359,14 +368,31 @@ export function sampleValue(col, i, lists) {
     default: return '';
   }
 }
+/** Imported rows kept in a project (Play data and CSV export). */
+export const MAX_ROWS = 200;
+/** A Person value for Play from an imported email address. */
+export function personFromEmail(v) {
+  const m = String(v || '').trim().toLowerCase();
+  if (!m) return '';
+  const known = PEOPLE.find((p) => p.Mail === m);
+  if (known) return known;
+  const name = m.split('@')[0].split(/[._-]+/).filter(Boolean).map((w) => w[0].toUpperCase() + w.slice(1)).join(' ');
+  return { DisplayName: name || m, Mail: m };
+}
 export function sampleRows(list, lists, n = 8) {
   const rows = [];
+  const imported = Array.isArray(list.rows) && list.rows.length ? list.rows : null;
+  if (imported) n = Math.min(n, imported.length);
   for (let i = 0; i < n; i++) {
     // every third row is "mine" (Alex Rivera, the signed-in user in Play) so My items views have content
     const r = { ID: i + 1, Created: new Date(Date.now() - i * 864e5).toISOString().slice(0, 10), Modified: new Date(Date.now() - i * 36e5).toISOString().slice(0, 10),
       Author: PEOPLE[i % 3 === 0 ? 0 : (i % (PEOPLE.length - 1)) + 1], Editor: PEOPLE[(i + 1) % PEOPLE.length] };
     r['Created By'] = r.Author; r['Modified By'] = r.Editor;
-    for (const c of list.columns) r[c.name] = sampleValue(c, i, lists);
+    for (const c of list.columns) {
+      if (!imported) { r[c.name] = sampleValue(c, i, lists); continue; }
+      const v = imported[i][c.name];
+      r[c.name] = v === undefined || v === null ? (c.type === 'YesNo' ? false : c.type === 'Number' || c.type === 'Currency' ? null : '') : c.type === 'Person' ? personFromEmail(v) : v;
+    }
     rows.push(r);
   }
   return rows;

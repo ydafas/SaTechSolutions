@@ -50,17 +50,23 @@ export function renameFx(f, map) {
   return out;
 }
 
+/** Keep a control exactly as Studio wrote it (type, variant, every property, children). */
+export function rawControl(project, name, def) {
+  const props = def.Properties || {};
+  const geo = { x: parseNum(props.X) ?? 40, y: parseNum(props.Y) ?? 40, w: parseNum(props.Width) ?? 160, h: parseNum(props.Height) ?? 40 };
+  const toNode = (n, d) => ({ name: n, control: d.Control, variant: d.Variant, props: Object.entries(d.Properties || {}).map(([k, v]) => [k, String(v).replace(/^=/, '')]), children: d.Children ? d.Children.map((ch) => { const [[cn, cd]] = Object.entries(ch); return toNode(cn, cd); }) : undefined });
+  const raw = newControl(project, 'raw', { name, ...geo });
+  raw.paControl = def.Control; raw.variant = def.Variant; raw.rawProps = { ...props };
+  if (def.Children) raw.rawChildren = toNode(name, def).children;
+  // position formulas (Parent.Width - 120 …) are kept as formulas
+  for (const k of ['X', 'Y', 'Width', 'Height']) if (k in props && parseNum(props[k]) === null) raw.fx = { ...(raw.fx || {}), [k]: String(props[k]).replace(/^=/, '') };
+  return raw;
+}
 function mapControl(project, name, def) {
   const props = def.Properties || {};
   const t = TYPE_MAP[baseType(def.Control)];
   const geo = { x: parseNum(props.X) ?? 40, y: parseNum(props.Y) ?? 40, w: parseNum(props.Width) ?? 160, h: parseNum(props.Height) ?? 40 };
-  if (!t) {
-    const toNode = (n, d) => ({ name: n, control: d.Control, variant: d.Variant, props: Object.entries(d.Properties || {}).map(([k, v]) => [k, String(v).replace(/^=/, '')]), children: d.Children ? d.Children.map((ch) => { const [[cn, cd]] = Object.entries(ch); return toNode(cn, cd); }) : undefined });
-    const raw = newControl(project, 'raw', { name, ...geo });
-    raw.paControl = def.Control; raw.variant = def.Variant; raw.rawProps = { ...props };
-    if (def.Children) raw.rawChildren = toNode(name, def).children;
-    return raw;
-  }
+  if (!t) return rawControl(project, name, def);
   const ctl = newControl(project, t, { name, ...geo });
   ctl.props = { ...ctl.props };
   const P = ctl.props, fx = {};

@@ -4,6 +4,12 @@ import { CATALOG, CATS, COLTYPES, THEME_COLORS, THEME_PRESETS, FONTS, FORM_FACTO
 import { screenYaml, themeFormulas, onStartFx, startScreenName, startScreenFx, checklist, provisioningScript, lint, ACTION_TYPES, controlYaml, usedLists } from './emit.js';
 import { flowDefinition, flowFileName, flowFxName, FLOW_KINDS } from './flows.js';
 import { initDescribeUI, describeDialog } from './describeui.js';
+import { initChangeUI, changeDialog } from './changeui.js';
+import { initTableUI, importTableDialog } from './tableui.js';
+import { initDriftUI, driftDialog } from './driftui.js';
+import { listToCsv } from './tabular.js';
+import { CONTRAST_PAIRS, contrast, fixContrast, AA } from './a11y.js';
+import { renameListIn, renameColumnIn } from './edit.js';
 import { initAssistUI, setupDialog, setupCardHtml, bindSetupCard, openSetupCount, deployView, exportGuide, startTour, tourDone, conditionalCount } from './assistui.js';
 import { SETUP_CODES } from './setup.js';
 import { initFlowsUI, panelFlows, addFlowDialog, flowDialog, downloadFlow, duplicateFlow, deleteFlow, loadFlowSample, flowZipBlob } from './flowsui.js';
@@ -79,6 +85,17 @@ function commit() {
 const commitSoon = () => { clearTimeout(commitTimer); commitTimer = setTimeout(commit, 350); };
 function undo() { commit(); if (!S.undo.length) return; S.redo.push(S.last); S.last = S.undo.pop(); P = JSON.parse(S.last); afterHistory(); }
 function redo() { if (!S.redo.length) return; S.undo.push(S.last); S.last = S.redo.pop(); P = JSON.parse(S.last); afterHistory(); }
+/** Swap in a whole new project as ONE undo step (Describe builds, Ask for a change). */
+function replaceProject(p) {
+  commit();
+  const prev = S.last;
+  P = p; migrate(P);
+  S.undo.push(prev); if (S.undo.length > 120) S.undo.shift(); S.redo = [];
+  S.last = JSON.stringify(P);
+  if (!P.screens.find((s) => s.id === S.screenId)) S.screenId = P.screens[0]?.id;
+  S.sel = S.sel.filter((id) => findCtl(P, id));
+  persist(); renderAll();
+}
 function afterHistory() { if (!P.screens.find((s) => s.id === S.screenId)) S.screenId = P.screens[0]?.id; S.sel = S.sel.filter((id) => findCtl(P, id)); persist(); renderAll(); }
 
 // ------------------------------------------------------------------ render all
@@ -461,7 +478,7 @@ function panelData() {
   return `<div class="ph"><h2>Data</h2><button class="btn sm" data-cmd="addList">${ui('plus')}List</button></div><div class="pb">
     <p class="note">Design the SharePoint lists your app uses. Play mode fills them with sample rows. Get YAML → Provisioning script creates them on your site.</p>
     ${dataEditorHtml(P.lists)}
-    <div class="btns"><button class="btn" data-cmd="importSchema">${ui('upload')}Import schema</button><button class="btn" data-cmd="showScript">${ui('file')}Provisioning script</button></div></div>`;
+    <div class="btns"><button class="btn" data-cmd="importTable">${ui('upload')}Import CSV or Excel</button><button class="btn" data-cmd="importSchema">${ui('upload')}Import schema</button><button class="btn" data-cmd="showScript">${ui('file')}Provisioning script</button></div></div>`;
 }
 function dataEditorHtml(lists) {
   if (!lists.length) return '<p class="note"><b>No lists yet.</b> Add one, or run New app to start from a scenario.</p>';
@@ -475,6 +492,7 @@ function dataEditorHtml(lists) {
         ${c.type === 'Choice' ? `<textarea class="inp" data-dc="choices" placeholder="One choice per line">${esc(c.choices.join('\n'))}</textarea>` : ''}
         ${c.type === 'Lookup' ? `<select class="inp" data-dc="lookupList"><option value="">(lookup target list)</option>${lists.filter((x) => x !== l).map((x) => `<option ${x.name === c.lookupList ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</select>` : ''}</div>
     </div>`).join('')}
+    ${l.rows?.length ? `<div class="rowsbar"><span><b>${l.rows.length}</b> imported row${l.rows.length === 1 ? '' : 's'} (Play uses them)</span><button class="btn sm" data-dcmd="exportRows">${ui('download')}Export CSV</button><button class="btn sm" data-dcmd="clearRows">Clear</button></div>` : ''}
     <div style="padding:8px 10px"><button class="btn sm" data-dcmd="addCol">${ui('plus')}Column</button></div></div>`).join('');
 }
 function bindDataEditor(root, lists, onChange, rerender) {
@@ -502,6 +520,8 @@ function bindDataEditor(root, lists, onChange, rerender) {
     const cmd = b.dataset.dcmd;
     if (cmd === 'addCol') { let n = 'NewColumn', i = 2; while (l.columns.some((c) => c.name === n)) n = 'NewColumn' + i++; l.columns.push(newColumn(n, 'Text')); }
     if (cmd === 'delCol') l.columns.splice(ci, 1);
+    if (cmd === 'exportRows') { download(`${core.slug(l.name) || 'list'}.csv`, listToCsv(l), 'text/csv'); return; }
+    if (cmd === 'clearRows') delete l.rows;
     if (cmd === 'colUp' && ci > 1) l.columns.splice(ci - 1, 0, l.columns.splice(ci, 1)[0]);
     if (cmd === 'delList') {
       if (lists === P.lists && usedLists(P).includes(l.name)) { ask('Delete list?', `"${l.name}" is used by controls in your screens. They will show errors until you rebind them.`, 'Delete').then((ok) => { if (ok) { lists.splice(lists.indexOf(l), 1); onChange(); redraw(); } }); return; }
@@ -510,26 +530,25 @@ function bindDataEditor(root, lists, onChange, rerender) {
     onChange(); redraw();
   };
 }
+// renames also rewrite the formulas the generator baked into screens (HtmlText, variables, filters)
 function renameList(oldN, newN) {
-  if (P.lists.some((l) => l.name === newN)) { toast('A list with that name exists', true); return; }
-  P.lists.find((l) => l.name === oldN).name = newN;
-  for (const l of P.lists) for (const c of l.columns) if (c.lookupList === oldN) c.lookupList = newN;
-  for (const s of P.screens) for (const [c] of walk(s.controls)) {
-    if (c.field?.list === oldN) c.field.list = newN; if (c.bind?.list === oldN) c.bind.list = newN; if (c.data?.list === oldN) c.data.list = newN;
-    Object.values(c.actions || {}).flat().forEach((a) => { if (a.list === oldN) a.list = newN; });
-  }
+  const err = renameListIn(P, oldN, newN);
+  if (err) { if (err !== 'Same name.') toast(err, true); return; }
   if (S.blockList === oldN) S.blockList = newN;
 }
 function renameColumn(list, oldN, newN) {
-  const l = P.lists.find((x) => x.name === list);
-  if (l.columns.some((c) => c.name === newN)) { toast('Column exists', true); return; }
-  l.columns.find((c) => c.name === oldN).name = newN;
-  for (const s of P.screens) for (const [c] of walk(s.controls)) {
-    if (c.field?.list === list && c.field.column === oldN) c.field.column = newN;
-    if (c.bind?.list === list && c.bind.field === oldN) c.bind.field = newN;
-    if (c.data?.list === list) for (const k of ['searchField', 'filterField', 'sortField']) if (c.data[k] === oldN) c.data[k] = newN;
-    Object.values(c.actions || {}).flat().forEach((a) => { if (a.list === list && a.field === oldN) a.field = newN; });
-  }
+  const err = renameColumnIn(P, list, oldN, newN);
+  if (err && err !== 'Same name.') toast(err, true);
+}
+/** WCAG AA check for the text/background pairs the generated screens use. */
+function contrastHtml(t) {
+  const rows = CONTRAST_PAIRS.map(([f, b, where]) => {
+    const r = contrast(t.colors[f], t.colors[b]), ok = r >= AA;
+    return `<div class="cx ${ok ? 'ok' : 'bad'}"><span class="cx-sw" style="background:${esc(t.colors[b])};color:${esc(t.colors[f])}">Aa</span>
+      <span class="cx-t"><b>${f} on ${b}</b><small>${esc(where)}</small></span><span class="cx-r">${r.toFixed(2)}:1</span>
+      ${ok ? '<span class="cx-ok" title="Passes WCAG AA (4.5:1)">AA</span>' : `<button class="btn sm" data-cfix="${f}|${b}" title="Nudge the color just enough to reach 4.5:1">Fix</button>`}</div>`;
+  }).join('');
+  return `<div class="sub">Contrast <small>(WCAG AA, 4.5:1 for text)</small></div><div class="cxs">${rows}</div>`;
 }
 function panelTheme() {
   const t = P.theme;
@@ -541,6 +560,7 @@ function panelTheme() {
     <label class="f"><span>Corner radius: <b id="radVal">${t.radius}px</b></span><input type="range" min="0" max="24" value="${t.radius}" data-th="radius"></label>
     <label class="f"><span>Header style for new screens</span><select data-th="header"><option value="gradient" ${t.header === 'gradient' ? 'selected' : ''}>Gradient (HeaderBg → Primary)</option><option value="solid" ${t.header === 'solid' ? 'selected' : ''}>Solid</option></select></label>
     <label class="chk"><input type="checkbox" data-th="dark" ${t.dark ? 'checked' : ''}>Dark theme (hover lightens instead of darkens)</label>
+    ${contrastHtml(t)}
     <div class="sub">Colors</div>
     ${THEME_COLORS.map(([k, d]) => `<div class="tokrow"><input type="color" value="${(t.colors[k] || '#000000').slice(0, 7)}" data-tc="${k}" aria-label="${k}"><span class="tn">${k}<small>${d}</small></span><input class="hex" value="${esc(t.colors[k])}" data-tch="${k}" aria-label="${k} hex"></div>`).join('')}
     <p class="note">Every control reads these from one <code>appTheme</code> record in App.Formulas, so you can also restyle the app later in Studio by editing that record.</p></div>`;
@@ -560,6 +580,8 @@ function panelApp() {
     <div class="sub">Advanced</div>
     <label class="f"><span>Extra App.OnStart (Power Fx)</span><textarea data-app="onStart" rows="4" placeholder="Set(varIsAdmin, false)">${esc(P.app.onStart)}</textarea></label>
     <label class="f"><span>Extra App.Formulas (named formulas)</span><textarea data-app="formulas" rows="4" placeholder="AppVersion = &quot;1.0&quot;;">${esc(P.app.formulas)}</textarea></label>
+    <label class="chk"><input type="checkbox" data-appft="a11y" ${P.app.features?.a11y ? 'checked' : ''}>Add accessibility labels (verify in your tenant)</label>
+    <p class="note" style="margin-top:-4px">Adds <code>AccessibleLabel</code> to inputs and to the invisible tap buttons over icons, images and cards, so screen readers announce them. Not yet field-tested in a GCC-High paste: paste one screen first and check it.</p>
     <div class="sub">Build</div>
     <button class="rowbtn" data-cmd="describe"><i>${ui('edit')}</i><span>Describe your app<small>Write the requirements; Claude plans the lists, screens and flows</small></span></button>
     <button class="rowbtn" data-cmd="wizard"><i>${ui('star')}</i><span>New app from requirements<small>Pick a scenario, shape the lists, generate every screen</small></span></button>
@@ -1305,12 +1327,15 @@ function runCmd(cmd, el) {
     case 'help': return helpDialog();
     case 'addList': { let n = 'NewList', k = 2; while (P.lists.some((l) => l.name === n)) n = 'NewList' + k++; P.lists.push(newList(n)); renderPanel(); commit(); return; }
     case 'importSchema': return schemaDialog();
+    case 'importTable': return importTableDialog();
+    case 'drift': return driftDialog();
     case 'showScript': return codeDialog('script');
     case 'setup': return setupDialog();
     case 'guide': exportGuide(); return;
     case 'demo': return ask('Open the demo?', 'This replaces the current project with the finished Request Tracker demo. Save a project file first if you want to keep your work.', 'Open demo').then((ok) => { if (ok) openDemo(); });
     case 'tour': return startTour();
     case 'describe': return describeDialog();
+    case 'change': return changeDialog();
     case 'addFlow': return addFlowDialog();
     case 'editFlow': return flowDialog(el.dataset.fid);
     case 'dlFlow': { const f = P.flows.find((x) => x.id === el.dataset.fid); if (f) downloadFlow(f); return; }
@@ -1343,7 +1368,10 @@ function runCmd(cmd, el) {
 
 function init() {
   initFlowsUI({ P: () => P, modal, toast, ui, esc, svgIcon, commit, renderPanel, download, copyText, ask });
-  initDescribeUI({ P: () => P, modal, toast, ui, esc, ask, setProject: (p) => { setProject(p, true); commit(); afterBuild(); } });
+  initDescribeUI({ P: () => P, modal, toast, ui, esc, ask, changeDialog: () => changeDialog(), setProject: (p) => { replaceProject(p); S.screenId = P.screens[0]?.id; S.sel = []; renderAll(); zoomFit(); afterBuild(); } });
+  initChangeUI({ P: () => P, modal, toast, ui, esc, replaceProject, undo });
+  initDriftUI({ P: () => P, modal, toast, ui, esc, replaceProject });
+  initTableUI({ P: () => P, modal, toast, ui, esc, commit, renderAll: () => { if (!P.screens.find((s) => s.id === S.screenId)) S.screenId = P.screens[0]?.id; renderAll(); } });
   initAssistUI({ P: () => P, modal, toast, ui, esc, commit, copyText, download, downloadFlow, renderThumb, slug: core.slug,
     onSetupChange: () => { lintSoon(); updateSetupBadge(); renderPanelIf('flows'); renderPanelIf('app'); } });
   $('#btnSetup').onclick = () => setupDialog();
@@ -1358,6 +1386,7 @@ function init() {
   $('#btnUndo').onclick = undo; $('#btnRedo').onclick = redo;
   $('#btnWizard').onclick = () => wizard();
   $('#btnDescribe').onclick = () => describeDialog();
+  $('#btnChange').onclick = () => changeDialog();
   $('#btnPlay').onclick = play;
   $('#btnCode').onclick = () => codeDialog();
   const fm = $('#fileMenu');
@@ -1390,6 +1419,7 @@ function init() {
     if (b.dataset.ins) return insertControl(b.dataset.ins);
     if (b.dataset.block) return doBlock(b.dataset.block);
     if (b.dataset.preset != null) { P.theme = clone(THEME_PRESETS[+b.dataset.preset]); renderPanel(); renderCanvas(); commit(); return; }
+    if (b.dataset.cfix) { const [f, bg] = b.dataset.cfix.split('|'), fx = fixContrast(P.theme.colors, f, bg); const was = P.theme.colors[fx.key]; P.theme.colors[fx.key] = fx.value; P.theme.name = 'Custom'; renderPanel(); renderCanvas(); commit(); toast(`${fx.key} ${was} → ${fx.value}`); return; }
     if (b.dataset.lcmd) { S.sel = [b.dataset.id]; zMove(b.dataset.lcmd); e.stopPropagation(); return; }
     if (b.dataset.cmd) { e.stopPropagation(); return runCmd(b.dataset.cmd, b); }
     if (b.classList.contains('scrrow')) { S.screenId = b.dataset.scr; S.sel = []; renderAll(); return; }
@@ -1401,6 +1431,7 @@ function init() {
     if (t.dataset.th) { const k = t.dataset.th; P.theme[k] = t.type === 'checkbox' ? t.checked : k === 'radius' ? Number(t.value) : t.value; P.theme.name = 'Custom'; if (k === 'radius') $('#radVal').textContent = t.value + 'px'; renderCanvas(); commitSoon(); return; }
     if (t.dataset.tc) { P.theme.colors[t.dataset.tc] = t.value.toUpperCase(); P.theme.name = 'Custom'; const hx = panel.querySelector(`[data-tch="${t.dataset.tc}"]`); if (hx) hx.value = t.value.toUpperCase(); renderCanvas(); commitSoon(); return; }
     if (t.dataset.tch) { if (!isHex(t.value)) return; P.theme.colors[t.dataset.tch] = t.value.toUpperCase(); P.theme.name = 'Custom'; const sw = panel.querySelector(`[data-tc="${t.dataset.tch}"]`); if (sw) sw.value = t.value.slice(0, 7); renderCanvas(); commitSoon(); return; }
+    if (t.dataset.appft === 'a11y') { if (t.checked) P.app.features.a11y = true; else delete P.app.features.a11y; commit(); return; }
     if (t.dataset.app) {
       const k = t.dataset.app;
       if (k === 'deepLinkScreen' || k === 'deepLinkList') {
