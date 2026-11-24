@@ -239,7 +239,8 @@ test('Play runtime: new item saves, required fields block saving', () => {
   rt.run(edit, [{ type: 'newItem', list: 'Requests', screen: edit.id }]);
   rt.run(edit, save.actions.OnSelect);
   eq(rt.db.Requests.length, before, 'blank Title must not save');
-  assert(toasts.some(([t, k]) => k === 'error' && /Title/.test(t)), 'error toast names the field');
+  assert(toasts.some(([t, k]) => (k === 'error' || k === 'warning') && /Title/.test(t)), 'toast names the missing field');
+  assert(rt.vars.varTriedSaveRequests === true, 'validation state set (red borders + still needed)');
   const title = edit.controls.find((c) => c.field?.column === 'Title');
   rt.inputs[title.name] = 'Harness item';
   rt.run(edit, save.actions.OnSelect);
@@ -445,6 +446,151 @@ test('an empty or broken plan still builds something usable', () => {
   let msg = '';
   try { AI.parseResponse({ stop_reason: 'max_tokens', content: [] }); } catch (e) { msg = e.message; }
   assert(/cut off/.test(msg), 'truncation explained');
+});
+
+// ---------------------------------------------------------------- premium generation
+const ALL_FT = { loading: true, usage: true, confirm: true, stepper: true, scope: 'mine', adminGroup: '11111111-2222-3333-4444-555555555555' };
+function buildFt(scenario, formFactor = 'tablet', ft = ALL_FT) {
+  const sc = SCENARIOS[scenario];
+  const p = core.newProject(); p.app.name = sc.app; p.app.formFactor = formFactor; p.lists = sc.lists();
+  p.app.features = { ...ft };
+  generateApp(p, { screens: ['home', 'browse', 'detail', 'edit'], approvals: sc.approvals || null });
+  return p;
+}
+/** Every HtmlViewer in the emitted YAML: the first fixed-height box plus its margins fits in Height - 10 (5px padding per side). */
+function checkHtmlPadding(parsed) {
+  let n = 0;
+  const walkY = (children) => (children || []).forEach((item) => {
+    const [[name, c]] = Object.entries(item);
+    if (c.Control === 'HtmlViewer') {
+      const h = Number(String(c.Properties?.Height || '').replace(/^=/, ''));
+      const html = String(c.Properties?.HtmlText || '');
+      assert(Number.isFinite(h), `${name}: HtmlViewer Height should be a number`);
+      if (/height:\s*\d/.test(html)) { n++; eq(E.htmlOverflow(html, h), 0, `${name}: HTML box overflows Height ${h} - 10`); }
+    }
+    walkY(c.Children);
+  });
+  for (const scr of Object.values(parsed)) walkY(scr.Children);
+  return n;
+}
+
+for (const k of Object.keys(SCENARIOS)) for (const ff of ['tablet', 'phone']) {
+  test(`premium ${k} (${ff}) with every option on: lint-clean, paste-safe, padded HTML`, () => {
+    const p = buildFt(k, ff);
+    const bad = E.lint(p).filter((f) => f.level !== 'info');
+    assert(!bad.length, bad.map((x) => `${x.code} ${x.where} ${x.msg}`).join('; '));
+    const parsed = checkApp(p);
+    assert(checkHtmlPadding(parsed) >= 3, 'card HTML present and checked');
+    eq(p.screens[0].role, 'loading', 'loading screen first');
+    eq(E.startScreenName(p), 'scrLoading', 'loading is the start screen');
+    const load = parsed.scrLoading;
+    const tmr = load.Children.map((x) => Object.entries(x)[0]).find(([n]) => n.startsWith('tmrLoad'));
+    assert(tmr && /Navigate\(scrHome/.test(tmr[1].Properties.OnTimerEnd), 'loading timer navigates home in OnTimerEnd');
+    assert(!/Navigate/.test(load.Properties?.OnVisible || ''), 'no Navigate in OnVisible');
+    assert(/Office365Groups\.ListGroupMembers\("11111111-2222-3333-4444-555555555555"\)/.test(E.onStartFx(p)) && /IfError\(/.test(E.onStartFx(p)), 'admin check wrapped in IfError');
+    assert(p.lists.some((l) => l.name === 'AppUsage'), 'AppUsage list provisioned');
+    assert(/AppUsage/.test(tmr[1].Properties.OnTimerEnd), 'usage recorded on the loading screen');
+    const yall = p.screens.map((s) => E.screenYaml(p, s)).join('\n');
+    assert(/varScope\w+ = "mine"/.test(yall) && /'Created By'\.Email = User\(\)\.Email/.test(yall), 'My items filter');
+    assert(/varTriedSave\w+ && /.test(yall), 'red borders / still needed');
+    assert(/varDone\w+/.test(yall) && /Add another/.test(yall), 'confirmation page');
+    assert(/varConfirmDelete\w+/.test(yall), 'two-click delete');
+    assert(!/Radius/.test(yall.split('\n').filter((l) => /Rectangle/.test(l)).join('')), 'no Rectangle radius');
+  });
+}
+
+test('options off: no loading screen, no admin check, no usage, no confirmation', () => {
+  const p = buildFt('requests', 'tablet', { loading: false, usage: false, confirm: false, stepper: false, scope: 'all', adminGroup: '' });
+  assert(!p.screens.some((s) => s.role === 'loading'), 'no loading screen');
+  assert(!/Office365Groups/.test(E.onStartFx(p)), 'no admin check');
+  assert(!p.lists.some((l) => l.name === 'AppUsage'), 'no AppUsage');
+  const yall = p.screens.map((s) => E.screenYaml(p, s)).join('\n');
+  assert(!/varDone/.test(yall), 'no confirmation overlay');
+  assert(!E.lint(p).some((f) => f.level !== 'info'), 'lint-clean');
+  checkHtmlPadding(checkApp(p));
+});
+
+test('theme FontCss has no single quotes (it is inlined into style=\'...\' attributes)', () => {
+  const p = build('requests');
+  for (const font of ['Segoe UI', 'Open Sans', 'Courier New', 'Georgia']) {
+    p.theme.font = font;
+    const line = E.themeFormulas(p).split('\n').find((l) => /FontCss:/.test(l));
+    assert(line && !/'/.test(line), 'FontCss quote-free: ' + line);
+  }
+});
+
+test('PS051 flags an HTML box taller than its HtmlViewer', () => {
+  eq(E.htmlOverflow("<div style='margin:3px;height:84px'>x</div>", 100), 0, 'fits exactly');
+  eq(E.htmlOverflow("<div style='margin:3px;height:90px'>x</div>", 100), 6, 'overflow by 6');
+  eq(E.htmlOverflow("<div style='margin:4px 2px;height:82px'>x</div>", 100), 0, 'two-value margin');
+  eq(E.htmlOverflow("<div style='height:91px'>x</div>", 100), 1, 'no margin');
+  const p = build('requests');
+  const scr = p.screens[0];
+  scr.controls.push(core.newControl(p, 'html', { name: 'htmTooTall', x: 10, y: 10, w: 200, h: 60, props: { html: "\"<div style='margin:2px;height:60px'>x</div>\"" } }));
+  assert(codes(p).has('PS051'), 'PS051 raised');
+});
+
+test('Play: validation, confirmation page, two-click delete, Mine filter', async () => {
+  const p = buildFt('requests');
+  const toasts = [];
+  const rt = createRuntime(p, { toast: (t, k) => toasts.push([t, k]), rerender: () => {} });
+  const edit = p.screens.find((x) => x.name === 'scrEditRequests');
+  const save = edit.controls.find((c) => c.name.startsWith('btnSave'));
+  rt.run(edit, [{ type: 'newItem', list: 'Requests', screen: edit.id }]);
+  rt.run(edit, save.actions.OnSelect);
+  assert(rt.vars.varTriedSaveRequests === true && toasts.at(-1)[1] === 'warning', 'blocked with a warning');
+  const need = edit.controls.find((c) => c.name === 'lblNeededEditRequests');
+  const R = await import('../js/render.js');
+  eq(R.evalFx(need.fx.Text, { rt, project: p, screen: edit }).trim(), 'Still needed: Title', '"Still needed" names the blank field');
+  assert(R.evalFx(need.fx.Visible, { rt, project: p, screen: edit }) === true, '"Still needed" visible');
+  rt.inputs[edit.controls.find((c) => c.field?.column === 'Title').name] = 'Premium harness';
+  const n = rt.db.Requests.length;
+  rt.run(edit, save.actions.OnSelect);
+  eq(rt.db.Requests.length, n + 1, 'saved');
+  assert(rt.vars.varDoneRequests === true, 'confirmation page shown for a new item');
+  assert(rt.vars.varTriedSaveRequests === false, 'validation state reset');
+  eq(rt.db.Requests[0].Author?.DisplayName, core.PEOPLE[0].DisplayName, 'new item is mine');
+  const det = p.screens.find((x) => x.name === 'scrDetailRequests');
+  const del = det.controls.find((c) => c.name.startsWith('btnDelete'));
+  rt.vars.varSelRequests = rt.db.Requests[0];
+  rt.run(det, del.actions.OnSelect);
+  eq(rt.db.Requests.length, n + 1, 'first click only arms the delete');
+  assert(rt.vars.varConfirmDeleteRequests === true, 'armed');
+  rt.run(det, del.actions.OnSelect);
+  eq(rt.db.Requests.length, n, 'second click deletes');
+});
+
+test('Play: the loading screen timer steps through and opens Home', () => {
+  const p = buildFt('requests');
+  const rt = createRuntime(p, { toast: () => {}, rerender: () => {} });
+  const load = p.screens[0];
+  eq(rt.screen, load.id, 'starts on the loading screen');
+  const tmr = load.controls.find((c) => c.type === 'timer');
+  for (let i = 0; i < 12 && rt.screen === load.id; i++) rt.run(load, tmr.actions.OnTimerEnd);
+  eq(p.screens.find((s) => s.id === rt.screen)?.name, 'scrHome', 'navigated home');
+});
+
+test('a plan\'s options reach the generated app', () => {
+  const { project: p, notes } = AI.specToProject(FIXTURE);
+  const ft = p.app.features;
+  assert(ft.loading && ft.usage && ft.confirm && ft.stepper && ft.scope === 'mine', 'options applied: ' + JSON.stringify(ft));
+  eq(ft.adminGroup, '', 'a bad group ID is dropped');
+  assert(notes.some((x) => /not a group ID/.test(x)), 'and reported');
+  assert(p.screens[0].role === 'loading', 'loading screen generated');
+  const props = AI.PLAN_SCHEMA.properties.options;
+  eq(props.additionalProperties, false, 'options closed');
+  eq(JSON.stringify(props.required.slice().sort()), JSON.stringify(Object.keys(props.properties).sort()), 'all option properties required');
+  const old = { ...FIXTURE }; delete old.options;
+  const { project: q } = AI.specToProject(old);
+  assert(q.app.features.loading === true && q.app.features.scope === 'all' && !q.app.features.usage, 'plans without options get sensible defaults');
+});
+
+test('old project files without features still load', () => {
+  const p = core.normalizeProject({ app: { name: 'Old' }, screens: [], lists: [] });
+  eq(JSON.stringify(p.app.features), JSON.stringify({ loading: false, usage: false, confirm: true, stepper: true, scope: 'all', adminGroup: '' }), 'defaults');
+  const q = core.normalizeProject({ app: { name: 'X', features: { adminGroup: '"); Remove(x' , scope: 'evil' } }, screens: [], lists: [] });
+  eq(q.app.features.adminGroup, '', 'non-GUID group ID dropped');
+  eq(q.app.features.scope, 'all', 'unknown scope dropped');
 });
 
 await Promise.all(pending);

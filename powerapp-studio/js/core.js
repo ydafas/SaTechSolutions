@@ -113,6 +113,8 @@ export const cssColor = (v, theme) => {
   if (!v || v === 'transparent') return 'transparent';
   if (v[0] === '@') { const c = theme.colors[v.slice(1)]; return isHex(c) ? c : '#ff00ff'; }
   if (isHex(v)) { const [r, g, b, a] = hexToRgba(v); return `rgba(${r},${g},${b},${a})`; }
+  const rgba = String(v).replace(/\s+/g, '');
+  if (/^rgba\(\d{1,3},\d{1,3},\d{1,3},(?:0|1|0?\.\d+)\)$/.test(rgba)) return rgba; // RGBA()/ColorValue results from Power Fx overrides
   return 'transparent'; // anything else could break out of a style attribute
 };
 /** A value safe to store as a color: theme token, hex or 'transparent'. */
@@ -182,7 +184,7 @@ export function newScreen(project, name, over = {}) {
 export function newProject() {
   const p = {
     version: 1,
-    app: { name: 'My App', formFactor: 'tablet', startScreen: '', onStart: '', formulas: '' },
+    app: { name: 'My App', formFactor: 'tablet', startScreen: '', onStart: '', formulas: '', features: { loading: false, usage: false, confirm: true, stepper: true, scope: 'all', adminGroup: '' } },
     theme: defaultTheme(),
     lists: [],
     screens: [],
@@ -262,6 +264,10 @@ export function normalizeProject(p) {
   p.app = { name: 'My App', formFactor: 'tablet', startScreen: '', onStart: '', formulas: '', ...(p.app || {}) };
   if (!FORM_FACTORS[p.app.formFactor]) p.app.formFactor = 'tablet';
   for (const k of ['name', 'startScreen', 'onStart', 'formulas', 'siteUrl', 'appLink']) p.app[k] = String(p.app[k] ?? '');
+  const ft = p.app.features && typeof p.app.features === 'object' ? p.app.features : {};
+  p.app.features = { loading: !!ft.loading, usage: !!ft.usage, confirm: ft.confirm !== false, stepper: ft.stepper !== false, scope: ft.scope === 'mine' ? 'mine' : 'all',
+    adminGroup: /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(ft.adminGroup || '').trim()) ? String(ft.adminGroup).trim() : '' };
+  for (const sc of p.screens || []) if (sc && sc.role !== undefined && typeof sc.role !== 'string') delete sc.role;
   if (p.app.deepLink && typeof p.app.deepLink === 'object') p.app.deepLink = { screen: String(p.app.deepLink.screen || ''), list: String(p.app.deepLink.list || '') }; else delete p.app.deepLink;
   if (p.app.flowSample && typeof p.app.flowSample !== 'object') delete p.app.flowSample;
   p.flows = Array.isArray(p.flows) ? p.flows : [];
@@ -348,7 +354,10 @@ export function sampleValue(col, i, lists) {
 export function sampleRows(list, lists, n = 8) {
   const rows = [];
   for (let i = 0; i < n; i++) {
-    const r = { ID: i + 1, Created: new Date(Date.now() - i * 864e5).toISOString().slice(0, 10), Modified: new Date(Date.now() - i * 36e5).toISOString().slice(0, 10) };
+    // every third row is "mine" (Alex Rivera, the signed-in user in Play) so My items views have content
+    const r = { ID: i + 1, Created: new Date(Date.now() - i * 864e5).toISOString().slice(0, 10), Modified: new Date(Date.now() - i * 36e5).toISOString().slice(0, 10),
+      Author: PEOPLE[i % 3 === 0 ? 0 : (i % (PEOPLE.length - 1)) + 1], Editor: PEOPLE[(i + 1) % PEOPLE.length] };
+    r['Created By'] = r.Author; r['Modified By'] = r.Editor;
     for (const c of list.columns) r[c.name] = sampleValue(c, i, lists);
     rows.push(r);
   }
