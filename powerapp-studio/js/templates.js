@@ -60,6 +60,8 @@ export const SCENARIOS = {
 //  * self-starting loading screen (timer + SMIL SVG in an Image, original emblem, separate progress ring)
 //  * role check via Office365Groups.ListGroupMembers(...).value wrapped in IfError (§6)
 
+/** Layout helpers for a screen: size, padding and an add() that keeps names unique app-wide. */
+export function layoutCtx(project, screen) { return ctx(project, screen); }
 function ctx(project, screen) {
   const ff = FORM_FACTORS[project.app.formFactor || 'tablet'];
   const used = allNames(project);
@@ -159,6 +161,10 @@ export function galleryRows(project, scr, gal, list, { compact = false } = {}) {
   const title = readFx(project, list.name, list.columns[0].name, 'ThisItem');
   const metaParts = [];
   if (sub) metaParts.push(readFx(project, list.name, sub.name, 'ThisItem'));
+  for (const mc of gal.data?.metaCols || []) {
+    const c = list.columns.find((x) => x.name === mc);
+    if (c && c !== sub && c !== dc) metaParts.push(`If(IsBlank(${readFx(project, list.name, c.name, 'ThisItem')}), "", "${pretty(c.name)} " & ${readFx(project, list.name, c.name, 'ThisItem')})`);
+  }
   if (dc) metaParts.push(`If(IsBlank(ThisItem.${/^[A-Za-z_]\w*$/.test(dc.name) ? dc.name : `'${dc.name}'`}), "", "${pretty(dc.name)} " & ${readFx(project, list.name, dc.name, 'ThisItem')})`);
   else metaParts.push(`"Updated " & Text(ThisItem.Modified, "mm/dd/yyyy")`);
   const meta = metaParts.map((m) => esc(m)).join(` & "  ·  " & `);
@@ -174,7 +180,7 @@ export function galleryRows(project, scr, gal, list, { compact = false } = {}) {
 }
 
 /** Label + input for one column. */
-function inputFor(project, screen, list, col, x, y, w) {
+export function inputFor(project, screen, list, col, x, y, w) {
   const { add } = ctx(project, screen), T = tag(screen);
   const type = col.type === 'YesNo' ? 'toggle' : col.type === 'Person' ? 'person' : col.type === 'DateTime' ? 'datepicker' : (col.type === 'Choice' || col.type === 'Lookup') ? 'dropdown' : 'textinput';
   const prefix = { textinput: 'txt', dropdown: 'dd', datepicker: 'dtp', toggle: 'tgl', person: 'pp' }[type];
@@ -184,6 +190,8 @@ function inputFor(project, screen, list, col, x, y, w) {
     props: type === 'textinput' ? { hint: col.type === 'Currency' ? '0.00' : col.type === 'Number' ? '0' : 'Enter ' + pretty(col.name).toLowerCase(), defaultText: '', multiline: col.type === 'Note', numeric: col.type === 'Number' || col.type === 'Currency', size: 12 } : undefined });
   return { lab, inp, bottom: y + 24 + h };
 }
+/** Section a column belongs to on generated forms and details screens. */
+export const sectionOf = (col) => (col.type === 'Note' ? 'Notes' : ['Person', 'DateTime'].includes(col.type) ? 'People and dates' : 'Details');
 /** Split columns into Details / People and dates / Notes. */
 function sections(cols) {
   const groups = [
@@ -194,7 +202,7 @@ function sections(cols) {
   return groups.filter((g) => g.cols.length);
 }
 /** Section card with a title (returns the card so callers can size it). */
-function sectionCard(add, name, x, y, w, title) {
+export function sectionCard(add, name, x, y, w, title) {
   const card = add('card', { name: 'card' + name, x, y, w, h: 100, props: { fill: '@Surface', borderColor: '@Border', borderThickness: 1, radius: 'theme', shadow: true } });
   add('label', { name: 'lblSec' + name, x: x + 20, y: y + 14, w: w - 40, h: 26, props: { text: title, size: 12, weight: 'Semibold', color: '@Text' } });
   return card;
@@ -285,7 +293,7 @@ export function genEdit(project, list, opts = {}) {
 }
 
 /** Status stepper: one circle per positive stage, coloured from the item's own status value. */
-function stepperFx(list, st, V) {
+export function stepperFx(list, st, V) {
   const ref = `${V}.${/^[A-Za-z_]\w*$/.test(st.name) ? st.name : `'${st.name}'`}.Value`;
   const steps = st.choices.filter((c) => !NEG.test(c));
   const negs = st.choices.filter((c) => NEG.test(c));
@@ -300,6 +308,16 @@ function stepperFx(list, st, V) {
   const body = `<table style='width:100%;border-collapse:collapse;table-layout:fixed;margin-top:14px'><tr>${cells}</tr></table>`
     + `{{=If(bad, "<div style='text-align:center;margin-top:6px;font-size:12px;font-weight:600;color:" & appTheme.DangerHex & "'>" & ${esc(ref)} & "</div>", "")}}`;
   return (h) => `With({ix: ${ix}, bad: ${bad}}, ${hx(cardOpen(h) + body + '</div>')})`;
+}
+
+/** Details summary card: title, status pill, created by / on, ID. */
+export function summaryFx(project, list, sw, sh) {
+  const phone = project.app.formFactor === 'phone', V = varSel(list.name), st = statusCol(list);
+  const tRef = readFx(project, list.name, list.columns[0].name, V);
+  const stRef = st ? `${V}.${/^[A-Za-z_]\w*$/.test(st.name) ? st.name : `'${st.name}'`}.Value` : null;
+  return hx(cardOpen(sh, 'padding:18px 22px;')
+      + `<div style='font-size:${phone ? 18 : 22}px;font-weight:700;color:{{Text}};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:${phone ? sw - 60 : sw - 420}px'>{{=${esc(tRef)}}}</div>`
+      + `<div style='margin-top:10px;font-size:12px;color:{{TextMuted}}'>${st ? pill(stRef, st) + '&nbsp;&nbsp;' : ''}Created by {{=${esc(`${V}.'Created By'.DisplayName`)}}} on {{=Text(${V}.Created, "mm/dd/yyyy")}}  ·  #{{=Text(${V}.ID)}}</div></div>`);
 }
 
 export function genDetail(project, list, opts = {}) {
@@ -323,10 +341,7 @@ export function genDetail(project, list, opts = {}) {
   const sy = HH + 16, sh = phone ? 132 : 112, sw = W - pad * 2;
   const tRef = readFx(project, list.name, titleCol.name, V);
   const stRef = st ? `${V}.${/^[A-Za-z_]\w*$/.test(st.name) ? st.name : `'${st.name}'`}.Value` : null;
-  add('html', { name: 'htmlSummary' + T, x: pad, y: sy, w: sw, h: sh, props: { html: '' }, fx: { ...vis,
-    HtmlText: hx(cardOpen(sh, 'padding:18px 22px;')
-      + `<div style='font-size:${phone ? 18 : 22}px;font-weight:700;color:{{Text}};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:${phone ? sw - 60 : sw - 420}px'>{{=${esc(tRef)}}}</div>`
-      + `<div style='margin-top:10px;font-size:12px;color:{{TextMuted}}'>${st ? pill(stRef, st) + '&nbsp;&nbsp;' : ''}Created by {{=${esc(`${V}.'Created By'.DisplayName`)}}} on {{=Text(${V}.Created, "mm/dd/yyyy")}}  ·  #{{=Text(${V}.ID)}}</div></div>`) } });
+  add('html', { name: 'htmlSummary' + T, x: pad, y: sy, w: sw, h: sh, props: { html: '' }, fx: { ...vis, HtmlText: summaryFx(project, list, sw, sh) } });
   // actions: delete (two-click), approve/reject when the item is waiting
   const ap = project.app.approvalsCfg && project.app.approvalsCfg.list === list.name ? project.app.approvalsCfg : null;
   const admin = ft.adminGroup ? ' && varIsAdmin' : '';

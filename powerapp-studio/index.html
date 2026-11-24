@@ -29,6 +29,7 @@
         <button class="ic" id="btnRedo" title="Redo (Ctrl+Y)" aria-label="Redo"></button>
         <span class="sep"></span>
         <button class="tb" id="btnDescribe" title="Describe the app in plain English; Claude plans it">Describe</button>
+        <button class="tb" id="btnChange" title="Describe a change in plain English; Claude edits the app you have">Ask for a change</button>
         <button class="tb" id="btnWizard" title="Generate an app from a scenario">New app</button>
         <div class="dd" id="fileMenu">
           <button class="tb" id="btnFile" aria-haspopup="true">Project</button>
@@ -39,7 +40,9 @@
             <button data-cmd="paste">Paste project JSON…</button>
             <hr>
             <button data-cmd="describe">Describe your app (Claude)…</button>
+            <button data-cmd="change">Ask for a change (Claude)…</button>
             <button data-cmd="import">Import screen YAML…</button>
+            <button data-cmd="drift">Check against a Studio export…</button>
             <hr>
             <button data-cmd="setup">Finish setup…</button>
             <button data-cmd="guide">Export customer guide (.html)</button>

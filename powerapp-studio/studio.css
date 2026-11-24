@@ -483,3 +483,53 @@ input[type=range] { width: 100%; accent-color: var(--cyan); }
 .su-ok { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--ok); font-weight: 600; }
 .su-ok svg { width: 18px; height: 18px; background: var(--ok); color: #fff; border-radius: 50%; padding: 3px; }
 .su-ok button { margin-left: auto; }
+
+/* ---- Ask for a change ---- */
+.linkbtn { background: none; border: 0; padding: 0; color: var(--cyan); font: inherit; font-weight: 600; cursor: pointer; text-decoration: underline; }
+.cg-exs { display: grid; gap: 6px; margin: 4px 0 8px; }
+.cg-ex { text-align: left; border: 1px solid var(--line); background: var(--paper, #fff); border-radius: 8px; padding: 6px 10px; font-size: 12.5px; color: #334155; cursor: pointer; }
+.cg-ex:hover { border-color: var(--cyan); background: var(--cyanBg); }
+.cg-sum { font-size: 14px; margin: 0 0 12px; color: #0f172a; }
+.cg-ops { display: grid; gap: 8px; }
+.cg-op { display: flex; gap: 10px; align-items: flex-start; border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; cursor: pointer; background: #fff; }
+.cg-op input { width: 16px; height: 16px; margin-top: 2px; accent-color: var(--cyan); flex: none; }
+.cg-op span { display: grid; gap: 3px; font-size: 13px; }
+.cg-op small { color: var(--muted); }
+.cg-op em { font-style: normal; font-size: 12px; font-weight: 600; }
+.cg-op.destr { border-color: #fcd34d; background: #fffdf5; }
+.cg-op.bad { opacity: .75; background: #f8fafc; cursor: default; }
+.cg-err { color: #b91c1c; }
+.cg-warn { color: #92400e; }
+.cg-done > b { display: block; font-size: 16px; margin-bottom: 12px; }
+
+/* ---- CSV / Excel import ---- */
+.modal.wide { width: min(1100px, 100%); }
+.drop { display: grid; justify-items: center; gap: 4px; border: 2px dashed var(--line2, #cbd5e1); border-radius: 12px; padding: 34px 20px; text-align: center; cursor: pointer; margin-bottom: 14px; background: #f8fafc; }
+.drop b { font-size: 15px; color: var(--cyan); }
+.drop small { color: var(--muted); }
+.drop.over, .drop:hover { border-color: var(--cyan); background: var(--cyanBg); }
+.imp-top { display: grid; grid-template-columns: 1fr 1fr; gap: 0 18px; align-items: end; }
+.imp-wrap { border: 1px solid var(--line); border-radius: 10px; overflow: auto; max-height: 46vh; }
+.imp-t { width: 100%; border-collapse: collapse; font-size: 13px; }
+.imp-t th { position: sticky; top: 0; background: #f1f5f9; text-align: left; font-size: 11.5px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); padding: 8px 10px; }
+.imp-t td { border-top: 1px solid var(--line); padding: 6px 10px; vertical-align: middle; }
+.imp-t td .inp { width: 100%; }
+.imp-t tr.is-title td { background: #f0fdfa; }
+.imp-t .lock { font-size: 12px; color: var(--muted); font-weight: 600; }
+.imp-s { color: #475569; max-width: 280px; }
+.imp-s small { display: block; color: var(--muted); }
+.rowsbar { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-top: 1px solid var(--line); background: #f8fafc; font-size: 12px; color: #334155; }
+.rowsbar span { flex: 1; }
+
+/* ---- theme contrast ---- */
+.cxs { display: grid; gap: 6px; margin-bottom: 12px; }
+.cx { display: flex; align-items: center; gap: 8px; border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; font-size: 12px; }
+.cx.bad { border-color: #fca5a5; background: #fef2f2; }
+.cx-sw { width: 34px; height: 26px; border-radius: 6px; display: grid; place-items: center; font-weight: 700; font-size: 13px; border: 1px solid rgba(0,0,0,.08); flex: none; }
+.cx-t { flex: 1; display: grid; min-width: 0; }
+.cx-t small { color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cx-r { font: 600 12px ui-monospace, Consolas, monospace; }
+.cx-ok { font-size: 10.5px; font-weight: 700; color: #047857; background: #d1fae5; border-radius: 99px; padding: 2px 7px; }
+.dr-scr { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; margin-bottom: 10px; }
+.dr-scr > b { font-size: 14px; } .dr-scr > small { color: var(--muted); margin-left: 6px; }
+.dr-scr .chk { margin: 6px 0 0; } .dr-scr .muted { color: var(--muted); font-size: 12px; }

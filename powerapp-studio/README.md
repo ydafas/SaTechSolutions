@@ -16,6 +16,10 @@ A browser-only Power Apps canvas app designer for satechitsolutions.com. There i
 10. **Finish setup**: one checklist for the values an app needs before it deploys cleanly: site URL, app web link, email-link screen, admin group ID and AppUsage list. Fixing a field clears its lint error at once.
 11. **Customer guide**: Export guide writes one self-contained HTML page with a lifecycle diagram, screen thumbnails, data model, who can do what, emails and flows, and numbered test cases with Pass/Fail, notes and Copy results.
 12. **Demo and tour**: first-time visitors can open a finished Request Tracker with flows and a 4-step tour.
+13. **Ask for a change** (uses Claude): describe a change to the app you already have ("add a required Cost Center to the form and details"). Claude returns small edit operations, you tick the ones to apply, and the studio changes only the screens they touch. One Undo reverts the whole change.
+14. **Import from CSV or Excel**: the Data tab turns a `.csv` or `.xlsx` file into a SharePoint list with guessed column types, keeps up to 200 rows as Play sample data, and can add list, details and form screens for it.
+15. **Contrast check and accessibility labels**: the Theme tab checks the theme's text colors against WCAG AA and fixes a failing pair in one click. An opt-in App setting adds `AccessibleLabel` to inputs and tap buttons.
+16. **Check against a Studio export**: read an `.msapp`, a solution `.zip` or `Src/*.pa.yaml` files, list the controls and screens that exist only in Studio, and bring them in exactly as Studio wrote them.
 
 ## What the generator builds
 
@@ -38,6 +42,8 @@ In the designer, conditional overlays (confirmation page, empty states, "Still n
 
 ### Needs a real-tenant paste test
 
+**Round 3 additions to test in a tenant.** `AccessibleLabel` is not in the skill's field-tested references. That is why it is opt-in (App → *Add accessibility labels*) and off by default, and default YAML does not change. Paste one screen with it on before you rely on it. Screens edited by *Ask for a change* reuse the generator's own controls, so they need no new properties. Controls imported from a Studio export are re-emitted exactly as Studio wrote them, except that Width and Height are added when the export left them out.
+
 These templates passed the harness and the skill's `screen_tool.py check`, but have not yet been pasted into a tenant: the stepper HTML built with `With()`, the confirmation overlay on a multi-screen app, the Mine/All `If` branches over `SortByColumns(Filter(...))`, the loading-screen emblem data URI with the timer step machine, and `appTheme.FontCss` inside HtmlViewer styles. The admin check (`mail` field) and the AppUsage block are copied from verified skill patterns.
 
 ## Files
@@ -55,6 +61,14 @@ These templates passed the harness and the skill's `screen_tool.py check`, but h
 | `js/flows.js` | Flow model and templates, Logic Apps definitions, legacy package files (`flowPackageFiles`), tokens to expressions, deep link (`deepLinkInfo`), flow lint |
 | `js/ai.js` | Describe-your-app: plan JSON schema, system prompt, browser call to the Claude API, `specToProject` (cleans the plan and builds the project, wiring button flows and deep links) |
 | `js/describeui.js` | The Describe dialog: requirements, key, model, review, refine, build |
+| `js/keystore.js` | Where the visitor's API key and model choice live (tab or browser storage, never in project files) |
+| `js/edit.js` | Edits to an existing project that keep untouched screens byte-identical: list and column renames that rewrite the generator's baked formulas, add a column to a form, details screen or gallery rows (grows the section, reflows to three columns when it no longer fits), remove a column, admin gating, rebuild status visuals |
+| `js/change.js` | Ask for a change: `CHANGE_SCHEMA` (structured outputs), `CHANGE_PROMPT`, `projectSummary()` (names and types only, no rows or setup values), `reviewOps()`, `applyOps()` |
+| `js/changeui.js` | The Ask-for-a-change dialog: request, review with per-edit checkboxes and a dry run, apply as one undo step, new lint findings |
+| `js/tabular.js` | CSV parser and writer, `.xlsx` reader (via JSZip: shared strings, inline strings, dates from cell styles), type inference, `listFromTable()`, `listToCsv()` |
+| `js/tableui.js` | Data tab → Import CSV or Excel |
+| `js/a11y.js` | WCAG contrast ratio, theme pairs, `fixContrast()` |
+| `js/drift.js`, `js/driftui.js` | Check against a Studio export: `readStudioExport()`, `driftReport()`, `importDrift()` |
 | `js/deploy.js` | Paste assistant model: ordered `deploySteps()`, FNV-1a `hash()`, `stepStatus()` (new / changed / unchanged), `markDeployed()`, `pendingSteps()`, `removedSinceDeploy()` |
 | `js/setup.js` | Finish setup: `setupItems()` (each mapped to the lint codes it clears), `applySetup()`, GUID check |
 | `js/guide.js` | Customer guide: `guideCases()` test cases from the app's actions and flows, `lifecycleSvg()`, `guideHtml()` |
@@ -113,6 +127,7 @@ Every finding has a stable code. To silence one rule on one control, put `lint-o
 | PS049 | error | "Run a flow" action without a flow of the button kind |
 | PS050 | error | Two flows with the same Power Apps name once spaces are removed |
 | PS051 | warn | An HTML box (first fixed `height:`, plus its margins) is taller than the HtmlViewer's Height − 10, so Power Apps shows a scrollbar |
+| PS052 | info | A theme text/background pair (Text on Bg or Surface, TextMuted on Surface, OnPrimary on Primary, OnHeader on HeaderBg) is below WCAG AA 4.5:1. The default SaTech Cyan and Sunset presets trip it for button text. |
 
 To add a rule, give it the next code in `LINT_RULES`, implement it in `lint()` in `js/emit.js`, and add a failing case to the "lint rules fire" test in `tests/run.mjs`.
 
@@ -145,6 +160,10 @@ The harness covers:
 - Finish setup: after Describe without a site URL, entering it clears every PS045. App link, email-link screen, admin GUID (bad values refused) and the AppUsage confirmation all tick their items.
 - Customer guide: test cases match the app (one per flow, per distinct decision, per save screen, per delete list), are numbered, and the page makes no external requests.
 - Demo: lint-clean with no warnings, setup complete, two flows, paste rules hold.
+- Ask for a change: the schema stays inside structured-output limits (closed objects, every property required, no size or `oneOf` keywords). The request carries names and types only. A mocked response (`tests/fixture-change.json`) is reviewed (invalid edits flagged, destructive ones marked) and applied. Every untouched screen's YAML stays byte-identical and the original project is not modified, which is what Undo restores. Adding a field reflows the tablet form so it still fits above the Save bar. A batch of list, screen, option and flow edits leaves no stale names behind.
+- CSV and Excel: quotes, doubled quotes, newlines in quotes, BOM, semicolon and tab files, write/read round trip. Type inference for every type. A generated `.xlsx` read in workbook sheet order, with rich-text strings and style-based dates. Imported lists get clean names, are capped at 200 rows, survive `normalizeProject`, feed Play, and export back to CSV.
+- Accessibility: contrast ratios match WCAG reference values, and the fix reaches AA with the smallest nudge. PS052 is info only. `AccessibleLabel` is absent by default and present on inputs and tap buttons when opted in.
+- Drift: a solution zip with a nested `.msapp` is read, Studio-only controls and screens are found, imported verbatim (formula positions kept) without touching other screens, and an `.msapp` without YAML source is explained.
 
 Run the harness before every push. If you change the emitter on purpose, look at the diff of a generated screen before pasting it into Studio.
 
@@ -208,6 +227,49 @@ The browser calls `https://api.anthropic.com/v1/messages` directly, sending the 
 - `tests/fixture-plan.json` is a deliberately messy plan. The tests check that it builds a lint-clean project, and they mock `fetch` to check the request headers and error handling.
 
 Corporate and government networks often block `api.anthropic.com`; the dialog reports that case clearly. The Claude artifact preview also blocks outside requests, so this feature only works on the live site.
+
+## Ask for a change (Claude)
+
+**Ask for a change** sits in the top bar, the Project menu and the Describe dialog (when an app already exists). Claude gets a compact summary of the project and the request: app options, lists with column names and types, screens with their kind, form and shown columns, galleries, and flows. It never gets sample rows, the site URL or the app link. Claude answers with `{summary, ops[], notes[]}` through structured outputs. The edit operations are `renameApp`, `setTheme`, `setOption`, `addList`, `renameList`, `addColumn`, `renameColumn`, `removeColumn`, `setChoices`, `addFieldToForm`, `addFieldToDetail`, `addFieldToGallery`, `addScreenFromTemplate`, `addFlow`, `editFlow` and `removeFlow`.
+
+- `reviewOps()` checks each operation against the project, in order, so later edits can use a column added by an earlier one. Edits that cannot run are shown unticked with the reason. Renames, removals and choice changes are marked, because formulas you wrote by hand may still use the old values.
+- The review shows a dry run of the ticked edits on a copy: which screens are new, which change, and anything worth knowing.
+- Applying swaps in the edited copy as **one undo step**, then lists any new lint findings.
+- Edits go through the same helpers as the designer (`js/edit.js`). Screens an edit does not touch keep byte-identical YAML, so the Paste assistant offers only the changed screens.
+- Renaming a list or column, here or on the Data tab, now also rewrites the generator's baked formulas: table references, `varSel…`/`varScope…` names, `.Column` member access, Filter predicates, flow tokens and captions.
+
+## Import from CSV or Excel
+
+Data tab → **Import CSV or Excel**. Choose a `.csv`, `.tsv` or `.xlsx` file, or paste CSV. The file is read in the browser and never uploaded.
+
+- **CSV**: quoted fields, doubled quotes, commas and line breaks inside quotes, CRLF, a BOM, and semicolon- or tab-separated files.
+- **Excel**: the first sheet in workbook order, read with the vendored JSZip. Dates are recognized from the cell's number format. Save older `.xls` files as `.xlsx` first.
+- **Types**:
+  - Yes/No when every value is yes/no/true/false.
+  - Person when every value is an email address.
+  - Currency when values carry `$`, or when a money-sounding header (cost, price, amount…) has plain numbers.
+  - Number otherwise for numbers. Values with leading zeros, such as ZIP codes, stay Text.
+  - Date for ISO or US dates.
+  - Choice for up to 12 repeated values.
+  - Multiple lines of text for long or multi-line values.
+  - Text for everything else.
+- The preview lets you rename, retype or skip each column and pick the Title column. Names become identifiers, and names SharePoint already uses (Created, Location…) get the list's name in front.
+- Up to 200 rows are kept in the project as Play sample data; the list card shows the count. **Export CSV** writes the rows with the internal column names as headers. Use them in SharePoint with *New → List → From CSV*, or paste them into the list's grid view (*Edit in grid view*) with the columns in the same order. Larger files belong straight in SharePoint.
+
+## Accessibility
+
+- **Theme → Contrast** shows the ratio of each text/background pair the screens use, with a **Fix** button for any pair below 4.5:1. The fix moves the text color's lightness (same hue) just far enough. When the text is already white or black, it moves the background instead. Lint PS052 (info) reports the same pairs.
+- **App → Add accessibility labels (verify in your tenant)** is off by default. When on, it adds `AccessibleLabel` to text inputs, dropdowns, date pickers, toggles and people pickers (the bound column's name), and to the invisible tap buttons over icons, images and cards (taken from the control name, so `icoBack…` becomes "Back").
+
+## Check against a Studio export
+
+Project → **Check against a Studio export**. Choose an `.msapp` saved from Studio, a solution `.zip` (nested `.msapp` files are opened), or the screen `.pa.yaml` files from `Src`. The studio compares each screen with what it would emit:
+
+- **Only in Studio**: top-level controls the project does not have. A container's children come with it.
+- **Screens only in Studio.**
+- **In your project, not in the export**: not pasted yet, or deleted in Studio.
+
+Ticked items are imported as raw controls with every property exactly as Studio wrote them, including formula positions. They land in front of the screen's other controls, so you can paste the screen again without losing them. An `.msapp` without YAML source is reported, with what to do instead.
 
 ## Paste assistant, Finish setup, guide, demo
 

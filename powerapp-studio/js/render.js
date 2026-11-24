@@ -247,7 +247,7 @@ function tryFx2(ast, env) {
 // ============================================================ runtime
 export function createRuntime(project, hooks) {
   const db = {};
-  for (const l of project.lists) db[l.name] = sampleRows(l, project.lists, 8);
+  for (const l of project.lists) db[l.name] = sampleRows(l, project.lists, l.rows?.length || 8);
   const rt = { db, vars: {}, inputs: {}, galSel: {}, history: [], screen: null, ctlValues: {}, api: null };
   const start = project.screens.find((s) => s.id === project.app.startScreen) || project.screens[0];
   rt.screen = start?.id;

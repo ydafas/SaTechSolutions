@@ -97,14 +97,14 @@ export function refineHistory(text, planJson, change) {
 
 export class AiError extends Error {}
 /** Call Claude from the browser. Returns {plan, raw, usage}. */
-export async function callClaude({ key, model, text, history, signal, fetchFn = globalThis.fetch }) {
+export async function callClaude({ key, model, text, history, request, signal, fetchFn = globalThis.fetch }) {
   if (!/^sk-ant-/.test(String(key || '').trim())) throw new AiError('Enter an Anthropic API key (it starts with sk-ant-).');
   let res;
   try {
     res = await fetchFn(API_URL, {
       method: 'POST', signal,
       headers: { 'content-type': 'application/json', 'x-api-key': key.trim(), 'anthropic-version': API_VERSION, 'anthropic-dangerous-direct-browser-access': 'true' },
-      body: JSON.stringify(buildRequest(text, model, history)),
+      body: JSON.stringify(request || buildRequest(text, model, history)),
     });
   } catch (e) {
     if (e?.name === 'AbortError') throw new AiError('Cancelled.');
@@ -199,46 +199,10 @@ export function specToProject(plan, { siteUrl = '' } = {}) {
   generateApp(p, { screens, approvals });
 
   // flows
-  const tokenFix = (text, l) => String(text || '').replace(/\{([^}]+)\}/g, (m, tok) => {
-    const [n, sub] = tok.split('.');
-    if (['Title', 'ID', 'Created', 'Modified', 'Author', 'Editor', 'Link', 'Me'].includes(n)) return m;
-    const c = findCol(l, n);
-    return c ? `{${internalName(c.name)}${sub ? '.' + sub : ''}}` : m;
-  });
   const usedNames = new Set();
   for (const rf of (plan?.flows || []).slice(0, 12)) {
-    if (!FLOW_KINDS[rf.kind]) continue;
-    const l = findList(rf.list) || p.lists[0];
-    const f = newFlow(p, rf.kind, l.name);
-    let nm = String(rf.name || f.name).trim().slice(0, 80) || f.name;
-    if (rf.kind === 'button') nm = cleanName(nm, 'RunFlow');
-    let n2 = nm, i = 2; while (usedNames.has(flowFxName(n2))) n2 = `${nm} ${i++}`;
-    f.name = n2; usedNames.add(flowFxName(n2));
-    f.subject = tokenFix(rf.subject, l) || f.subject;
-    f.body = tokenFix(rf.body, l) || f.body;
-    const rec = [];
-    for (const r of rf.recipients || []) {
-      if (r.kind === 'column') { const c = findCol(l, r.value); if (c?.type === 'Person') rec.push({ kind: 'column', value: c.name }); else notes.push(`Flow "${f.name}": "${r.value}" is not a Person column of ${l.name}; recipient dropped.`); }
-      else if (r.kind === 'address') { const em = String(r.value || '').split(/[;,\s]+/).filter(isEmail); em.forEach((e) => rec.push({ kind: 'address', value: e })); if (!em.length) notes.push(`Flow "${f.name}": "${r.value}" is not an email address; recipient dropped.`); }
-      else if (r.kind === 'me' && rf.kind !== 'button') rec.push({ kind: 'author', value: '' });
-      else if (['author', 'editor', 'me'].includes(r.kind)) rec.push({ kind: r.kind, value: '' });
-    }
-    if (rec.length) f.recipients = rec;
-    if (rf.kind === 'statusChanged' || rf.kind === 'reminder') {
-      const c = findCol(l, rf.statusField);
-      if (rf.kind === 'statusChanged') {
-        if (c?.type === 'Choice') f.statusField = c.name;
-        const col = l.columns.find((x) => x.name === f.statusField);
-        f.statusValues = (rf.statusValues || []).filter((v) => col?.choices.includes(v));
-        if (!col) notes.push(`Flow "${f.name}" needs a Choice column to watch; pick one on the Flows tab.`);
-      } else {
-        if (c) f.statusField = c.name;
-        const col = l.columns.find((x) => x.name === f.statusField);
-        f.reminderValue = col?.type === 'Choice' ? (col.choices.includes(rf.reminderValue) ? rf.reminderValue : col.choices[0]) : String(rf.reminderValue ?? '');
-        f.days = Math.max(0, Math.min(365, Math.round(Number(rf.days) || 0)));
-        f.hour = Math.max(0, Math.min(23, Math.round(Number(rf.hour) || 8)));
-      }
-    }
+    const f = flowFromSpec(p, rf, { findList, findCol, usedNames, notes });
+    if (!f) continue;
     p.flows.push(f);
     if (f.kind === 'button') addRunFlowButton(p, f);
   }
@@ -250,6 +214,55 @@ export function specToProject(plan, { siteUrl = '' } = {}) {
   }
   if (p.flows.length && !p.app.siteUrl) notes.push('Set the SharePoint site URL on the Flows tab before downloading flows.');
   return { project: p, notes };
+}
+
+/** Build a cleaned flow from a plan/edit spec. Lookups: findList(name), findCol(list, name). Returns the flow (not added). */
+export function flowFromSpec(p, rf, { findList, findCol, usedNames = new Set((p.flows || []).map((f) => flowFxName(f.name))), notes = [] }) {
+  if (!FLOW_KINDS[rf.kind]) return null;
+  const l = findList(rf.list) || p.lists[0];
+  if (!l) return null;
+  const f = newFlow(p, rf.kind, l.name);
+  let nm = String(rf.name || f.name).trim().slice(0, 80) || f.name;
+  if (rf.kind === 'button') nm = cleanName(nm, 'RunFlow');
+  let n2 = nm, i = 2; while (usedNames.has(flowFxName(n2))) n2 = `${nm} ${i++}`;
+  f.name = n2; usedNames.add(flowFxName(n2));
+  applyFlowFields(p, f, rf, l, { findCol, notes });
+  return f;
+}
+/** Copy subject, body, recipients and trigger settings from a spec onto a flow, cleaning each. Empty fields are left as they are. */
+export function applyFlowFields(p, f, rf, l, { findCol, notes = [] }) {
+  const tokenFix = (text) => String(text || '').replace(/\{([^}]+)\}/g, (m, tok) => {
+    const [n, sub] = tok.split('.');
+    if (['Title', 'ID', 'Created', 'Modified', 'Author', 'Editor', 'Link', 'Me'].includes(n)) return m;
+    const c = findCol(l, n);
+    return c ? `{${internalName(c.name)}${sub ? '.' + sub : ''}}` : m;
+  });
+  if (rf.subject) f.subject = tokenFix(rf.subject);
+  if (rf.body) f.body = tokenFix(rf.body);
+  const rec = [];
+  for (const r of rf.recipients || []) {
+    if (r.kind === 'column') { const c = findCol(l, r.value); if (c?.type === 'Person') rec.push({ kind: 'column', value: c.name }); else notes.push(`Flow "${f.name}": "${r.value}" is not a Person column of ${l.name}; recipient dropped.`); }
+    else if (r.kind === 'address') { const em = String(r.value || '').split(/[;,\s]+/).filter(isEmail); em.forEach((e) => rec.push({ kind: 'address', value: e })); if (!em.length) notes.push(`Flow "${f.name}": "${r.value}" is not an email address; recipient dropped.`); }
+    else if (r.kind === 'me' && f.kind !== 'button') rec.push({ kind: 'author', value: '' });
+    else if (['author', 'editor', 'me'].includes(r.kind)) rec.push({ kind: r.kind, value: '' });
+  }
+  if (rec.length) f.recipients = rec;
+  if (f.kind === 'statusChanged' || f.kind === 'reminder') {
+    const c = rf.statusField ? findCol(l, rf.statusField) : null;
+    if (f.kind === 'statusChanged') {
+      if (c?.type === 'Choice') f.statusField = c.name;
+      const col = l.columns.find((x) => x.name === f.statusField);
+      if ((rf.statusValues || []).length || rf.statusField) f.statusValues = (rf.statusValues || []).filter((v) => col?.choices.includes(v));
+      if (!col) notes.push(`Flow "${f.name}" needs a Choice column to watch; pick one on the Flows tab.`);
+    } else {
+      if (c) f.statusField = c.name;
+      const col = l.columns.find((x) => x.name === f.statusField);
+      if (rf.reminderValue !== undefined && rf.reminderValue !== '' || rf.statusField) f.reminderValue = col?.type === 'Choice' ? (col.choices.includes(rf.reminderValue) ? rf.reminderValue : col.choices[0]) : String(rf.reminderValue ?? '');
+      if (rf.days !== undefined && (rf.days || rf.statusField)) f.days = Math.max(0, Math.min(365, Math.round(Number(rf.days) || 0)));
+      if (rf.hour !== undefined && (rf.hour || rf.statusField)) f.hour = Math.max(0, Math.min(23, Math.round(Number(rf.hour) || 8)));
+    }
+  }
+  return f;
 }
 
 /** Put a "Run a flow" button on the flow's detail screen: in the header beside Edit (tablet), above the action bar (phone). */

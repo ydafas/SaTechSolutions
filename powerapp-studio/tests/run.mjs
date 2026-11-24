@@ -23,6 +23,12 @@ const GD = await import('../js/guide.js');
 const { buildDemo } = await import('../js/templates.js');
 const fs = await import('node:fs');
 const FIXTURE = JSON.parse(fs.readFileSync(new URL('./fixture-plan.json', import.meta.url), 'utf8'));
+const CHANGE_FIXTURE = JSON.parse(fs.readFileSync(new URL('./fixture-change.json', import.meta.url), 'utf8'));
+const CH = await import('../js/change.js');
+const ED = await import('../js/edit.js');
+const TB = await import('../js/tabular.js');
+const A11 = await import('../js/a11y.js');
+const JSZip = require(path.join(here, '../vendor/jszip.min.js'));
 
 // ---------------------------------------------------------------- tiny runner
 let pass = 0, fail = 0;
@@ -708,6 +714,282 @@ test('the demo is lint-clean, fully set up and paste-safe', () => {
   assert(p.screens[0].name === 'scrLoading', 'starts on the loading screen');
   const seen = new Set();
   for (const s of p.screens) checkScreenYaml(E.screenYaml(p, s), seen);
+});
+
+
+// ---------------------------------------------------------------- round 3: ask for a change
+/** Structured-output limits: closed objects, every property required, no size/one-of keywords. */
+function schemaLimits(node, path, out) {
+  if (!node || typeof node !== 'object') return out;
+  for (const bad of ['minItems', 'maxItems', 'minimum', 'maximum', 'minLength', 'maxLength', 'oneOf', 'anyOf', 'allOf', 'pattern', 'format']) if (bad in node) out.push(`${path}: ${bad}`);
+  if (node.type === 'object') {
+    if (node.additionalProperties !== false) out.push(`${path}: additionalProperties must be false`);
+    const keys = Object.keys(node.properties || {});
+    if (JSON.stringify([...(node.required || [])].sort()) !== JSON.stringify([...keys].sort())) out.push(`${path}: every property must be required`);
+    for (const k of keys) schemaLimits(node.properties[k], `${path}.${k}`, out);
+  }
+  if (node.type === 'array') schemaLimits(node.items, `${path}[]`, out);
+  return out;
+}
+test('change schema stays inside structured-output limits', () => {
+  const bad = schemaLimits(CH.CHANGE_SCHEMA, 'change', []);
+  assert(!bad.length, bad.join('; '));
+  const opKeys = Object.keys(CH.CHANGE_SCHEMA.properties.ops.items.properties);
+  for (const k of Object.keys(CHANGE_FIXTURE.ops[0])) assert(opKeys.includes(k), 'fixture field in schema: ' + k);
+  for (const o of ['addList', 'addColumn', 'renameColumn', 'removeColumn', 'setChoices', 'addFlow', 'editFlow', 'removeFlow', 'setOption', 'addScreenFromTemplate', 'addFieldToForm', 'addFieldToDetail', 'addFieldToGallery', 'setTheme', 'renameApp'])
+    assert(CH.CHANGE_SCHEMA.properties.ops.items.properties.op.enum.includes(o), 'op in enum: ' + o);
+});
+test('change request: summary has names and types only, never sample rows or setup values', () => {
+  const p = buildDemo(core.newProject);
+  p.lists[0].rows = [{ Title: 'secret row' }];
+  const req = CH.buildChangeRequest(p, 'Add a Cost Center', 'claude-sonnet-5-5');
+  eq(req.output_config.format.type, 'json_schema', 'structured output');
+  assert(!('temperature' in req), 'no temperature');
+  const sent = JSON.stringify(req.messages);
+  assert(!sent.includes('secret row'), 'no row data');
+  assert(!sent.includes(p.app.siteUrl), 'no site URL');
+  assert(sent.includes('Requests') && sent.includes('EstimatedCost') && sent.includes('scrEditRequests'), 'lists, columns and screens');
+});
+test('change ops from a mocked Claude response: review, apply, skip, untouched screens byte-identical', async () => {
+  const p = buildDemo(core.newProject);
+  const before = Object.fromEntries(p.screens.map((s) => [s.id, E.screenYaml(p, s)]));
+  const snapshot = JSON.stringify(p);
+  let sent = null;
+  const fetchFn = async (url, init) => { sent = JSON.parse(init.body); return { ok: true, status: 200, json: async () => ({ stop_reason: 'end_turn', content: [{ type: 'text', text: JSON.stringify(CHANGE_FIXTURE) }], usage: {} }) }; };
+  const r = await AI.callClaude({ key: 'sk-ant-test', request: CH.buildChangeRequest(p, 'Add a cost center', 'claude-sonnet-5-5'), fetchFn });
+  eq(sent.system, CH.CHANGE_PROMPT, 'change prompt sent');
+  const rows = CH.reviewOps(p, r.plan.ops);
+  eq(rows.filter((x) => x.error).length, 2, 'two invalid ops flagged: ' + rows.map((x) => x.error).join('|'));
+  assert(rows.find((x) => x.op.op === 'removeColumn').destructive && rows.find((x) => x.op.op === 'setChoices').destructive, 'destructive flagged');
+  const q = core.clone(p);
+  const res = CH.applyOps(q, r.plan.ops);
+  eq(JSON.stringify(p), snapshot, 'the original project is not touched (undo restores it exactly)');
+  eq(res.applied.length, 6, 'six applied');
+  eq(res.skipped.length, 2, 'two skipped with reasons');
+  assert(res.skipped.every((x) => x.reason), 'reasons');
+  const l = q.lists.find((x) => x.name === 'Requests');
+  assert(l.columns.some((c) => c.name === 'CostCenter' && c.required), 'column added with a clean name');
+  assert(l.columns.find((c) => c.name === 'Category').choices.includes('Finance'), 'choices updated');
+  assert(q.flows.some((f) => f.name === 'Weekly pending reminder' && f.kind === 'reminder' && f.recipients[0].value === 'Approver'), 'flow added');
+  const edit = q.screens.find((s) => s.name === 'scrEditRequests');
+  assert([...core.walk(edit.controls)].some(([c]) => c.field?.column === 'CostCenter'), 'on the form');
+  assert(res.touched.has(edit.id), 'form touched');
+  assert(!edit.controls.find((c) => c.name === 'lblNeededByEditRequests').fx?.Text, 'the NeededBy caption is not mistaken for the Still needed strip');
+  assert(/Cost Center/.test(edit.controls.find((c) => c.name === 'lblNeededEditRequests').fx.Text), 'Still needed strip knows the new required field');
+  let changed = 0;
+  for (const s of q.screens) {
+    const y = E.screenYaml(q, s);
+    if (res.touched.has(s.id)) { if (y !== before[s.id]) changed++; continue; }
+    eq(y, before[s.id], `untouched ${s.name} is byte-identical`);
+  }
+  assert(changed >= 3, 'form, details and browse changed');
+  const errs = errors(q); assert(!errs.length, errs.map((x) => x.code + ' ' + x.msg).join('; '));
+  assert(!E.lint(q).some((f) => f.level === 'warn'), 'no new warnings: ' + E.lint(q).filter((f) => f.level === 'warn').map((f) => f.code + ' ' + f.where + ' ' + f.msg).join('; '));
+  checkApp(q);
+  const fm = E.lint(q); void fm;
+  // the form still fits above the Save bar
+  const bar = edit.controls.find((c) => c.name.startsWith('rectBar'));
+  assert(Math.max(...edit.controls.filter((c) => c.y < bar.y && !/^(rectDone|cardDone|icoDone|lblDone|btnDone)/.test(c.name)).map((c) => c.y + c.h)) <= bar.y, 'form fits above the bar');
+});
+test('change ops: lists, screens, options and flows in one batch', () => {
+  const p = buildDemo(core.newProject), q = core.clone(p);
+  const B = CHANGE_FIXTURE.ops[0], op = (o) => ({ ...B, reason: '', required: false, list: '', column: '', type: '', ...o });
+  const res = CH.applyOps(q, [
+    op({ op: 'addList', list: 'Vendors', columns: [{ name: 'Contact', type: 'Person', required: false, choices: [], lookupList: '' }, { name: 'Tier', type: 'Choice', required: true, choices: ['Gold', 'Silver'], lookupList: '' }] }),
+    op({ op: 'addScreenFromTemplate', template: 'edit', list: 'Vendors' }),
+    op({ op: 'addScreenFromTemplate', template: 'detail', list: 'Vendors' }),
+    op({ op: 'addScreenFromTemplate', template: 'browse', list: 'Vendors' }),
+    op({ op: 'renameColumn', list: 'Requests', column: 'Priority', newName: 'Urgency' }),
+    op({ op: 'setOption', option: 'adminGroupId', value: '' }),
+    op({ op: 'setOption', option: 'loadingScreen', value: 'false' }),
+    op({ op: 'editFlow', flowName: p.flows[0].name, subject: 'Heads up: {Title}' }),
+    op({ op: 'removeFlow', flowName: p.flows[1].name }),
+    op({ op: 'renameApp', newName: 'Ops Desk' }),
+  ]);
+  eq(res.skipped.length, 0, 'none skipped: ' + res.skipped.map((x) => x.reason).join('; '));
+  assert(q.screens.some((s) => s.name === 'scrBrowseVendors') && !q.screens.some((s) => s.role === 'loading'), 'screens added/removed');
+  assert(q.app.startScreen === q.screens[0].id, 'start screen valid');
+  const hay = JSON.stringify(q.screens);
+  assert(!/\bPriority\b/.test(hay), 'no stale Priority references');
+  assert(!/varIsAdmin/.test(hay), 'admin gating removed');
+  eq(q.flows.length, 1, 'flow removed');
+  assert(q.flows[0].subject.startsWith('Heads up'), 'flow edited');
+  const errs = errors(q); assert(!errs.length, errs.map((x) => x.code + ' ' + x.msg).join('; '));
+  checkApp(q);
+});
+test('field adds on phone keep overlays in front and the form above the bar', () => {
+  const p = build('requests', 'phone'), q = core.clone(p);
+  const B = CHANGE_FIXTURE.ops[0];
+  const res = CH.applyOps(q, [{ ...B }, { ...CHANGE_FIXTURE.ops[1] }, { ...CHANGE_FIXTURE.ops[2] }]);
+  eq(res.skipped.length, 0, 'applied: ' + res.skipped.map((x) => x.reason).join('; '));
+  const edit = q.screens.find((s) => s.name.startsWith('scrEdit'));
+  const iNew = edit.controls.findIndex((c) => c.field?.column === 'CostCenter');
+  const iBar = edit.controls.findIndex((c) => /^rectBar/.test(c.name));
+  assert(iNew >= 0 && iNew < iBar, 'new input sits behind the bottom bar and overlays');
+  checkApp(q);
+});
+
+// ---------------------------------------------------------------- round 3: CSV / Excel import
+test('CSV parser: quotes, doubled quotes, commas and newlines in quotes, CRLF, BOM, blank lines, other delimiters', () => {
+  const rows = TB.parseCSV('﻿a,b,c\r\n"x, y","say ""hi""","l1\nl2"\r\n\r\n1,,3\n');
+  eq(JSON.stringify(rows), JSON.stringify([['a', 'b', 'c'], ['x, y', 'say "hi"', 'l1\nl2'], ['1', '', '3']]), 'rows');
+  eq(JSON.stringify(TB.parseCSV('a;b\n1;"2;3"')), JSON.stringify([['a', 'b'], ['1', '2;3']]), 'semicolon');
+  eq(JSON.stringify(TB.parseCSV('a\tb\n1\t2')), JSON.stringify([['a', 'b'], ['1', '2']]), 'tab');
+  eq(JSON.stringify(TB.parseCSV('a,b\n1,2')), JSON.stringify([['a', 'b'], ['1', '2']]), 'no trailing newline');
+  const back = TB.parseCSV(TB.writeCSV([['x, y', 'say "hi"', 'l1\nl2', ' pad']]));
+  eq(JSON.stringify(back), JSON.stringify([['x, y', 'say "hi"', 'l1\nl2', ' pad']]), 'round trip');
+});
+test('type inference: Number, Currency, DateTime, YesNo, Choice, Person, Note, Text', () => {
+  const head = ['Name', 'Owner', 'Qty', 'Cost', 'Due', 'Done', 'Dept', 'Notes', 'Zip', 'Phone'];
+  const rows = [
+    ['Laptop', 'ana@contoso.com', '3', '$1,200.00', '2026-01-03', 'Yes', 'IT', 'short', '02134', '555-0101'],
+    ['Desk', 'ben@contoso.com', '12', '$85.50', '1/5/2026', 'no', 'HR', 'a\nmulti-line note', '10001', '555-0102'],
+    ['Chair', 'cy@contoso.com', '1,000', '$40', '2026-02-01', 'TRUE', 'IT', 'ok', '99999', '555-0103'],
+    ['Phone', 'di@contoso.com', '-4', '$7', '2026-03-01', 'false', 'IT', '', '12345', '555-0104'],
+  ];
+  const t = Object.fromEntries(TB.inferColumns(head, rows).map((c) => [c.header, c.type]));
+  eq(JSON.stringify(t), JSON.stringify({ Name: 'Text', Owner: 'Person', Qty: 'Number', Cost: 'Currency', Due: 'DateTime', Done: 'YesNo', Dept: 'Choice', Notes: 'Note', Zip: 'Text', Phone: 'Text' }), 'types');
+  eq(TB.inferColumns(['Budget'], [['1200.50'], ['80']])[0].type, 'Currency', 'money header with plain numbers');
+  eq(TB.inferColumns(['Mixed'], [['ana@contoso.com'], ['not an email']])[0].type, 'Text', 'Person only when every value is an email');
+  eq(TB.inferColumns(['Unique'], [['a'], ['b'], ['c'], ['d']])[0].type, 'Text', 'Choice needs repeats');
+  eq(TB.convertCell('Currency', '($1,200.50)'), -1200.5, 'accounting negative');
+  eq(TB.convertCell('DateTime', '2/30/2026'), '', 'invalid date');
+  eq(TB.convertCell('DateTime', '12/31/25'), '2025-12-31', 'two-digit year');
+});
+/** A minimal real .xlsx: shared strings, an inline string, a styled date, a boolean, a skipped cell. */
+async function makeXlsx() {
+  const z = new JSZip();
+  z.file('[Content_Types].xml', '<?xml version="1.0"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"/>');
+  z.file('xl/workbook.xml', '<workbook xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Assets" sheetId="1" r:id="rId7"/><sheet name="Other" sheetId="2" r:id="rId8"/></sheets></workbook>');
+  z.file('xl/_rels/workbook.xml.rels', '<Relationships><Relationship Id="rId8" Target="worksheets/sheet1.xml"/><Relationship Id="rId7" Target="worksheets/sheet2.xml"/></Relationships>');
+  z.file('xl/sharedStrings.xml', '<sst><si><t>Asset</t></si><si><t>Purchased</t></si><si><r><t>Ow</t></r><r><t>ner</t></r><rPh><t>x</t></rPh></si><si><t>Active</t></si><si><t xml:space="preserve">Laptop &amp; dock</t></si><si><t>ana@contoso.com</t></si><si><t>Cost</t></si></sst>');
+  z.file('xl/styles.xml', '<styleSheet><numFmts count="1"><numFmt numFmtId="164" formatCode="yyyy\\-mm\\-dd"/></numFmts><cellXfs count="3"><xf numFmtId="0"/><xf numFmtId="164"/><xf numFmtId="14"/></cellXfs></styleSheet>');
+  z.file('xl/worksheets/sheet1.xml', '<worksheet><sheetData><row r="1"><c r="A1" t="inlineStr"><is><t>WRONG SHEET</t></is></c></row></sheetData></worksheet>');
+  z.file('xl/worksheets/sheet2.xml', '<worksheet><sheetData>'
+    + '<row r="1"><c r="A1" t="s"><v>0</v></c><c r="B1" t="s"><v>1</v></c><c r="C1" t="s"><v>2</v></c><c r="D1" t="s"><v>3</v></c><c r="E1" t="s"><v>6</v></c></row>'
+    + '<row r="2"><c r="A2" t="s"><v>4</v></c><c r="B2" s="1"><v>46025</v></c><c r="C2" t="s"><v>5</v></c><c r="D2" t="b"><v>1</v></c><c r="E2"><v>1299.5</v></c></row>'
+    + '<row r="3"><c r="A3" t="inlineStr"><is><t>Monitor</t></is></c><c r="B3" s="2"><v>46054</v></c><c r="D3" t="b"><v>0</v></c><c r="E3"><v>199</v></c></row>'
+    + '</sheetData></worksheet>');
+  return z.generateAsync({ type: 'uint8array' });
+}
+test('xlsx reader: first sheet in workbook order, shared/rich/inline strings, dates from styles, booleans, gaps', async () => {
+  const rows = await TB.readXlsx(await makeXlsx(), JSZip);
+  eq(JSON.stringify(rows[0]), JSON.stringify(['Asset', 'Purchased', 'Owner', 'Active', 'Cost']), 'header (rich text joined, phonetic dropped)');
+  eq(JSON.stringify(rows[1]), JSON.stringify(['Laptop & dock', '2026-01-03', 'ana@contoso.com', 'TRUE', '1299.5']), 'row 2');
+  eq(JSON.stringify(rows[2]), JSON.stringify(['Monitor', '2026-02-01', '', 'FALSE', '199']), 'row 3 keeps the gap');
+  const types = TB.inferColumns(rows[0], rows.slice(1)).map((c) => c.type);
+  eq(JSON.stringify(types), JSON.stringify(['Text', 'DateTime', 'Person', 'YesNo', 'Currency']), 'types');
+});
+test('imported rows become a list with clean names, are capped at 200, and Play uses them', () => {
+  const p = core.newProject();
+  const head = ['Item Name', 'Created', 'Status', 'Owner', 'Amount'];
+  const data = Array.from({ length: 230 }, (_, i) => [`Thing ${i + 1}`, '2026-01-0' + ((i % 9) + 1), ['Open', 'Closed'][i % 2], i % 2 ? 'ana@contoso.com' : 'zed.q@fabrikam.com', String(i * 10)]);
+  const info = TB.inferColumns(head, data).map((c, i) => ({ ...c, index: i, include: true, name: c.header }));
+  const { list, notes, truncated } = TB.listFromTable(p, { name: 'my assets!', rows: data, cols: info, titleIndex: 0 });
+  eq(list.name, 'MyAssets', 'list name cleaned');
+  assert(truncated && notes.some((n) => /200/.test(n)), 'capped with a note');
+  eq(list.rows.length, 200, '200 rows kept');
+  const names = list.columns.map((c) => c.name);
+  assert(!names.includes('Created') && names.some((n) => /Created$/.test(n)), 'reserved name prefixed: ' + names.join(','));
+  eq(list.columns.find((c) => c.name === 'Status').type, 'Choice', 'choice');
+  eq(list.rows[0].Title, 'Thing 1', 'Title from the chosen column');
+  p.lists.push(list);
+  generateApp(p, { screens: ['browse', 'detail', 'edit'] });
+  assert(p.lists[0].rows.length === 200, 'generateApp keeps the rows');
+  const saved = JSON.parse(JSON.stringify(p)); core.normalizeProject(saved);
+  eq(saved.lists[0].rows.length, 200, 'rows survive save/load');
+  saved.lists[0].rows.unshift({ Title: 'x', Evil: { a: 1 }, Nope: 'y' }); core.normalizeProject(saved);
+  eq(saved.lists[0].rows.length, 200, 'normalize caps rows');
+  eq(JSON.stringify(saved.lists[0].rows[0]), JSON.stringify({ Title: 'x' }), 'unknown keys and objects dropped');
+  const rt = createRuntime(p, { toast: () => {}, rerender: () => {} });
+  eq(rt.db.MyAssets.length, 200, 'Play has every imported row');
+  eq(rt.db.MyAssets[0].Title, 'Thing 1', 'Play row 1');
+  eq(rt.db.MyAssets[0].Owner.Mail, 'zed.q@fabrikam.com', 'unknown person keeps the address');
+  eq(rt.db.MyAssets[0].Owner.DisplayName, 'Zed Q', 'name from the address');
+  eq(typeof rt.db.MyAssets[3].Amount, 'number', 'numbers stay numbers');
+  const back = TB.parseCSV(TB.listToCsv(p.lists[0]));
+  eq(back.length, 201, 'header + rows');
+  eq(back[0][0], 'Title', 'internal names as headers');
+  eq(back[1][0], 'Thing 1', 'first row');
+  checkApp(p);
+});
+
+// ---------------------------------------------------------------- round 3: accessibility
+test('contrast math matches WCAG reference values and the fix reaches AA with the smallest nudge', () => {
+  const near = (a, b, m) => assert(Math.abs(a - b) < 0.01, `${m}: ${a} vs ${b}`);
+  near(A11.contrast('#000000', '#FFFFFF'), 21, 'black on white');
+  near(A11.contrast('#FFFFFF', '#FFFFFF'), 1, 'same color');
+  near(A11.contrast('#767676', '#FFFFFF'), 4.54, '#767676 is the lightest AA gray on white');
+  near(A11.contrast('#777777', '#FFFFFF'), 4.48, '#777777 just fails');
+  near(A11.contrast('#0F6CBD', '#FFFFFF'), A11.contrast('#FFFFFF', '#0F6CBD'), 'symmetric');
+  const colors = { ...core.THEME_PRESETS[0].colors, TextMuted: '#A0AEC0', OnPrimary: '#FFFFFF', Primary: '#F59E0B' };
+  const issues = A11.contrastIssues(colors).map((x) => x.fg + '/' + x.bg);
+  assert(issues.includes('TextMuted/Surface') && issues.includes('OnPrimary/Primary'), 'issues found: ' + issues);
+  const f1 = A11.fixContrast(colors, 'TextMuted', 'Surface');
+  eq(f1.key, 'TextMuted', 'text color nudged first');
+  assert(A11.contrast(f1.value, colors.Surface) >= 4.5 && A11.contrast(f1.value, colors.Surface) < 5.2, 'just past AA: ' + f1.value);
+  const f2 = A11.fixContrast(colors, 'OnPrimary', 'Primary');
+  eq(f2.key, 'Primary', 'white text cannot get lighter, so the button color darkens');
+  assert(A11.contrast(colors.OnPrimary, f2.value) >= 4.5, 'button passes: ' + f2.value);
+  const p = buildDemo(core.newProject);
+  p.theme.colors.TextMuted = '#A0AEC0';
+  const f = E.lint(p).filter((x) => x.code === 'PS052' && /TextMuted/.test(x.msg));
+  eq(f.length, 1, 'one PS052 finding for TextMuted');
+  eq(f[0].level, 'info', 'info only');
+  p.theme.colors.TextMuted = A11.fixContrast(p.theme.colors, 'TextMuted', 'Surface').value;
+  eq(E.lint(p).filter((x) => x.code === 'PS052' && /TextMuted/.test(x.msg)).length, 0, 'fixed');
+});
+test('accessibility labels are opt-in: default YAML has none, opting in labels inputs and tap buttons', () => {
+  const p = buildDemo(core.newProject);
+  const before = p.screens.map((s) => E.screenYaml(p, s)).join('\n');
+  assert(!before.includes('AccessibleLabel'), 'off by default');
+  const saved = JSON.parse(JSON.stringify(p)); core.normalizeProject(saved);
+  assert(!('a11y' in saved.app.features), 'flag not added to existing projects');
+  p.app.features.a11y = true;
+  const seen = new Set();
+  const edit = p.screens.find((s) => s.name === 'scrEditRequests');
+  const y = E.screenYaml(p, edit);
+  checkScreenYaml(y, seen);
+  assert(/txtTitleEditRequests:[\s\S]*?AccessibleLabel: ="Title"/.test(y), 'input labeled with its column');
+  assert(/ppApproverEditRequests:[\s\S]*?AccessibleLabel: ="Approver"/.test(y), 'people picker labeled');
+  assert(/icoBackEditRequestsTap:[\s\S]*?AccessibleLabel: ="Back"/.test(y), 'back icon tap button labeled');
+  for (const s of p.screens) if (s !== edit) checkScreenYaml(E.screenYaml(p, s), seen);
+  const saved2 = JSON.parse(JSON.stringify(p)); core.normalizeProject(saved2);
+  eq(saved2.app.features.a11y, true, 'flag survives save/load');
+});
+
+// ---------------------------------------------------------------- round 3: drift check against a Studio export
+test('drift check: reads a solution zip with a nested .msapp, finds Studio-only controls and screens, imports them verbatim', async () => {
+  const DR = await import('../js/drift.js');
+  const p = buildDemo(core.newProject);
+  const z = new JSZip();
+  for (const s of p.screens) {
+    let y = E.screenYaml(p, s);
+    if (s.name === 'scrDetailRequests') y += '\n    - btnStudioPrint:\n        Control: Classic/Button\n        Properties:\n          Text: ="Print"\n          X: =Parent.Width - 200\n          Y: =100\n          OnSelect: =Print()\n    - grpStudio:\n        Control: GroupContainer\n        Variant: ManualLayout\n        Children:\n          - lblInGroup:\n              Control: Label\n              Properties:\n                Text: ="hi"\n';
+    if (s.name !== 'scrApprovalsRequests') z.file(`Src/${s.name}.pa.yaml`, y);
+  }
+  z.file('Src/App.pa.yaml', 'App:\n  Properties:\n    OnStart: =1\n');
+  z.file('Src/scrStudioOnly.pa.yaml', 'Screens:\n  scrStudioOnly:\n    Children:\n      - lblHelloStudio:\n          Control: Label\n          Properties:\n            Text: ="Hello"\n');
+  const sol = new JSZip(); sol.file('CanvasApps/contoso_app_DocumentUri.msapp', await z.generateAsync({ type: 'uint8array' }));
+  const st = await DR.readStudioExport([{ name: 'Solution.zip', data: await sol.generateAsync({ type: 'uint8array' }) }], JSZip);
+  eq(st.notes.length, 0, 'no notes');
+  const rep = DR.driftReport(p, st);
+  const det = rep.screens.find((s) => s.name === 'scrDetailRequests');
+  eq(JSON.stringify(det.studioOnly.map((c) => c.name)), JSON.stringify(['btnStudioPrint', 'grpStudio']), 'Studio-only top-level controls (children ride along)');
+  eq(det.studioOnly[1].nested, 1, 'nested count');
+  eq(rep.newScreens[0].name, 'scrStudioOnly', 'Studio-only screen');
+  assert(!rep.screens.some((s) => s.name === 'scrApprovalsRequests'), 'screens missing from the export are not reported as drift');
+  const before = Object.fromEntries(p.screens.map((s) => [s.id, E.screenYaml(p, s)]));
+  const res = DR.importDrift(p, st, [{ screen: 'scrDetailRequests', names: ['btnStudioPrint', 'grpStudio'] }], ['scrStudioOnly']);
+  eq(res.added, 3, 'three imported');
+  for (const s of p.screens) if (before[s.id] && s.name !== 'scrDetailRequests') eq(E.screenYaml(p, s), before[s.id], `${s.name} untouched`);
+  const y = E.screenYaml(p, p.screens.find((s) => s.name === 'scrDetailRequests'));
+  assert(/btnStudioPrint:\n\s+Control: Classic\/Button[\s\S]*?OnSelect: =Print\(\)[\s\S]*?X: =Parent\.Width - 200/.test(y), 'kept verbatim, formula position kept');
+  assert(/grpStudio:\n\s+Control: GroupContainer\n\s+Variant: ManualLayout[\s\S]*?lblInGroup:/.test(y), 'container with children');
+  const after = DR.driftReport(p, st);
+  eq(after.screens.filter((s) => s.studioOnly.length).length + after.newScreens.length, 0, 'no drift left');
+  const none = await DR.readStudioExport([{ name: 'old.msapp', data: await new JSZip().file('Header.json', '{}').generateAsync({ type: 'uint8array' }) }], JSZip);
+  assert(/no YAML source/.test(none.notes[0] || ''), 'explains an .msapp without Src');
 });
 
 await Promise.all(pending);
