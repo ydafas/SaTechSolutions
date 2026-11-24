@@ -19,7 +19,7 @@ export function setupCardHtml({ compact = false } = {}) {
     if (it.kind === 'url' || it.kind === 'guid') field = `<input data-su="${it.id}" value="${esc(it.value)}" placeholder="${it.kind === 'guid' ? '00000000-0000-0000-0000-000000000000' : 'https://'}" spellcheck="false" autocomplete="off" aria-label="${esc(it.label)}">`;
     if (it.kind === 'deeplink') field = `<div class="su-two"><select data-su="deepLink" data-part="screen" aria-label="Screen">${['', ...P.screens.map((s) => s.id)].map((v) => `<option value="${esc(v)}" ${v === (it.value.screen || '') ? 'selected' : ''}>${v ? esc(P.screens.find((s) => s.id === v).name) : '(screen)'}</option>`).join('')}</select>
       <select data-su="deepLink" data-part="list" aria-label="List">${['', ...P.lists.filter((l) => !l.system).map((l) => l.name)].map((v) => `<option value="${esc(v)}" ${v === (it.value.list || '') ? 'selected' : ''}>${v ? esc(v) : '(list)'}</option>`).join('')}</select></div>`;
-    if (it.kind === 'confirm') field = `<label class="chk" style="margin:4px 0 0"><input type="checkbox" data-su="${it.id}" ${it.value ? 'checked' : ''}>Done: the list exists and users can contribute</label>`;
+    if (it.kind === 'confirm') field = `<label class="chk" style="margin:4px 0 0"><input type="checkbox" data-su="${it.id}" ${it.value ? 'checked' : ''}>${it.id === 'rowLimit' ? 'Done: the data row limit is 2000' : 'Done: the list exists and users can contribute'}</label>`;
     return `<div class="su-item ${it.done ? 'done' : ''}" data-item="${it.id}"><i class="su-st" aria-hidden="true">${it.done ? ui('check') : ''}</i><div class="su-body"><b>${esc(it.label)}</b>${compact ? '' : `<small>${esc(it.help)}</small>`}${field}<em class="su-hint">${esc(it.hint || '')}</em></div></div>`;
   };
   return `<div class="setup-card ${open ? '' : 'all-done'}" id="setupCard"><div class="su-h"><b>${open ? 'Finish setup' : 'Setup complete'}</b><span class="su-count">${open ? `${open} of ${items.length} left` : `${items.length} of ${items.length} done`}</span></div>${items.map(row).join('')}</div>`;
@@ -98,6 +98,7 @@ export function deployView(main, closeDialog) {
       q('#dpDl') && (q('#dpDl').onclick = () => H.downloadFlow(cur.flow));
       q('#dpDone').onclick = () => { markDeployed(P, cur); H.commit(); const steps2 = list(); st.i = st.mode === 'changed' ? steps2.findIndex((s) => stepStatus(P, s) !== 'unchanged') : st.i + 1; if (st.i < 0) st.i = steps2.length; draw(); };
       q('#dpSkip').onclick = () => { st.i += 1; draw(); };
+      q('#dpErr') && (q('#dpErr').onclick = () => { closeDialog?.(); H.reportError(); });
       q('#dpBack') && (q('#dpBack').onclick = () => { st.i = Math.max(0, st.i - 1); draw(); });
     } else {
       q('#dpRestart') && (q('#dpRestart').onclick = () => { st.mode = 'all'; st.i = 0; draw(); });
@@ -115,7 +116,7 @@ export function deployView(main, closeDialog) {
       ${repaste ? `<div class="note-box warn"><b>Before you delete ${esc(s.screen.name)} in Studio</b>Re-pasting replaces the whole screen. Controls you added by hand in Studio (an attachments form, for example) are lost: select them, Ctrl+C, paste into Notepad, and paste them back after this step.</div>` : ''}
       <div class="dp-acts">${s.text ? `<button class="btn pri big" id="dpCopy">${ui('copy')}${esc(s.copyLabel || 'Copy')}</button>` : ''}${s.flow ? `<button class="btn pri big" id="dpDl">${ui('download')}Download ${esc(s.file)}</button>` : ''}
         <button class="btn big" id="dpDone">${ui('check')}Done, next</button></div>
-      <div class="dp-sub">${i > 0 ? '<button class="btn sm" id="dpBack">Back</button>' : ''}<button class="btn sm" id="dpSkip">Skip</button>${s.text ? `<details><summary class="note">Show what gets copied</summary><pre class="code small">${esc(s.text.length > 6000 ? s.text.slice(0, 6000) + '\n…' : s.text)}</pre></details>` : ''}</div>`;
+      <div class="dp-sub">${i > 0 ? '<button class="btn sm" id="dpBack">Back</button>' : ''}<button class="btn sm" id="dpSkip">Skip</button>${H.reportError ? '<button class="btn sm" id="dpErr" title="Paste the error Studio or Power Automate showed">Got an error?</button>' : ''}${s.text ? `<details><summary class="note">Show what gets copied</summary><pre class="code small">${esc(s.text.length > 6000 ? s.text.slice(0, 6000) + '\n…' : s.text)}</pre></details>` : ''}</div>`;
   };
   const finishedHtml = (removed, before) => `<div class="dp-done">${ui('check')}<h4>${before ? 'Everything is deployed' : 'Nothing left in this list'}</h4>
     <p class="note">Edits you make from now on show up here as Changed, so only those screens and flows need re-pasting.</p>

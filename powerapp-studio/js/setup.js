@@ -3,6 +3,7 @@
 // lint codes it clears, so the checklist can sit next to the errors and fix them in place.
 import { walk } from './core.js';
 import { deepLinkInfo } from './flows.js';
+import { needsRowLimit } from './delegation.js';
 
 export const GUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const isHttps = (v) => /^https:\/\/[^\s/]+\.[^\s]+$/i.test(String(v || '').trim());
@@ -48,6 +49,12 @@ export function setupItems(p) {
       help: `Object ID of the Microsoft 365 group whose members approve the ${st.name} stage (Entra admin center → Groups → the group → Object ID). Members are checked with Office 365 Groups when the app starts.`,
       hint: v && !GUID.test(v) ? 'It should look like 00000000-0000-0000-0000-000000000000.' : '' });
   }
+  if (needsRowLimit(p)) {
+    const v = !!p.app.setup?.rowLimitConfirmed;
+    const big = p.lists.filter((l) => l.size === 'medium' || l.size === 'large').map((l) => l.name).join(', ');
+    items.push({ id: 'rowLimit', kind: 'confirm', label: 'Data row limit raised to 2000', value: v, done: v, codes: [],
+      help: `${big} can hold more than 500 items. In Studio: Settings → General → Data row limit → 2000, so galleries, counts and lookups see up to 2,000 items. Lists marked Large also get "2000+" counts.` });
+  }
   if (p.app.features?.usage) {
     const v = !!p.app.setup?.usageConfirmed;
     items.push({ id: 'usageList', kind: 'confirm', label: 'AppUsage list exists', value: v, done: v, codes: [],
@@ -88,6 +95,7 @@ export function applySetup(p, id, value) {
       p.app.setup.adminDraft = v; return false;
     }
     case 'usageList': p.app.setup.usageConfirmed = !!value; return true;
+    case 'rowLimit': if (value) p.app.setup.rowLimitConfirmed = true; else delete p.app.setup.rowLimitConfirmed; return true;
   }
   return false;
 }
