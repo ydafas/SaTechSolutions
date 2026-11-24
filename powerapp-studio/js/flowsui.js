@@ -91,6 +91,7 @@ export function flowDialog(id) {
       ${kindHtml}
       <div class="f"><span>Send to</span>${f.recipients.map((r, i) => `<div class="rrow"><select data-ri="${i}" data-rk="1">${opts(rkinds, r.kind)}</select>${r.kind === 'column' ? `<select data-ri="${i}" data-rv="1">${opts([['', '(column)'], ...personCols.map((c) => c.name)], r.value)}</select>` : r.kind === 'address' ? `<input data-ri="${i}" data-rv="1" value="${esc(r.value)}" placeholder="name@agency.mil; team@agency.mil">` : '<span></span>'}<button class="mini danger" data-rdel="${i}" title="Remove">${ui('close')}</button></div>`).join('')}
         <button class="btn sm" data-radd="1">${ui('plus')}Recipient</button></div>
+      ${f.recipients.some((r) => r.kind === 'column' && r.value) ? F('If nobody to email <small>(the Person column is blank on the item)</small>', `<select data-f="fallback">${opts([['', 'Skip the email'], ['author', 'Send it to Created By'], ...(/@/.test(f.fallback) ? [[f.fallback, f.fallback]] : [])], f.fallback)}</select><input data-f="fallback" placeholder="…or type an address" value="${/@/.test(f.fallback) ? esc(f.fallback) : ''}" style="margin-top:6px">`) : ''}
       ${F('Subject', `<input data-f="subject" value="${esc(f.subject)}">`)}
       ${F('Message', `<textarea class="plain" rows="7" data-f="body">${esc(f.body)}</textarea>`)}
       <div class="f"><span>Insert a value <small>(click to add at the cursor)</small></span><div class="chips">${tokens().map((t) => `<button type="button" class="chip" data-tok="${esc(t)}">{${esc(t)}}</button>`).join('')}</div></div>

@@ -308,10 +308,13 @@ const weight = (w) => `FontWeight.${w || 'Normal'}`;
 
 function cardHtmlFx(ctl) {
   const p = ctl.props, shadow = !!p.shadow;
-  const h = shadow ? ctl.h - 12 : ctl.h;
+  // The control is emitted 5px larger on each side plus 2px of slack (see controlProps 'card'), so the inner area is
+  // (w + 2) x (h + 2). The card is pinned to an explicit w x h box (inset 6px when it has a shadow) and clips, so
+  // Studio's rounding at other scales can never make it overflow and draw a scrollbar.
+  const h = shadow ? ctl.h - 12 : ctl.h, w = shadow ? ctl.w - 12 : ctl.w;
   const bg = p.fill2 ? ['linear-gradient(', String(p.gradAngle ?? 135), 'deg,', cssPiece(p.fill), ',', cssPiece(p.fill2), ')'] : [cssPiece(p.fill)];
   const rad = p.radius === 'theme' || p.radius == null ? { fx: 'Text(appTheme.Radius)' } : { lit: N(p.radius) };
-  const pieces = [`<div style='${shadow ? 'margin:1px' : 'margin:0'};box-sizing:border-box;height:${h}px;background:`, ...bg,
+  const pieces = [`<div style='margin:${shadow ? '6px' : '0'};box-sizing:border-box;width:${Math.max(0, w)}px;height:${Math.max(0, h)}px;overflow:hidden;background:`, ...bg,
     `;border-radius:`, rad, 'px;'];
   if (Number(p.borderThickness) > 0) pieces.push(`border:${N(p.borderThickness)}px solid `, cssPiece(p.borderColor), ';');
   if (shadow) pieces.push('box-shadow:0 2px 6px rgba(15,23,42,0.14);');
@@ -377,9 +380,9 @@ function controlProps(project, screen, ctl) {
     }
     case 'card':
       add('HtmlText', cardHtmlFx(ctl));
-      // HtmlViewer pads its content 5px per side: a borderless card grows the control by 5px all round so the
-      // drawn card lands exactly on the designer rectangle and its content never exceeds Height - 10.
-      if (p.shadow) geo(); else { add('X', N(ctl.x - 5)); add('Y', N(ctl.y - 5)); add('Width', N(ctl.w + 10)); add('Height', N(ctl.h + 10)); }
+      // HtmlViewer pads its content 5px per side: grow the control by 5px all round (+2px slack) so the drawn card
+      // lands exactly on the designer rectangle with room to spare (an exact fit drew scrollbars in a real tenant).
+      add('X', N(ctl.x - 5)); add('Y', N(ctl.y - 5)); add('Width', N(ctl.w + 12)); add('Height', N(ctl.h + 12));
       break;
     case 'html': add('HtmlText', s(p.html)); geo(); break;
     case 'rect': geo(); add('Fill', colorFx(p.fill)); add('BorderColor', colorFx(p.borderColor)); add('BorderThickness', N(p.borderThickness)); break;
@@ -461,6 +464,18 @@ function controlProps(project, screen, ctl) {
     const i = P.findIndex(([kk]) => kk === k);
     const val = String(v).replace(/^=/, '');
     if (i >= 0) P[i][1] = val; else P.push([k, val]);
+  }
+  // HTML text: clip to the designed inner box and give the control 2px of slack, so content that fits exactly in the
+  // browser (or text that renders taller in Studio) can never overflow and draw a grey scrollbar. Opt out with
+  // "Allow scrolling" for long scrolling text.
+  if (ctl.type === 'html' && !p.scroll && !ctl.fx?.Width && !ctl.fx?.Height) {
+    const hi = P.findIndex(([k]) => k === 'HtmlText');
+    if (hi >= 0) {
+      P[hi][1] = `"<div style='box-sizing:border-box;width:${Math.max(0, Math.round(ctl.w) - 10)}px;height:${Math.max(0, Math.round(ctl.h) - 10)}px;overflow:hidden'>" & ${P[hi][1]} & "</div>"`;
+      const wi = P.findIndex(([k]) => k === 'Width'), h2 = P.findIndex(([k]) => k === 'Height');
+      if (wi >= 0) P[wi][1] = N(ctl.w + 2);
+      if (h2 >= 0) P[h2][1] = N(ctl.h + 2);
+    }
   }
   return P;
 }
@@ -845,7 +860,7 @@ export const LINT_RULES = {
   PS053: 'Approval chain list or stage count invalid', PS054: 'Approval group stage without a valid group ID', PS055: 'Approval stage approver is not a Person column',
   PS056: 'Approval chain column missing', PS057: 'Approve/reject action without a chain or comment box',
   PS058: 'Formula override on a property the tenant rejected', PS059: 'Not delegable on a large list',
-  PS060: 'Attachments form is added by hand after the paste', PS061: 'Admin override without an admin group',
+  PS060: 'Attachments form is added by hand after the paste', PS061: 'Admin override without an admin group', PS062: 'Flow emails an optional Person column with no fallback',
 };
 const screenHas = (scr, name) => !!name && [...walk(scr.controls)].some(([c]) => c.name === name);
 const overlap = (a, b) => Math.max(0, Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x)) * Math.max(0, Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y));
@@ -981,7 +996,7 @@ export function lint(project) {
   for (const scr of project.screens) for (const [c] of walk(scr.controls)) {
     if (c.type !== 'html') continue;
     const over = htmlOverflow(String(c.props?.html || ''), c.h);
-    if (over > 0) mk(fxText(c))('warn', 'PS051', `${scr.name} › ${c.name}`, `The HTML box is ${over}px taller than this control can show (HtmlViewer adds 5px padding on each side), so Power Apps will draw a scrollbar. Make the box ${over}px shorter or the control ${over}px taller.`);
+    if (over > 0) mk(fxText(c))('warn', 'PS051', `${scr.name} › ${c.name}`, `The HTML box is ${over}px taller than this control can show (HtmlViewer adds 5px padding on each side), so Power Apps will draw a scrollbar. Make the box ${over}px shorter or the control ${over}px taller, or its bottom is cut off.`);
   }
   // attachments: the Edit form cannot be pasted (attach.js); remind where it goes, flag placeholders that do nothing
   for (const x of allAttachSlots(project)) addG('info', 'PS060', `${x.screen.name} › ${x.ctl.name}`, `Insert an Edit form named ${x.form} over this box after pasting (Paste assistant, Attachments step). Re-pasting ${x.screen.name} removes it: copy it to Notepad first.`);

@@ -1122,8 +1122,9 @@ test('approval chain: default output is byte-identical to round 3', () => {
   }
   const r = AI.specToProject(FIXTURE); r.project.theme = navy(); dump(r.project);
   // sha256 of the same output on origin/main 308cbb9 (round 3)
-  // round 6: detail section titles now hide with their cards (Visible: has); the only change vs round 3
-  eq(createHash('sha256').update(out.join('\n')).digest('hex'), '7ba2ef8bb522888d4bc3dde46ab6f572ae71a83354f4cd075049da751f319a3d', 'output hash');
+  // round 6: detail section titles now hide with their cards (Visible: has)
+  // tenant fix 1: HtmlViewer boxes get 2px slack + clip (grey scrollbars in a real tenant); flows guard blank Person recipients
+  eq(createHash('sha256').update(out.join('\n')).digest('hex'), 'ddf433e886bc52c8055ecc22e8b8c789ced58d977f8dabd3c94f7b473655416d', 'output hash');
   assert(!r.project.app.chain, 'the round-3 plan fixture (no stages) stays a single approvals queue');
 });
 test('approval chain: lint catches bad group IDs, wrong approver columns and missing columns', () => {
@@ -1741,6 +1742,59 @@ test('round 6 polish: a bundle can be added to the open app', () => {
   const r2 = BU.mergeProjects(t2, s2);
   eq(r2.lists.join(), 'Equipment,Checkouts', 'new lists come in as they are');
   assert(t2.flows.length >= 2, 'flows added');
+});
+
+// ---------------------------------------------------------------- tenant test 1 fixes
+test('every HtmlViewer has slack: its first box fits in Width-10 x Height-10 with 2px to spare (no scrollbars)', () => {
+  let n = 0;
+  const all = Object.keys(SCENARIOS);
+  for (const k of all) for (const ff of ['tablet', 'phone']) {
+    const p = core.newProject(); const sc = SCENARIOS[k]; p.app.name = sc.app; p.app.formFactor = ff; p.lists = sc.lists();
+    p.app.features = { loading: true, usage: true, confirm: true, stepper: true, scope: 'all', adminGroup: '11111111-2222-4333-8444-555555555555' };
+    generateApp(p, { screens: ['home', 'browse', 'detail', 'edit'], approvals: sc.approvals || null });
+    for (const s of p.screens) {
+      const doc = yaml.load(E.screenYaml(p, s), { schema: yaml.FAILSAFE_SCHEMA });
+      const walkY = (ch) => (ch || []).forEach((it) => {
+        const [[name, c]] = Object.entries(it);
+        if (c.Control === 'HtmlViewer') {
+          const P = c.Properties, W = Number(String(P.Width).replace('=', '')), H = Number(String(P.Height).replace('=', ''));
+          if (!Number.isNaN(W) && !Number.isNaN(H)) {
+            const html = String(P.HtmlText);
+            const first = (/style='([^']*)'/.exec(html) || [, ''])[1];
+            const w = /width:(\d+)px/.exec(first), h = /height:(\d+)px/.exec(first), m = /margin:(\d+)px/.exec(first);
+            const mg = m ? 2 * Number(m[1]) : 0;
+            assert(/overflow:hidden/.test(first), `${k}/${ff} ${s.name}.${name}: first box clips`);
+            assert(h && Number(h[1]) + mg <= H - 12, `${k}/${ff} ${s.name}.${name}: height ${h && h[1]}+${mg} vs control ${H}`);
+            assert(w && Number(w[1]) + mg <= W - 12, `${k}/${ff} ${s.name}.${name}: width ${w && w[1]}+${mg} vs control ${W}`);
+            n++;
+          }
+        }
+        walkY(c.Children);
+      });
+      walkY(Object.values(doc.Screens)[0].Children);
+    }
+  }
+  assert(n > 200, 'checked many HtmlViewers: ' + n);
+});
+test('flows guard a blank Person recipient instead of failing with "To field cannot be empty"', () => {
+  const p = build('requests'); p.app.siteUrl = 'https://x.sharepoint.com/sites/a';
+  const f = FL.newFlow(p, 'created', 'Requests');
+  f.recipients = [{ kind: 'column', value: 'Approver' }];
+  p.lists[0].columns.find((c) => c.name === 'Approver').required = false;
+  p.flows = [f];
+  let d = FL.flowDefinition(p, f);
+  assert(d.actions.Compose_recipients && d.actions.Check_recipients, 'compose + condition');
+  eq(d.actions.Check_recipients.actions['Send_an_email_(V2)'].inputs.parameters['emailMessage/To'], "@{outputs('Compose_recipients')}", 'sends to the composed line');
+  eq(Object.keys(d.actions.Check_recipients.else.actions).length, 0, 'no fallback: skip');
+  assert(E.lint(p).some((x) => x.code === 'PS062'), 'optional recipient noted');
+  f.fallback = 'author'; d = FL.flowDefinition(p, f);
+  assert(JSON.stringify(d.actions.Check_recipients.else.actions.Send_to_fallback).includes("body/Author/Email"), 'fallback to Created By');
+  f.recipients = [{ kind: 'author', value: '' }]; d = FL.flowDefinition(p, f);
+  assert(d.actions['Send_an_email_(V2)'] && !d.actions.Compose_recipients, 'always-present recipients stay a plain send');
+  const b = FL.newFlow(p, 'button', 'Requests'); b.recipients = [{ kind: 'column', value: 'Approver' }];
+  d = FL.flowDefinition(p, b);
+  eq(JSON.stringify(d.actions.Respond_to_a_PowerApp_or_flow.runAfter), '{"Check_recipients":["Succeeded"]}', 'button flow responds after the check');
+  checkExpressions(d);
 });
 
 await Promise.all(pending);

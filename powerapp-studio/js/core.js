@@ -340,7 +340,7 @@ export function normalizeProject(p) {
   for (const f of p.flows) {
     if (!SAFE_ID.test(f.id || '')) f.id = uid();
     if (!KINDS.includes(f.kind)) f.kind = 'created';
-    for (const k of ['name', 'list', 'subject', 'body', 'statusField', 'reminderValue', 'timeZone']) f[k] = String(f[k] ?? '');
+    for (const k of ['name', 'list', 'subject', 'body', 'statusField', 'reminderValue', 'timeZone', 'fallback']) f[k] = String(f[k] ?? '');
     f.recipients = Array.isArray(f.recipients) ? f.recipients.filter((r) => r && typeof r === 'object').map((r) => ({ kind: String(r.kind || 'address'), value: String(r.value ?? '') })) : [];
     f.statusValues = Array.isArray(f.statusValues) ? f.statusValues.map(String) : [];
     f.days = clamp(Number(f.days) || 0, 0, 365); f.hour = clamp(Number(f.hour) || 0, 0, 23); f.enabled = f.enabled !== false;
