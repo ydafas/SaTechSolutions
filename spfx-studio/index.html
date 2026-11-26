@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>SPFx Studio | SaTech IT Solutions</title>
+  <meta name="description" content="Describe a SharePoint web part in plain English and download a deployable SPFx .sppkg. Live preview with sample data, property pane, list provisioning. Works for GCC High: nothing loads from outside SharePoint.">
+  <script async src="https://www.googletagmanager.com/gtag/js?id=GT-5DF6JG2M"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'GT-5DF6JG2M');
+  </script>
+  <link rel="stylesheet" href="studio.css">
+</head>
+<body>
+  <div id="app">
+    <header class="top">
+      <a class="brand" href="../index.html" title="SaTech IT Solutions home">
+        <i class="brand-mark"><svg viewBox="0 0 24 24"><path d="M4 5h16v14H4zM4 9h16M9 9v10" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg></i>
+        <span class="brand-name">SaTech</span><span class="brand-app">SPFx Studio</span>
+      </a>
+      <label class="wpname"><span class="sr">Web part name</span><input id="wpTitle" spellcheck="false" autocomplete="off" placeholder="New web part"></label>
+      <span class="ver" id="verBadge" title="Package version"></span>
+      <div class="top-actions">
+        <button class="tb" id="btnExamples">Examples</button>
+        <div class="dd" id="projMenu">
+          <button class="tb" aria-haspopup="true" id="btnProject">Project</button>
+          <div class="dd-menu" role="menu">
+            <button data-cmd="new">New web part</button>
+            <button data-cmd="save">Save project file</button>
+            <button data-cmd="open">Open project file…</button>
+            <button data-cmd="history">Version history…</button>
+            <hr>
+            <button data-cmd="deploy">How to deploy</button>
+            <a href="../powerapp-studio/" role="menuitem">Power App Studio ↗</a>
+          </div>
+        </div>
+        <span class="sep"></span>
+        <button class="tb" id="btnSource" title="Standard SPFx 1.21.1 project: npm install, gulp bundle --ship, gulp package-solution --ship">Source (.zip)</button>
+        <button class="tb primary" id="btnPackage" title="Download the .sppkg for your app catalog"><svg viewBox="0 0 24 24"><path d="M12 4v11M7 10l5 5 5-5M4 20h16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>Download .sppkg</button>
+      </div>
+    </header>
+    <div class="body">
+      <aside class="left">
+        <nav class="tabs" role="tablist">
+          <button role="tab" data-tab="build" class="on">Build</button>
+          <button role="tab" data-tab="code">Code</button>
+          <button role="tab" data-tab="package">Package</button>
+        </nav>
+        <section class="tabpane" id="tab-build"></section>
+        <section class="tabpane" id="tab-code" hidden></section>
+        <section class="tabpane" id="tab-package" hidden></section>
+      </aside>
+      <main class="stage">
+        <div class="toolbar">
+          <div class="seg" id="segWidth" role="group" aria-label="Section width">
+            <button data-w="third">One-third</button><button data-w="half">Half</button><button data-w="full">One column</button><button data-w="bleed">Full width</button>
+          </div>
+          <div class="seg" id="segSection" role="group" aria-label="Section background">
+            <button data-s="neutral">White</button><button data-s="soft">Soft</button><button data-s="strong">Strong</button>
+          </div>
+          <label class="swatch" title="Site theme colour"><span class="sr">Site theme colour</span><select id="themeSel"></select></label>
+          <label class="chk"><input type="checkbox" id="editMode"> Edit mode</label>
+          <span class="grow"></span>
+          <button class="btn sm" id="btnReseed" title="Put the sample rows back">Reset sample data</button>
+          <button class="btn sm" id="btnLog" title="SharePoint REST calls the web part made">REST calls <b id="logCount">0</b></button>
+        </div>
+        <div class="errbar" id="errBar" hidden></div>
+        <div class="canvas" id="canvas">
+          <div class="sp-page" id="spPage">
+            <div class="sp-suite"><span class="waffle"></span><b>SharePoint</b><span class="sp-search">Search this site</span></div>
+            <div class="sp-head"><span class="sp-logo">CI</span><div><b>Contoso Intranet</b><small>Home · News · Documents · Pages</small></div></div>
+            <div class="sp-section" id="spSection"><div class="sp-col" id="spCol"><div class="sp-wp" id="spWp"><iframe id="preview" title="Web part preview" sandbox="allow-scripts allow-forms allow-popups"></iframe></div></div></div>
+          </div>
+          <div class="start" id="start" hidden></div>
+        </div>
+        <div class="restlog" id="restLog" hidden></div>
+      </main>
+      <aside class="pane" id="pane" aria-label="Property pane"></aside>
+    </div>
+  </div>
+  <div id="toasts" aria-live="polite"></div>
+  <input type="file" id="fileOpen" accept=".json,application/json" hidden>
+  <script src="vendor/jszip.min.js"></script>
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

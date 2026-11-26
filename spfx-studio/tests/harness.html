@@ -1,0 +1,25 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>SPFx Studio preview harness</title></head>
+<body style="margin:0"><iframe id="f" sandbox="allow-scripts" style="width:900px;height:860px;border:0"></iframe>
+<script type="module">
+// Test harness: mounts an example (or a raw bundle from ?bundle=) in the real preview iframe and records messages.
+import { EXAMPLES } from '../js/examples.js';
+import { buildWebPart } from '../js/bundle.js';
+import { previewDoc } from '../js/preview.js';
+const q = new URLSearchParams(location.search);
+const ex = EXAMPLES.find((e) => e.key === (q.get('ex') || 'quicklinks'));
+const project = { spec: ex.spec, ids: { solution: 'a1b2c3d4-0000-4000-8000-000000000001', feature: 'a1b2c3d4-0000-4000-8000-000000000002', component: 'a1b2c3d4-0000-4000-8000-000000000003', assets: 'a1b2c3d4-0000-4000-8000-000000000004' }, build: 3 };
+const props = {}; for (const p of ex.spec.properties) props[p.key] = p.type === 'toggle' ? p.default === 'true' : (p.type === 'slider' || p.type === 'number') ? Number(p.default) : p.default;
+window.msgs = []; window.ready = false;
+const f = document.getElementById('f');
+window.send = (m) => f.contentWindow.postMessage(Object.assign({ __sss: 1 }, m), '*');
+window.addEventListener('message', async (e) => {
+  if (!e.data || !e.data.__sss) return; window.msgs.push(e.data);
+  if (e.data.type === 'ready') {
+    let bundle = buildWebPart(project).text;
+    if (q.get('bundle')) bundle = await (await fetch(q.get('bundle'))).text();
+    send({ type: 'load', bundle, props, edit: q.get('edit') === '1', lists: project.spec.lists, theme: null, reseed: true });
+  }
+  if (e.data.type === 'mounted') window.ready = true;
+});
+f.srcdoc = previewDoc();
+</script></body></html>
